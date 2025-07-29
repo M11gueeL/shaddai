@@ -1,56 +1,32 @@
 <?php
-// Habilitar toda la depuración
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// index.php
+require_once __DIR__ . '/../vendor/autoload.php';
+use Dotenv\Dotenv;
 
-// Obtener la ruta solicitada
-$requestUri = $_SERVER['REQUEST_URI'];
-$requestPath = parse_url($requestUri, PHP_URL_PATH);
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../config');
+$dotenv->safeLoad();
 
-// Eliminar el base path si es necesario
-$basePath = '/shaddai/shaddai-api/public';
-if (strpos($requestPath, $basePath) === 0) {
-    $requestPath = substr($requestPath, strlen($basePath));
-}
+require_once __DIR__ . '/../utils/Utilities.php';
 
-// Configuración de cabeceras
-header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+Utilities::setHeaders();
+Utilities::handleOption();
+Utilities::initDatabase();
 
-// Preflight request
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-// Inicializar la base de datos
-require_once __DIR__ . '/../config/Database.php';
-try {
-    Database::getInstance();
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed', 'message' => $e->getMessage()]);
-    exit;
-}
-
-// Crear el enrutador
 require_once __DIR__ . '/../config/Router.php';
 $router = new Router();
 
-// Registrar módulos
-require_once __DIR__ . '/../modules/patients/PatientsRoutes.php';
-PatientsRoutes::register($router);
+// Cargar todas las rutas automáticamente
+Utilities::registerRoutes($router);
 
-// Manejar entrada JSON
-if ($_SERVER['REQUEST_METHOD'] == 'POST' || $_SERVER['REQUEST_METHOD'] == 'PUT') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if ($input) {
-        $_POST = array_merge($_POST, $input);
-    }
-}
+Utilities::handleJsonInput();
 
-// Despachar la solicitud
+$requestPath = Utilities::getRequestPath();
+
+// Mostrar información de depuración
+// Descomenta estas líneas para ver qué está sucediendo
+// echo "Método: " . $_SERVER['REQUEST_METHOD'] . "\n";
+// echo "Ruta: " . $requestPath . "\n";
+// echo "Rutas registradas:\n";
+// print_r($router->getRoutes());
+
 $router->dispatch($requestPath, $_SERVER['REQUEST_METHOD']);

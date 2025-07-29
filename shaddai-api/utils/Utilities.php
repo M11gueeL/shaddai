@@ -54,8 +54,13 @@ class Utilities {
 
     // Obtención de la ruta solicitada
     public static function getRequestPath() {
-    $requestUri = $_SERVER['REQUEST_URI'];
-    $path = parse_url($requestUri, PHP_URL_PATH);
-    return $path;
-}
+        $requestUri = $_SERVER['REQUEST_URI'];
+        $basePath = ($_ENV['API_BASE_PATH'] ?? '/shaddai/shaddai-api/public');
+        $path = parse_url($requestUri, PHP_URL_PATH);
+        if (strpos($path, $basePath) === 0) {
+            $path = substr($path, strlen($basePath));
+        }
+        return $path;
+    }
+
 }
