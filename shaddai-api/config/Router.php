@@ -2,67 +2,80 @@
 
 class Router {
     private $routes = [];
-    private $middlewareInstances = [];
 
-    // Registrar instancias de middleware
-    public function registerMiddleware($name, $middleware) {
-        $this->middlewareInstances[$name] = $middleware;
-    
-    }
-    // Este método agrega una ruta al enrutador
-    public function add($method, $route, $callback, $middleware = null) {
+    public function add($method, $route, $callback) {
         $this->routes[] = [
             'method' => strtoupper($method),
-            'route' => $route,
-            'callback' => $callback,
-            'middleware' => $middleware // Nombre del middleware a aplicar
+            'route' => trim($route, '/'),
+            'callback' => $callback
         ];
     }
 
-    // Este método maneja la solicitud entrante y despacha la ruta correspondiente
-    public function dispatch($requestUri, $requestMethod) {
-        $requestUri = trim($requestUri, '/');
+    public function dispatch($requestPath, $requestMethod) {
+        $requestPath = trim($requestPath, '/');
         
         foreach ($this->routes as $route) {
-            $pattern = $this->convertToRegex($route['route']);
+            // Convertir ruta a patrón regex
+            $pattern = $this->routeToPattern($route['route']);
             
-            if ($route['method'] === $requestMethod && preg_match($pattern, $requestUri, $matches)) {
-                // Aplicar middleware si está definido
-                if ($route['middleware'] && isset($this->middlewareInstances[$route['middleware']])) {
-                    try {
-                        $this->middlewareInstances[$route['middleware']]->authenticate();
-                    } catch (Exception $e) {
-                        http_response_code($e->getCode());
-                        echo json_encode(['error' => $e->getMessage()]);
-                        return;
-                    }
-                }
-                
+            if ($route['method'] === $requestMethod && preg_match($pattern, $requestPath, $matches)) {
                 // Extraer parámetros
                 $params = [];
                 foreach ($matches as $key => $value) {
-                    if (is_string($key)) $params[$key] = $value;
+                    if (is_string($key)) {
+                        $params[$key] = $value;
+                    }
                 }
                 
-                // Llamar al controlador
-                call_user_func_array($route['callback'], array_values($params));
+                // Llamar al callback
+                $this->callCallback($route['callback'], $params);
                 return;
             }
         }
 
         http_response_code(404);
         echo json_encode(['error' => 'Recurso no encontrado']);
+        // echo json_encode($this->getNotFoundResponse($requestMethod, $requestPath));
     }
 
-    // Convertir una ruta a una expresión regular
-    private function convertToRegex($route) {
-        $route = trim($route, '/');
-        $pattern = preg_replace('/\{(\w+)\}/', '(?P<$1>[^\/]+)', $route);
+    private function routeToPattern($route) {
+        // Reemplazar {param} por regex
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '(?P<$1>[^\/]+)', $route);
         return '@^' . $pattern . '$@';
     }
 
-    // Método para obtener todas las rutas registradas
+    private function callCallback($callback, $params) {
+        if (is_callable($callback)) {
+            call_user_func_array($callback, $params);
+        } elseif (is_array($callback) && count($callback) === 2) {
+            [$controller, $method] = $callback;
+            if (method_exists($controller, $method)) {
+                call_user_func_array([$controller, $method], $params);
+            } else {
+                http_response_code(500);
+                echo json_encode([
+                    'error' => 'Controller method not found',
+                    'controller' => get_class($controller),
+                    'method' => $method
+                ]);
+            }
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Invalid callback format']);
+        }
+    }
+
+    public function getNotFoundResponse($requestMethod, $requestPath) {
+        return [
+            'error' => 'Recurso no encontrado',
+            'requested' => "$requestMethod /$requestPath",
+            'registered' => array_map(function($r) {
+                return $r['method'] . ' /' . $r['route'];
+            }, $this->routes)
+        ];
+    }
+
     public function getRoutes() {
         return $this->routes;
     }
-} 
+}

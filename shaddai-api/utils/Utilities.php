@@ -1,0 +1,61 @@
+<?php
+
+class Utilities {
+
+    // Configuración de header comunes
+    public static function setHeaders() {
+        header("Access-Control-Allow-Origin: *");
+        header("Content-Type: application/json; charset=UTF-8");
+        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+        header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+    }
+
+    // Manejo de preflight OPTIONS
+    public static function handleOption() {
+        if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+            http_response_code(200);
+            exit();
+        }
+    }
+
+    // Inicialización de la base de datos
+    public static function initDatabase() {
+        require_once __DIR__ . '/../config/Database.php';
+        try {
+            Database::getInstance();
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Database connection failed', 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
+
+    // Registro de rutas
+    public static function registerRoutes($router) {
+        $routesPaths = glob(__DIR__ . '/../modules/*/*Routes.php');
+        foreach ($routesPaths as $file) {
+            require_once $file;
+            $className = basename($file, '.php');
+            if (class_exists($className) && method_exists($className, 'register')) {
+                $className::register($router);
+            }
+        }
+    }
+
+    // Manejo de entrada JSON
+    public static function handleJsonInput() {
+        if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT'])) {
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (is_array($input)) {
+                $_POST = array_merge($_POST, $input);
+            } 
+        }
+    }
+
+    // Obtención de la ruta solicitada
+    public static function getRequestPath() {
+    $requestUri = $_SERVER['REQUEST_URI'];
+    $path = parse_url($requestUri, PHP_URL_PATH);
+    return $path;
+}
+}
