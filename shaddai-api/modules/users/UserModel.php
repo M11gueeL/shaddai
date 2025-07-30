@@ -1,0 +1,258 @@
+<?php
+
+require_once __DIR__ . '/../../config/Database.php';
+
+class UserModel {
+    private $db; 
+
+    public function __construct() {
+        $this->db = Database::getInstance();
+    }
+
+    // Crear usuario y asignar roles / medical_info / medical_specialties según rol
+    public function createUser($data) {
+        try {
+            $this->db->execute("START TRANSACTION");
+
+            // Insertar en users
+            $query = "INSERT INTO users (
+                first_name, last_name, cedula, birth_date, gender, address,
+                phone, email, password, created_by
+            ) VALUES (
+                :first_name, :last_name, :cedula, :birth_date, :gender, :address,
+                :phone, :email, :password, :created_by
+            )";
+
+            $params = [
+                ':first_name' => $data['first_name'],
+                ':last_name' => $data['last_name'],
+                ':cedula' => $data['cedula'],
+                ':birth_date' => $data['birth_date'] ?? null,
+                ':gender' => $data['gender'] ?? null,
+                ':address' => $data['address'] ?? null,
+                ':phone' => $data['phone'],
+                ':email' => $data['email'],
+                ':password' => password_hash($data['password'], PASSWORD_DEFAULT),
+                ':created_by' => $data['created_by'] ?? null,
+            ];
+
+            $this->db->execute($query, $params);
+            $userId = $this->db->lastInsertId();
+
+            // Insertar roles en user_roles (puede tener varios)
+            foreach ($data['roles'] as $roleId) {
+                $this->db->execute(
+                    "INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)",
+                    [':user_id' => $userId, ':role_id' => $roleId]
+                );
+            }
+
+            // Si es medico (role_id = 2), insertar en user_medical_info y user_specialties
+            if (in_array(2, $data['roles'])) {
+                // Validar que vengan los campos requeridos para medico
+                if (empty($data['mpps_code']) || empty($data['medical_college_id']) || empty($data['college_code'])) {
+                    throw new Exception('Faltan datos médicos requeridos para médico');
+                }
+
+                $this->db->execute(
+                    "INSERT INTO user_medical_info (user_id, mpps_code, medical_college_id, college_code) 
+                     VALUES (:user_id, :mpps_code, :medical_college_id, :college_code)",
+                    [
+                        ':user_id' => $userId,
+                        ':mpps_code' => $data['mpps_code'],
+                        ':medical_college_id' => $data['medical_college_id'],
+                        ':college_code' => $data['college_code'],
+                    ]
+                );
+
+                // Insertar especialidades médicas: array de specialty_id
+                if (!empty($data['specialties']) && is_array($data['specialties'])) {
+                    foreach ($data['specialties'] as $specialtyId) {
+                        $this->db->execute(
+                            "INSERT INTO user_specialties (user_id, specialty_id) VALUES (:user_id, :specialty_id)",
+                            [':user_id' => $userId, ':specialty_id' => $specialtyId]
+                        );
+                    }
+                }
+            }
+
+            $this->db->execute("COMMIT");
+            return $userId;
+        } catch (Exception $e) {
+            $this->db->execute("ROLLBACK");
+            throw $e;
+        }
+    }
+
+    // Obtener todos los usuarios con roles y datos médicos si es medico
+    public function getAllUsers() {
+        $users = $this->db->query("SELECT id, first_name, last_name, cedula, birth_date, gender, address,
+                phone, email, created_by FROM users");
+
+        // Traer roles para cada usuario
+        foreach ($users as &$user) {
+            $user['roles'] = $this->db->query(
+                "SELECT r.id, r.name FROM roles r 
+                JOIN user_roles ur ON ur.role_id = r.id WHERE ur.user_id = :user_id",
+                [':user_id' => $user['id']]
+            );
+
+            // Si tiene rol medico (id=2), agregar medical_info y specialties
+            $roleIds = array_column($user['roles'], 'id');
+            if (in_array(2, $roleIds)) {
+                $user['medical_info'] = $this->db->query(
+                    "SELECT * FROM user_medical_info WHERE user_id = :user_id",
+                    [':user_id' => $user['id']]
+                )[0] ?? null;
+
+                $user['specialties'] = $this->db->query(
+                    "SELECT ms.id, ms.name FROM medical_specialties ms 
+                     JOIN user_specialties us ON us.specialty_id = ms.id 
+                     WHERE us.user_id = :user_id",
+                     [':user_id' => $user['id']]
+                );
+            }
+        }
+
+        return $users;
+    }
+
+    // Obtener usuario por ID con roles y datos medicos (similar a getAll pero para un usuario)
+    public function getUserById($id) {
+        $user = $this->db->query("SELECT first_name, last_name, cedula, birth_date, gender, address,
+                phone, email, created_by FROM users WHERE id = :id", [':id' => $id]);
+        if (empty($user)) return null;
+
+        $user = $user[0];
+        $user['roles'] = $this->db->query(
+            "SELECT r.id, r.name FROM roles r JOIN user_roles ur ON ur.role_id = r.id WHERE ur.user_id = :user_id",
+            [':user_id' => $id]
+        );
+
+        $roleIds = array_column($user['roles'], 'id');
+        if (in_array(2, $roleIds)) {
+            $user['medical_info'] = $this->db->query("SELECT * FROM user_medical_info WHERE user_id = :user_id", [':user_id' => $id])[0] ?? null;
+
+            $user['specialties'] = $this->db->query(
+                "SELECT ms.id, ms.name FROM medical_specialties ms 
+                 JOIN user_specialties us ON us.specialty_id = ms.id WHERE us.user_id = :user_id",
+                 [':user_id' => $id]
+            );
+        }
+
+        return $user;
+    }
+
+    // Actualizar usuario y roles / medical info / specialties
+    public function updateUser($id, $data) {
+        try {
+            $this->db->execute("START TRANSACTION");
+
+            // Actualizar tabla users (excepto password si no viene)
+            $query = "UPDATE users SET 
+                first_name = :first_name, last_name = :last_name, cedula = :cedula, 
+                birth_date = :birth_date, gender = :gender, address = :address, 
+                phone = :phone, email = :email";
+
+            $params = [
+                ':first_name' => $data['first_name'],
+                ':last_name' => $data['last_name'],
+                ':cedula' => $data['cedula'],
+                ':birth_date' => $data['birth_date'] ?? null,
+                ':gender' => $data['gender'] ?? null,
+                ':address' => $data['address'] ?? null,
+                ':phone' => $data['phone'],
+                ':email' => $data['email'],
+                ':id' => $id
+            ];
+
+            if (!empty($data['password'])) {
+                $query .= ", password = :password";
+                $params[':password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+            }
+
+            $query .= " WHERE id = :id";
+
+            $this->db->execute($query, $params);
+
+            // Actualizar roles
+            if (isset($data['roles']) && is_array($data['roles'])) {
+                // Primero borrar roles viejos
+                $this->db->execute("DELETE FROM user_roles WHERE user_id = :user_id", [':user_id' => $id]);
+
+                // Insertar nuevos
+                foreach ($data['roles'] as $roleId) {
+                    $this->db->execute(
+                        "INSERT INTO user_roles (user_id, role_id) VALUES (:user_id, :role_id)",
+                        [':user_id' => $id, ':role_id' => $roleId]
+                    );
+                }
+            }
+
+            // Si el usuario es medico (rol_id=2)
+            if (isset($data['roles']) && in_array(2, $data['roles'])) {
+                // Update o insert medical_info
+                $exists = $this->db->query("SELECT 1 FROM user_medical_info WHERE user_id = :user_id", [':user_id' => $id]);
+                if ($exists) {
+                    $this->db->execute(
+                        "UPDATE user_medical_info SET
+                        mpps_code = :mpps_code,
+                        medical_college_id = :medical_college_id,
+                        college_code = :college_code
+                        WHERE user_id = :user_id",
+                        [
+                            ':mpps_code' => $data['mpps_code'],
+                            ':medical_college_id' => $data['medical_college_id'],
+                            ':college_code' => $data['college_code'],
+                            ':user_id' => $id
+                        ]
+                    );
+                } else {
+                    $this->db->execute(
+                        "INSERT INTO user_medical_info (user_id, mpps_code, medical_college_id, college_code) 
+                        VALUES (:user_id, :mpps_code, :medical_college_id, :college_code)",
+                        [
+                            ':user_id' => $id,
+                            ':mpps_code' => $data['mpps_code'],
+                            ':medical_college_id' => $data['medical_college_id'],
+                            ':college_code' => $data['college_code']
+                        ]
+                    );
+                }
+
+                // Actualizar specialties (borrar todas y agregar las nuevas)
+                $this->db->execute("DELETE FROM user_specialties WHERE user_id = :user_id", [':user_id' => $id]);
+                if (!empty($data['specialties']) && is_array($data['specialties'])) {
+                    foreach ($data['specialties'] as $specialtyId) {
+                        $this->db->execute(
+                            "INSERT INTO user_specialties (user_id, specialty_id) VALUES (:user_id, :specialty_id)",
+                            [':user_id' => $id, ':specialty_id' => $specialtyId]
+                        );
+                    }
+                }
+            } else {
+                // Si ya no es medico, borrar info medica y specialties si existian
+                $this->db->execute("DELETE FROM user_medical_info WHERE user_id = :user_id", [':user_id' => $id]);
+                $this->db->execute("DELETE FROM user_specialties WHERE user_id = :user_id", [':user_id' => $id]);
+            }
+
+            $this->db->execute("COMMIT");
+            return true;
+
+        } catch (Exception $e) {
+            $this->db->execute("ROLLBACK");
+            throw $e;
+        }
+    }
+
+    /**
+     * En un futuro desactivare que se pueda eliminar un usuario, 
+     * implemntare que solo se pueda desactivar o activar usuario con un campo en la tabla
+     * Por ahora, se elimina el usuario y se limpian las relaciones gracias a las foreign keys ON DELETE CASCADE
+    **/
+
+    // Eliminar usuario y limpieza automática gracias a foreign keys ON DELETE CASCADE
+    public function deleteUser($id) {
+        return $this->db->execute("DELETE FROM users WHERE id = :id", [':id' => $id]);
+    }
+}
