@@ -93,4 +93,48 @@ class UsersController {
         }
     }
 
+    public function findUserByCedula($cedula) {
+        try {
+            $user = $this->model->findByCedula($cedula);
+            if ($user) {
+                echo json_encode($user);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Usuario no encontrado']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function getUserByEmail($email) {
+        try {
+            $user = $this->model->findByEmail($email);
+            if ($user) {
+                echo json_encode($user);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Usuario no encontrado']);
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);    
+        }
+    }
+
+    public function toggleUserStatus($id) {
+        try {
+            $status = $this->model->toggleUserStatus($id);
+            if ($status) {
+                echo json_encode(['message' => 'Estado del usuario actualizado']);
+            } else {
+                throw new Exception('No se pudo actualizar el estado del usuario');
+            }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
 }

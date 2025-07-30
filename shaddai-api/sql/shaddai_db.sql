@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 28-07-2025 a las 02:26:37
+-- Tiempo de generación: 30-07-2025 a las 23:40:40
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -185,6 +185,13 @@ CREATE TABLE `patients` (
   `created_by` int(11) DEFAULT NULL COMMENT 'Usuario que registró al paciente'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
+--
+-- Volcado de datos para la tabla `patients`
+--
+
+INSERT INTO `patients` (`id`, `full_name`, `cedula`, `birth_date`, `gender`, `marital_status`, `address`, `phone`, `email`, `created_at`, `updated_at`, `created_by`) VALUES
+(2, 'Juan Pérez', '12345678', '1980-12-04', 'Masculino', 'Casado', 'Santa Rita', '04121234567', 'email@email.com', '2025-07-28 23:09:31', '2025-07-28 23:21:16', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -224,16 +231,16 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `created_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `active` tinyint(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 --
 -- Volcado de datos para la tabla `users`
 --
 
-INSERT INTO `users` (`id`, `first_name`, `last_name`, `cedula`, `birth_date`, `gender`, `address`, `phone`, `email`, `password`, `created_by`, `created_at`, `updated_at`) VALUES
-(5, 'Miguelangel', 'Monasterio Salas', '31080925', '2005-11-24', 'Masculino', 'Palo Negro, Urb. Santa Elena calle 8 casa 6', '04243316242', 'monasteriomiguelangel81@gmail.com', '01001101m', NULL, '2025-07-28 00:18:47', '2025-07-28 00:18:47'),
-(6, 'Jessr Nacary', 'Bravo Monasterio', '19514942', '1989-03-16', 'Femenino', 'Palo Negro, Urb. Santa Elena calle 8 casa 6', '04243503887', 'jessirnacarybravo@gmail.com', '123123', 5, '2025-07-28 00:22:02', '2025-07-28 00:22:02');
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `cedula`, `birth_date`, `gender`, `address`, `phone`, `email`, `password`, `created_by`, `created_at`, `updated_at`, `active`) VALUES
+(8, 'Miguelangel', 'Moansterio Salas', '31080925', '2005-11-24', 'Masculino', 'Palo Negro', '04243316242', 'monasteriomiguelangel81@gmail.com', '$2y$10$03jo4oyAlcJQ2wKqV.2J1egVyr2E09kqdG1kqAYIjgQG41F3Aaeqm', NULL, '2025-07-30 20:56:13', '2025-07-30 21:38:09', 1);
 
 -- --------------------------------------------------------
 
@@ -247,13 +254,6 @@ CREATE TABLE `user_medical_info` (
   `medical_college_id` int(11) NOT NULL,
   `college_code` int(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
-
---
--- Volcado de datos para la tabla `user_medical_info`
---
-
-INSERT INTO `user_medical_info` (`user_id`, `mpps_code`, `medical_college_id`, `college_code`) VALUES
-(6, '141013', 4, 12756);
 
 -- --------------------------------------------------------
 
@@ -271,8 +271,7 @@ CREATE TABLE `user_roles` (
 --
 
 INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES
-(5, 1),
-(6, 2);
+(8, 1);
 
 -- --------------------------------------------------------
 
@@ -300,13 +299,6 @@ CREATE TABLE `user_specialties` (
   `user_id` int(11) NOT NULL,
   `specialty_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
-
---
--- Volcado de datos para la tabla `user_specialties`
---
-
-INSERT INTO `user_specialties` (`user_id`, `specialty_id`) VALUES
-(6, 1);
 
 --
 -- Índices para tablas volcadas
@@ -395,13 +387,13 @@ ALTER TABLE `medical_colleges`
 -- AUTO_INCREMENT de la tabla `medical_specialties`
 --
 ALTER TABLE `medical_specialties`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=115;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
 
 --
 -- AUTO_INCREMENT de la tabla `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `roles`
@@ -413,7 +405,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Restricciones para tablas volcadas

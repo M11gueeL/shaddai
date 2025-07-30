@@ -87,7 +87,7 @@ class UserModel {
     // Obtener todos los usuarios con roles y datos médicos si es medico
     public function getAllUsers() {
         $users = $this->db->query("SELECT id, first_name, last_name, cedula, birth_date, gender, address,
-                phone, email, created_by FROM users");
+                phone, email, created_by, created_at, updated_at, active FROM users");
 
         // Traer roles para cada usuario
         foreach ($users as &$user) {
@@ -120,7 +120,7 @@ class UserModel {
     // Obtener usuario por ID con roles y datos medicos (similar a getAll pero para un usuario)
     public function getUserById($id) {
         $user = $this->db->query("SELECT first_name, last_name, cedula, birth_date, gender, address,
-                phone, email, created_by FROM users WHERE id = :id", [':id' => $id]);
+                phone, email, created_by, created_at, updated_at, active FROM users WHERE id = :id", [':id' => $id]);
         if (empty($user)) return null;
 
         $user = $user[0];
@@ -245,14 +245,46 @@ class UserModel {
         }
     }
 
-    /**
-     * En un futuro desactivare que se pueda eliminar un usuario, 
-     * implemntare que solo se pueda desactivar o activar usuario con un campo en la tabla
-     * Por ahora, se elimina el usuario y se limpian las relaciones gracias a las foreign keys ON DELETE CASCADE
-    **/
-
     // Eliminar usuario y limpieza automática gracias a foreign keys ON DELETE CASCADE
     public function deleteUser($id) {
         return $this->db->execute("DELETE FROM users WHERE id = :id", [':id' => $id]);
     }
+
+    public function findByCedula($cedula) {
+        $query = "SELECT first_name, last_name, cedula, birth_date, gender, address,
+                phone, email, created_by, created_at, updated_at, active FROM users WHERE cedula = :cedula";
+        $params = [':cedula' => $cedula];
+        $result = $this->db->query($query, $params);
+        return !empty($result) ? $result[0] : null;
+    }
+
+    public function findByEmail($email) {
+        $query = "SELECT first_name, last_name, cedula, birth_date, gender, address,
+                phone, email, created_by, created_at, updated_at, active FROM users WHERE email = :email";
+        $params = [':email' => $email];
+        $result = $this->db->query($query, $params);
+        return !empty($result) ? $result[0] : null;
+    }
+
+    // Metodo para activar o desactivar un usuario
+    public function toggleUserStatus($id) {
+        try {
+            $user = $this->getUserById($id);
+            if (!$user) {
+                throw new Exception('Usuario no encontrado');
+            }
+
+            // en la base de datos, el campo active es un booleano y por defecto es 1 (activo)
+            $newStatus = $user['active'] ? 0 : 1; // si esta activo, lo desactivo y viceversa
+            $this->db->execute("UPDATE users SET active = :active WHERE id = :id", [
+                ':active' => $newStatus,
+                ':id' => $id
+            ]);
+            return $newStatus ? 'Usuario activado' : 'Usuario desactivado';
+
+        } catch (Exception $e) {
+            throw $e;
+        }
+    }
+        
 }
