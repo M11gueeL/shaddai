@@ -1,34 +1,38 @@
 <?php
 
+namespace Middlewares;
+
+use \Firebase\JWT\JWT;
+use \Firebase\JWT\Key;
+
 class AuthMiddleware {
-    
-    private $authModel;
-
-    public function __construct(/*AuthModel*/ $authModel) {
-        $this->authModel = $authModel;
-    }
-
-    // Método para autenticar al usuario
-    public function authenticate() {
+    public function handle() {
         $headers = getallheaders();
-        $authHeader = $headers['Authorization'] ?? '';
-
-        if (empty($authHeader)) {
-            throw new Exception('Token de autenticación no proporcionado', 401);
+        if (!isset($headers['Authorization'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Token JWT requerido']);
+            exit();
         }
 
-        if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            throw new Exception('Formato de token inválido', 401);
+        $authHeader = $headers['Authorization'];
+        // Esperamos formato "Bearer token"
+        if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            $jwt = $matches[1];
+        } else {
+            http_response_code(401);
+            echo json_encode(['error' => 'Formato de token inválido']);
+            exit();
         }
 
-        $token = $matches[1];
-
-        if (!$this->authModel->isValidToken($token)) {
-            throw new Exception('Token de autenticación inválido', 401);
+        try {
+            $secret = $_ENV['JWT_SECRET'];
+            $decoded = JWT::decode($jwt, new Key($secret, 'HS256'));
+            // Guardar info decodificada para usar en el controller si se quiere (opcional)
+            $_REQUEST['jwt_payload'] = $decoded;
+        } catch (\Exception $e) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Token inválido o expirado', 'message' => $e->getMessage()]);
+            exit();
         }
-
-        // Si el token es válido, se puede continuar con la solicitud
-        return true;
     }
-
 }

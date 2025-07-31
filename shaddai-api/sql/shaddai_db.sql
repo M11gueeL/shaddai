@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 30-07-2025 a las 23:40:40
+-- Tiempo de generación: 31-07-2025 a las 05:01:18
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -284,9 +284,11 @@ CREATE TABLE `user_sessions` (
   `user_id` int(11) NOT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
   `device_info` text DEFAULT NULL,
-  `session_start` timestamp NOT NULL DEFAULT current_timestamp(),
-  `session_end` timestamp NULL DEFAULT NULL,
-  `status` varchar(32) NOT NULL
+  `login_time` timestamp NOT NULL DEFAULT current_timestamp(),
+  `session_status` varchar(32) NOT NULL DEFAULT 'active',
+  `token` varchar(512) DEFAULT NULL,
+  `logout_time` timestamp NULL DEFAULT NULL,
+  `session_end` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
 -- --------------------------------------------------------

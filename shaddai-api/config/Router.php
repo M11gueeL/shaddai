@@ -3,11 +3,17 @@
 class Router {
     private $routes = [];
 
-    public function add($method, $route, $callback) {
+    public function add($method, $route, $callback, $middlewares = null) {
+        // Normalizar middlewares a array
+        if ($middlewares !== null && !is_array($middlewares)) {
+            $middlewares = [$middlewares];
+        }
+
         $this->routes[] = [
             'method' => strtoupper($method),
             'route' => trim($route, '/'),
-            'callback' => $callback
+            'callback' => $callback,
+            'middlewares' => $middlewares
         ];
     }
 
@@ -15,19 +21,33 @@ class Router {
         $requestPath = trim($requestPath, '/');
         
         foreach ($this->routes as $route) {
-            // Convertir ruta a patrón regex
             $pattern = $this->routeToPattern($route['route']);
             
             if ($route['method'] === $requestMethod && preg_match($pattern, $requestPath, $matches)) {
-                // Extraer parámetros
+                // Ejecutar middlewares antes de la acción si existen
+                if (!empty($route['middlewares'])) {
+                    foreach ($route['middlewares'] as $middlewareName) {
+                        $middlewareClass = 'Middlewares\\' . ucfirst($middlewareName) . 'Middleware';
+                        if (class_exists($middlewareClass)) {
+                            $middleware = new $middlewareClass;
+                            // Si middleware retorna false o lanza excepción, detener ejecución
+                            $middleware->handle();
+                        } else {
+                            http_response_code(500);
+                            echo json_encode(['error' => "Middleware $middlewareName no encontrado"]);
+                            return;
+                        }
+                    }
+                }
+
+                // Extraer parámetros con nombre
                 $params = [];
                 foreach ($matches as $key => $value) {
                     if (is_string($key)) {
                         $params[$key] = $value;
                     }
                 }
-                
-                // Llamar al callback
+
                 $this->callCallback($route['callback'], $params);
                 return;
             }
@@ -35,6 +55,7 @@ class Router {
 
         http_response_code(404);
         echo json_encode(['error' => 'Recurso no encontrado']);
+        // Solo para testing
         // echo json_encode($this->getNotFoundResponse($requestMethod, $requestPath));
     }
 

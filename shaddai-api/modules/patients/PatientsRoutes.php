@@ -5,11 +5,11 @@ class PatientsRoutes {
     public static function register($router) {
         $controller = new PatientsController();
         
-        $router->add('GET', 'patients', [$controller, 'getAll']);
-        $router->add('GET', 'patients/{id}', [$controller, 'get']);
-        $router->add('POST', 'patients', [$controller, 'create']);
-        $router->add('PUT', 'patients/{id}', [$controller, 'update']);
-        $router->add('DELETE', 'patients/{id}', [$controller, 'delete']);
+        $router->add('GET', 'patients', [$controller, 'getAll'], 'auth');
+        $router->add('GET', 'patients/{id}', [$controller, 'get'], 'auth');
+        $router->add('POST', 'patients', [$controller, 'create'], 'auth');
+        $router->add('PUT', 'patients/{id}', [$controller, 'update'], 'auth');
+        $router->add('DELETE', 'patients/{id}', [$controller, 'delete'], 'auth');
         
         // Ruta de prueba
         $router->add('GET', 'test', function() {
