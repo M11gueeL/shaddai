@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 31-07-2025 a las 05:01:18
+-- Tiempo de generación: 31-07-2025 a las 17:48:39
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -290,6 +290,14 @@ CREATE TABLE `user_sessions` (
   `logout_time` timestamp NULL DEFAULT NULL,
   `session_end` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `user_sessions`
+--
+
+INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`, `session_end`) VALUES
+('46071c7170802079143cae400b3fa2facf9177a1fcbc9009ae6a85b14a42d691', 8, '::1', 'PostmanRuntime/7.44.1', '2025-07-31 20:50:05', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzUzOTczNDA1LCJleHAiOjE3NTM5NzcwMDV9.tbjh7zupnGEAv5qpjd1pKxzoVtosKPIne7VEZgyi0Ig', '2025-07-31 15:14:33', NULL),
+('7af72eb230364f7bc3c699e12e7322fe9f7c127d8b275e7561d03e85c8b58367', 8, '::1', 'PostmanRuntime/7.44.1', '2025-07-31 21:15:01', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzUzOTc0OTAxLCJleHAiOjE3NTM5Nzg1MDF9.Hns3WYWFY7o6eJF14HrN1cLLfMNwO7GPGW8yitlPJto', '2025-07-31 15:15:23', NULL);
 
 -- --------------------------------------------------------
 

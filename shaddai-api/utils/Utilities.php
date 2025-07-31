@@ -63,4 +63,12 @@ class Utilities {
         return $path;
     }
 
+    // Cargar los middlewares creados
+    public static function loadMiddlewares() {
+        $middlewaresPath = __DIR__ . '/../middlewares/';
+        foreach (glob($middlewaresPath . '*.php') as $file) {
+            require_once $file;
+        }
+    }
+
 }
