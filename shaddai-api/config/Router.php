@@ -24,18 +24,28 @@ class Router {
             $pattern = $this->routeToPattern($route['route']);
             
             if ($route['method'] === $requestMethod && preg_match($pattern, $requestPath, $matches)) {
+               
                 // Ejecutar middlewares antes de la acción si existen
                 if (!empty($route['middlewares'])) {
-                    foreach ($route['middlewares'] as $middlewareName) {
-                        $middlewareClass = 'Middlewares\\' . ucfirst($middlewareName) . 'Middleware';
-                        if (class_exists($middlewareClass)) {
-                            $middleware = new $middlewareClass;
-                            // Si middleware retorna false o lanza excepción, detener ejecución
-                            $middleware->handle();
-                        } else {
-                            http_response_code(500);
-                            echo json_encode(['error' => "Middleware $middlewareName no encontrado"]);
-                            return;
+
+                    foreach ($route['middlewares'] as $middleware) {
+                        
+                        if (is_callable($middleware)) {
+                            // Middleware como función anónima
+                            $middleware();
+                        } elseif (is_array($middleware) && class_exists($middleware[0])) {
+                            // Middleware con parámetros [ClassName, param1, param2]
+                            $className = $middleware[0];
+                            $params = array_slice($middleware, 1);
+                            $instance = new $className(...$params);
+                            $instance->handle();
+                        } elseif (is_string($middleware)) {
+                            // Middleware por nombre de clase
+                            $middlewareClass = 'Middlewares\\' . ucfirst($middleware) . 'Middleware';
+                            if (class_exists($middlewareClass)) {
+                                $instance = new $middlewareClass;
+                                $instance->handle();
+                            }
                         }
                     }
                 }

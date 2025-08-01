@@ -1,15 +1,20 @@
 <?php
 require_once __DIR__ . '/PatientsController.php';
 
+use Middlewares\RoleMiddleware;
+
 class PatientsRoutes {
     public static function register($router) {
+        
         $controller = new PatientsController();
         
-        $router->add('GET', 'patients', [$controller, 'getAll'], 'auth');
-        $router->add('GET', 'patients/{id}', [$controller, 'get'], 'auth');
-        $router->add('POST', 'patients', [$controller, 'create'], 'auth');
-        $router->add('PUT', 'patients/{id}', [$controller, 'update'], 'auth');
-        $router->add('DELETE', 'patients/{id}', [$controller, 'delete'], 'auth');
+        $adminOrReception = [RoleMiddleware::class, ['admin', 'recepcionista']];
+
+        $router->add('GET', 'patients', [$controller, 'getAll'], ['auth', $adminOrReception]);
+        $router->add('GET', 'patients/{id}', [$controller, 'get'], ['auth', $adminOrReception]);
+        $router->add('POST', 'patients', [$controller, 'create'], ['auth', $adminOrReception]);
+        $router->add('PUT', 'patients/{id}', [$controller, 'update'], ['auth', $adminOrReception]);
+        $router->add('DELETE', 'patients/{id}', [$controller, 'delete'], ['auth', $adminOrReception]);
         
         // Ruta de prueba
         $router->add('GET', 'test', function() {
