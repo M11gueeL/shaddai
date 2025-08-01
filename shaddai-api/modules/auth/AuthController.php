@@ -12,18 +12,33 @@ class AuthController {
 
     // LOGIN
     public function login() {
-        $data = $_POST;
+        
+        $data = $_POST;     
         if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Email y password requeridos']);
             return;
         }
-        $user = $this->model->findUserByEmail($data['email']);
-        if (!$user || !password_verify($data['password'], $user['password'])) {
+
+        $user = $this->model->findUserByEmailAnyStatus($data['email']);
+        if (!$user) {
             http_response_code(401);
             echo json_encode(['error' => 'Credenciales inválidas']);
             return;
         }
+
+        if (!$user['active']) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Este usuario está inactivo. Contacta al administrador.']);
+            return;
+        }
+
+        if (!password_verify($data['password'], $user['password'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Credenciales inválidas']);
+            return;
+        }
+        
         // Generar payload del JWT
         $roles = $this->model->getUserRoles($user['id']);
         $roleNames = array_column($roles, 'name');
@@ -69,35 +84,47 @@ class AuthController {
         echo json_encode(['message' => $result ? 'Sesión cerrada' : 'No se pudo cerrar sesión, ya estaba cerrada o token inválido']);
     }
 
-    // PERFIL DEL USUARIO (requiere middleware)
     public function getProfile() {
+        
         $payload = $_REQUEST['jwt_payload'] ?? null;
+        
         if (!$payload) {
             http_response_code(401);
             echo json_encode(['error' => 'No autorizado']);
             return;
         }
-        $user = $this->model->findUserByEmail($payload->email);
-        if (!$user) {
+        
+        $userProfile = $this->model->getUserProfile($payload->sub);
+        
+        if (!$userProfile) {
             http_response_code(404);
             echo json_encode(['error' => 'Usuario no encontrado']);
             return;
         }
-        $roles = $this->model->getUserRoles($user['id']);
-        unset($user['password']);
-        $user['roles'] = array_column($roles, 'name');
-        echo json_encode($user);
+
+        $roles = $this->model->getUserRoles($userProfile['id']);
+        unset($userProfile['password']);
+        $userProfile['roles'] = array_column($roles, 'name');
+        echo json_encode($userProfile);
     }
 
-    // LISTAR SESIONES ACTIVAS DEL USUARIO (requiere middleware)
+    
     public function listSessions() {
         $payload = $_REQUEST['jwt_payload'] ?? null;
+        
         if (!$payload) {
             http_response_code(401);
             echo json_encode(['error' => 'No autorizado']);
             return;
         }
-        $sessions = $this->model->getSessions($payload->sub);
+        
+        // Validar que tenga rol admin
+        if (!in_array('admin', $payload->roles)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acceso denegado, solo admin pueder ver las sesiones']);
+        }
+
+        $sessions = $this->model->getAllSessions();
         echo json_encode($sessions);
     }
 }

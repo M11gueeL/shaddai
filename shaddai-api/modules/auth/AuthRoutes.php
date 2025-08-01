@@ -14,6 +14,6 @@ class AuthRoutes {
 
         $router->add('POST', 'auth/logout', [$authController, 'logout'], 'auth');
         $router->add('GET', 'auth/profile', [$authController, 'getProfile'], 'auth');
-        $router->add('GET', 'auth/sessions', [$authController, 'listSessions'], ['auth', 'role:admin']);
+        $router->add('GET', 'auth/sessions', [$authController, 'listSessions'], ['auth', 'role:admin']); // deben ser todas las sesiones de todos los usuarios, no la del usuairo actual logeado
     }
 }

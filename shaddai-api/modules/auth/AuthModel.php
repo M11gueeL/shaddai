@@ -15,6 +15,13 @@ class AuthModel {
         return $users[0] ?? null;
     }
 
+    public function findUserByEmailAnyStatus($email) {
+        $sql = "SELECT * FROM users WHERE email = :email";
+        $params = [':email' => $email];
+        $users = $this->db->query($sql, $params);
+        return $users[0] ?? null;
+    }
+
     public function getUserRoles($userId) {
         $sql = "SELECT r.name FROM roles r 
                 INNER JOIN user_roles ur ON ur.role_id = r.id
@@ -47,4 +54,51 @@ class AuthModel {
         $sql = "SELECT * FROM user_sessions WHERE user_id = :user_id ORDER BY login_time DESC";
         return $this->db->query($sql, [':user_id' => $userId]);
     }
+
+    public function getAllSessions() {
+        $sql = "SELECT * FROM user_sessions ORDER BY login_time DESC";
+        return $this->db->query($sql);
+    }
+
+    public function getUserProfile($userId) {
+        $user = $this->db->query(
+            "SELECT id, first_name, last_name, cedula, birth_date, gender, address,
+                    phone, email, created_by, created_at, updated_at, active
+            FROM users WHERE id = :id",
+            [':id' => $userId]
+        );
+
+        if (empty($user)) return null;
+
+        $user = $user[0];
+
+        // Traer roles del usuario
+        $roles = $this->db->query(
+            "SELECT r.id, r.name FROM roles r 
+            JOIN user_roles ur ON ur.role_id = r.id 
+            WHERE ur.user_id = :user_id",
+            [':user_id' => $userId]
+        );
+        $user['roles'] = array_column($roles, 'name');
+
+        // Si es medico (asumiendo rol id 2)
+        $roleIds = array_column($roles, 'id');
+        if (in_array(2, $roleIds)) {
+            $user['medical_info'] = $this->db->query(
+                "SELECT * FROM user_medical_info WHERE user_id = :user_id",
+                [':user_id' => $userId]
+            )[0] ?? null;
+
+            $user['specialties'] = $this->db->query(
+                "SELECT ms.id, ms.name FROM medical_specialties ms 
+                JOIN user_specialties us ON us.specialty_id = ms.id 
+                WHERE us.user_id = :user_id",
+                [':user_id' => $userId]
+            );
+        }
+
+        unset($user['password']);
+        return $user;
+    }
+
 }

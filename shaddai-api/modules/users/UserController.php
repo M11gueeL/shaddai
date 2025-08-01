@@ -26,7 +26,7 @@ class UsersController {
                 echo json_encode($user);
             } else {
                 http_response_code(404);
-                echo json_encode(['error' => 'Usuairo no encontrado']);
+                echo json_encode(['error' => 'Usuario no encontrado']);
             }
         } catch (Exception $e) {
             http_response_code(500);
