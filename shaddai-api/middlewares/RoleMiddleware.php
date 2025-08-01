@@ -3,35 +3,44 @@
 namespace Middlewares;
 
 class RoleMiddleware {
-    private $allowedRoles;
+    private $roles = [];
 
-    public function __construct(array $allowedRoles) {
-        $this->allowedRoles = $allowedRoles;
+    public function __construct($roles = []) {
+        if (is_string($roles)) {
+            // Por ejemplo: "admin,receptionist"
+            $this->roles = array_map('trim', explode(',', $roles));
+        } elseif (is_array($roles)) {
+            $this->roles = $roles;
+        }
     }
 
     public function handle() {
-        $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
-        
-        if (!$jwtPayload) {
+        $payload = $_REQUEST['jwt_payload'] ?? null;
+
+        if (!$payload) {
             http_response_code(401);
-            echo json_encode(['error' => 'No se encontró información de autenticación']);
+            echo json_encode(['error' => 'No autorizado']);
             exit();
         }
 
-        $userRoles = $jwtPayload->roles ?? [];
-        $hasAccess = false;
+        $userRoles = $payload->roles ?? [];
 
-        // Verificar si el usuario tiene al menos uno de los roles permitidos
-        foreach ($userRoles as $role) {
-            if (in_array($role, $this->allowedRoles)) {
-                $hasAccess = true;
+        if (in_array('admin', $userRoles)) {
+            // Admin tiene acceso a todo
+            return;
+        }
+
+        $allowed = false;
+        foreach ($this->roles as $role) {
+            if (in_array($role, $userRoles)) {
+                $allowed = true;
                 break;
             }
         }
 
-        if (!$hasAccess) {
+        if (!$allowed) {
             http_response_code(403);
-            echo json_encode(['error' => 'Acceso denegado: Usuario no autorizado']);
+            echo json_encode(['error' => 'Acceso denegado']);
             exit();
         }
     }

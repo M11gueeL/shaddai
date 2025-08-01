@@ -24,33 +24,43 @@ class Router {
             $pattern = $this->routeToPattern($route['route']);
             
             if ($route['method'] === $requestMethod && preg_match($pattern, $requestPath, $matches)) {
-               
-                // Ejecutar middlewares antes de la acción si existen
+                
                 if (!empty($route['middlewares'])) {
 
                     foreach ($route['middlewares'] as $middleware) {
-                        
-                        if (is_callable($middleware)) {
-                            // Middleware como función anónima
+
+                        if (is_string($middleware)) {
+
+                            if ($middleware === 'auth') {
+                                $middlewareClass = 'Middlewares\\AuthMiddleware';
+                                $instance = new $middlewareClass;
+                                $instance->handle();
+                            } elseif (str_starts_with($middleware, 'role:')) {
+                                $rolesStr = substr($middleware, strlen('role:'));
+                                $middlewareClass = 'Middlewares\\RoleMiddleware';
+                                $instance = new $middlewareClass($rolesStr);
+                                $instance->handle();
+                            } else {
+                                // Middleware por nombre de clase sin argumentos
+                                $middlewareClass = 'Middlewares\\' . ucfirst($middleware) . 'Middleware';
+                                
+                                if (class_exists($middlewareClass)) {
+                                    $instance = new $middlewareClass;
+                                    $instance->handle();
+                                }
+                            }
+                        } elseif (is_callable($middleware)) {
                             $middleware();
                         } elseif (is_array($middleware) && class_exists($middleware[0])) {
-                            // Middleware con parámetros [ClassName, param1, param2]
                             $className = $middleware[0];
                             $params = array_slice($middleware, 1);
                             $instance = new $className(...$params);
                             $instance->handle();
-                        } elseif (is_string($middleware)) {
-                            // Middleware por nombre de clase
-                            $middlewareClass = 'Middlewares\\' . ucfirst($middleware) . 'Middleware';
-                            if (class_exists($middlewareClass)) {
-                                $instance = new $middlewareClass;
-                                $instance->handle();
-                            }
                         }
                     }
                 }
 
-                // Extraer parámetros con nombre
+                // Extraer parámetros y llamar callback (igual que antes)
                 $params = [];
                 foreach ($matches as $key => $value) {
                     if (is_string($key)) {
@@ -65,9 +75,9 @@ class Router {
 
         http_response_code(404);
         echo json_encode(['error' => 'Recurso no encontrado']);
-        // Solo para testing
-        // echo json_encode($this->getNotFoundResponse($requestMethod, $requestPath));
+        //echo json_encode($this->getNotFoundResponse($requestMethod, $requestPath));
     }
+
 
     private function routeToPattern($route) {
         // Reemplazar {param} por regex
