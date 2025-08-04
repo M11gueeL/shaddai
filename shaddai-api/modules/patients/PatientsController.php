@@ -8,9 +8,9 @@ class PatientsController {
         $this->model = new PatientsModel();
     }
 
-    public function getAll() {
+    public function getAllPatients() {
         try {
-            $patients = $this->model->getAll();
+            $patients = $this->model->getAllPatients();
             echo json_encode($patients);
         } catch (Exception $e) {
             http_response_code(500);
@@ -18,9 +18,9 @@ class PatientsController {
         }
     }
 
-    public function get($id) {
+    public function getPatient($id) {
         try {
-            $patient = $this->model->getById($id);
+            $patient = $this->model->getPatientById($id);
             if ($patient) {
                 echo json_encode($patient);
             } else {
@@ -33,7 +33,7 @@ class PatientsController {
         }
     }
 
-    public function create() {
+    public function createPatient() {
         try {
             $data = $_POST;
             
@@ -42,7 +42,7 @@ class PatientsController {
                 throw new Exception('Full name is required');
             }
             
-            $result = $this->model->create($data);
+            $result = $this->model->createPatient($data);
             if ($result) {
                 http_response_code(201);
                 echo json_encode(['message' => 'Patient created']);
@@ -55,7 +55,7 @@ class PatientsController {
         }
     }
 
-    public function update($id) {
+    public function updatePatient($id) {
         try {
             $data = $_POST;
             
@@ -63,7 +63,7 @@ class PatientsController {
                 throw new Exception('Full name is required');
             }
             
-            $result = $this->model->update($id, $data);
+            $result = $this->model->updatePatient($id, $data);
             if ($result) {
                 echo json_encode(['message' => 'Patient updated']);
             } else {
@@ -75,9 +75,9 @@ class PatientsController {
         }
     }
 
-    public function delete($id) {
+    public function deletePatient($id) {
         try {
-            $result = $this->model->delete($id);
+            $result = $this->model->deletePatient($id);
             if ($result) {
                 echo json_encode(['message' => 'Patient deleted']);
             } else {

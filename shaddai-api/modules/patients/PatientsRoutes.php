@@ -9,11 +9,11 @@ class PatientsRoutes {
         
         $controller = new PatientsController();
 
-        $router->add('GET', 'patients', [$controller, 'getAll'], ['auth', 'role:admin,recepcionista']);
-        $router->add('GET', 'patients/{id}', [$controller, 'get'], ['auth', 'role:admin,recepcionista']);
-        $router->add('POST', 'patients', [$controller, 'create'], ['auth', 'role:admin,recepcionista']);
-        $router->add('PUT', 'patients/{id}', [$controller, 'update'], ['auth', 'role:admin,recepcionista']);
-        $router->add('DELETE', 'patients/{id}', [$controller, 'delete'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'patients', [$controller, 'getAllPatients'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'patients/{id}', [$controller, 'getPatient'], ['auth', 'role:admin,recepcionista']);
+        $router->add('POST', 'patients', [$controller, 'createPatient'], ['auth', 'role:admin,recepcionista']);
+        $router->add('PUT', 'patients/{id}', [$controller, 'updatePatient'], ['auth', 'role:admin,recepcionista']);
+        $router->add('DELETE', 'patients/{id}', [$controller, 'deletePatient'], ['auth', 'role:admin,recepcionista']);
         
         // Ruta de prueba
         $router->add('GET', 'test', function() {

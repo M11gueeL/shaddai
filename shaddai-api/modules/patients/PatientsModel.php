@@ -9,7 +9,7 @@ class PatientsModel {
         $this->db = Database::getInstance();
     }
 
-    public function create($data) {
+    public function createPatient($data) {
         $query = "INSERT INTO patients (
             full_name,
             cedula,
@@ -47,26 +47,26 @@ class PatientsModel {
         return $this->db->execute($query, $params);
     }
 
-    public function getAll() {
+    public function getAllPatients() {
         $query = "SELECT * FROM patients";
         return $this->db->query($query);
     }
     
-    public function getById($id) {
+    public function getPatientById($id) {
         $query = "SELECT * FROM patients WHERE id = :id";
         $params = [':id' => $id];
         $result = $this->db->query($query, $params);
         return !empty($result) ? $result[0] : null;
     }
     
-    public function findByCedula($cedula) {
+    public function findPatientByCedula($cedula) {
         $query = "SELECT * FROM patients WHERE cedula = :cedula";
         $params = [':cedula' => $cedula];
         $result = $this->db->query($query, $params);
         return $result[0] ?? null;
     }
 
-    public function update($id, $data) {
+    public function updatePatient($id, $data) {
         $query = "UPDATE patients SET
                     full_name = :full_name,
                     cedula = :cedula,
@@ -93,7 +93,7 @@ class PatientsModel {
         return $this->db->execute($query, $params);
     }
 
-    public function delete($id) {
+    public function deletePatient($id) {
         $query = "DELETE FROM patients WHERE id = :id";
         $params = [':id' => $id];
         return $this->db->execute($query, $params);
