@@ -2,3 +2,5 @@ shaddai-api/config/.env
 shaddai-api/vendor/
 
 .vscode/
+
+shaddai-app/node_modules
