@@ -56,7 +56,11 @@ class AuthModel {
     }
 
     public function getAllSessions() {
-        $sql = "SELECT * FROM user_sessions ORDER BY login_time DESC";
+        $sql = "SELECT us.*,
+                    u.email 
+                FROM user_sessions us
+                JOIN users u ON us.user_id = u.id
+            ORDER BY us.login_time DESC";
         return $this->db->query($sql);
     }
 

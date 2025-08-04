@@ -16,14 +16,14 @@ class AuthController {
         $data = $_POST;     
         if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Email y password requeridos']);
+            echo json_encode(['error' => 'Correo y contraseña son requeridos']);
             return;
         }
 
         $user = $this->model->findUserByEmailAnyStatus($data['email']);
         if (!$user) {
             http_response_code(401);
-            echo json_encode(['error' => 'Credenciales inválidas']);
+            echo json_encode(['error' => 'Este correo no se encuentra registrado']);
             return;
         }
 
@@ -35,7 +35,7 @@ class AuthController {
 
         if (!password_verify($data['password'], $user['password'])) {
             http_response_code(401);
-            echo json_encode(['error' => 'Credenciales inválidas']);
+            echo json_encode(['error' => 'Contraseña incorrecta']);
             return;
         }
         

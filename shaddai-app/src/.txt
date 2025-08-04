@@ -1,0 +1,47 @@
+src/
+│
+├── api/                # Lógica para consumir endpoints (servicios, fetch, axios, etc.)
+│   └── userApi.js
+│   └── authApi.js
+│
+├── assets/             # Imágenes, fuentes, íconos, etc.
+│   └── images/
+│   └── icons/
+│
+├── components/         # Componentes reutilizables, organizados por dominio/tema
+│   └── dashboard/
+│       └── Dashboard.jsx
+│   └── auth/
+│       └── Login.jsx
+│       └── Session.jsx
+│   └── users/
+│       └── UsersTable.jsx
+│       └── UserForm.jsx
+│       └── UserTab.jsx
+│
+├── context/            # Contextos de React (Auth, Theme, etc.)
+│   └── AuthContext.jsx
+│   └── ThemeContext.jsx
+│
+├── css/                # Archivos CSS globales, Tailwind, customizaciones
+│   └── style.css
+│
+├── hooks/              # Custom hooks (si son necesarios)
+│   └── useAuth.js
+│   └── useUsers.js
+│
+├── layouts/            # Layouts generales y parciales
+│   └── Layout.jsx
+│   └── Header.jsx
+│   └── Footer.jsx
+│
+├── routes/             # Definición de rutas (aqui definiremos componentes para rutas protegidas casi todas, y para las rutas publicas que es unicamente el formulairo deinicio de sesion, login, porqeu los usuarios los crea solamente admin adentro de la app, mas nadie, es para algo empresarial)
+│   └── AppRoutes.jsx
+│
+├── utils/              # Utilidades y helpers (no he desarrollado nada de esto todavia)
+│   └── formatDate.js
+│   └── validators.js
+│
+├── App.jsx             # Componente raíz
+├── main.jsx            # Punto de entrada (Vite) o index.js (CRA)
+└── index.html
