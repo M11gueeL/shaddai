@@ -36,6 +36,15 @@ class PatientsController {
     public function createPatient() {
         try {
             $data = $_POST;
+
+            // Obtener el id del usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$jwtPayload) {
+                throw new Exception('No autorizado para crear pacientes');
+            }
+
+            // Asiganar created_by automáticamente
+            $data['created_by'] = $jwtPayload->sub;
             
             // Validación básica
             if (empty($data['full_name'])) {

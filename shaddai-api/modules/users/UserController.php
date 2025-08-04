@@ -38,6 +38,15 @@ class UsersController {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
 
+            // Obtener el id del usuario autenticado desde JWT (inyectado por middleware)
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$jwtPayload) {
+                throw new Exception('No autorizado para crear usuarios');
+            }
+
+            // Setear created_by automáticamente
+            $data['created_by'] = $jwtPayload->sub;
+
             // Validación básica
             $requiredFields = ['first_name', 'last_name', 'cedula', 'phone', 'email', 'password', 'roles'];
             foreach ($requiredFields as $field) {
