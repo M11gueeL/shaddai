@@ -4,3 +4,5 @@ shaddai-api/vendor/
 .vscode/
 
 shaddai-app/node_modules
+
+.txt
