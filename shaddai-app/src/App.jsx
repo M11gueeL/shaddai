@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./layouts/Layout";
 import PublicRoute from "./routes/PublicRoute";
+import RoleProtectedRoute from "./routes/RoleProtectedRoute"; // Nuevo componente
 import Login from "./components/auth/Login";
 import Dashboard from "./components/dashboard/Dashboard";
 import ControlPanel from "./components/controlPanel/ControlPanel";
@@ -13,35 +14,61 @@ import ProfilePanel from "./components/users/ProfilePanel";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 
-
 export default function App() {
-  
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<Login />} />
           </Route>
 
-          {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
+              {/* Rutas accesibles por todos los roles autenticados */}
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/controlpanel" element={<ControlPanel />} />
               <Route path="/profile" element={<ProfilePanel />} />
-              <Route path="/reception" element={<ReceptionPanel />} />
-              <Route path="/medicalrecords" element={<MedicalRecordsPanel />} />
-              <Route path="/payment" element={<PaymentePanel />} />
-              <Route path="/inventory" element={<InventoryPanel />} />
+              
+              {/* Panel de Control - Solo Admin */}
+              <Route path="/controlpanel" element={
+                <RoleProtectedRoute allowedRoles={['admin']}>
+                  <ControlPanel />
+                </RoleProtectedRoute>
+              } />
+              
+              {/* Recepción - Admin + Recepcionista */}
+              <Route path="/reception" element={
+                <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                  <ReceptionPanel />
+                </RoleProtectedRoute>
+              } />
+              
+              {/* Historias Clínicas - Admin + Médico */}
+              <Route path="/medicalrecords" element={
+                <RoleProtectedRoute allowedRoles={['admin', 'medico']}>
+                  <MedicalRecordsPanel />
+                </RoleProtectedRoute>
+              } />
+              
+              {/* Pago - Admin + Recepcionista */}
+              <Route path="/payment" element={
+                <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                  <PaymentePanel />
+                </RoleProtectedRoute>
+              } />
+              
+              {/* Inventario - Admin + Recepcionista */}
+              <Route path="/inventory" element={
+                <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                  <InventoryPanel />
+                </RoleProtectedRoute>
+              } />
+              
               <Route index element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Route>
 
-          {/* Not found or fallback */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          
         </Routes>
       </BrowserRouter>
     </AuthProvider>

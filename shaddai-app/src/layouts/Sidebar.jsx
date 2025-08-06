@@ -1,21 +1,27 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
-
-const menuItems = [
-  { name: "Inicio", path: "/dashboard" },
-  { name: "Mi Perfil", path: "/profile" },
-  { name: "Recepción", path: "/reception" },
-  { name: "Caja", path: "/payment" },
-  { name: "Inventario", path: "/inventory" },
-  { name: "Historias Clínicas", path: "/medicalrecords" },
-  { name: "Panel de Control", path: "/controlpanel" },
-];
+import { useAuth } from "../context/AuthContext"; // Importar contexto
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
+  const { hasRole } = useAuth();
+
+  // Definir todas las opciones posibles con sus roles requeridos
+  const allMenuItems = [
+    { name: "Inicio", path: "/dashboard", roles: ['admin', 'medico', 'recepcionista'] },
+    { name: "Mi Perfil", path: "/profile", roles: ['admin', 'medico', 'recepcionista'] },
+    { name: "Recepción", path: "/reception", roles: ['admin', 'recepcionista'] },
+    { name: "Caja", path: "/payment", roles: ['admin', 'recepcionista'] },
+    { name: "Inventario", path: "/inventory", roles: ['admin', 'recepcionista'] },
+    { name: "Historias Clínicas", path: "/medicalrecords", roles: ['admin', 'medico'] },
+    { name: "Panel de Control", path: "/controlpanel", roles: ['admin'] },
+  ];
+
+  // Filtrar opciones basadas en los roles del usuario
+  const menuItems = allMenuItems.filter(item => hasRole(item.roles));
+
   return (
     <div>
-      {/* Overlay con efecto de desenfoque para móvil */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 backdrop-blur-xs md:hidden"
@@ -37,7 +43,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           `}
         >
           <div className={`${isOpen ? "py-10 px-5" : "p-2"} transition-all`}>
-            {/* Botón de toggle */}
             <button
               onClick={toggleSidebar}
               className={`absolute top-9 right-4 bg-white rounded-full p-2 shadow-md border border-gray-200 hover:bg-gray-50
@@ -48,13 +53,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               {isOpen ? <FaTimes className="text-gray-900" /> : <FaBars className="text-gray-900" />}
             </button>
 
-            {/* Logo/Título */}
             <div className={`font-bold text-white mb-8 transition-all
               ${isOpen ? "text-2xl tracking-tight" : "text-center text-sm mt-8"}`}>
               {isOpen ? "Shaddai App" : "Shaddai APP"}
             </div>
 
-            {/* Opciones menú */}
             <ul className="flex flex-col gap-2">
               {menuItems.map(({ name, path }) => (
                 <li key={path}>
