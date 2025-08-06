@@ -3,11 +3,13 @@ import { NavLink } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
 
 const menuItems = [
-  { name: "Dashboard", path: "/dashboard" },
-  { name: "Usuarios", path: "/users" },
-  { name: "Configuración", path: "/settings" },
-  { name: "Historias clinicas", path: "/settings" },
-  { name: "panel de control", path: "/settings" },
+  { name: "Inicio", path: "/dashboard" },
+  { name: "Mi Perfil", path: "/profile" },
+  { name: "Recepción", path: "/reception" },
+  { name: "Caja", path: "/payment" },
+  { name: "Inventario", path: "/inventory" },
+  { name: "Historias Clínicas", path: "/medicalrecords" },
+  { name: "Panel de Control", path: "/controlpanel" },
 ];
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
@@ -29,37 +31,37 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         `}
       >
         <nav
-          className={`h-full flex flex-col bg-gradient-to-b bg-emerald-400 shadow-xl
-            ${isOpen ? "w-64" : "w-0 md:w-16"} 
+          className={`h-full flex flex-col bg-gradient-to-bl from-slate-800 to-slate-900 shadow-xl
+            ${isOpen ? "w-64" : "w-0 md:w-22"} 
             overflow-hidden transition-all duration-300
           `}
         >
-          <div className={`${isOpen ? "px-6 py-6" : "p-2"} transition-all`}>
+          <div className={`${isOpen ? "py-10 px-5" : "p-2"} transition-all`}>
             {/* Botón de toggle */}
             <button
               onClick={toggleSidebar}
-              className={`absolute top-4 right-4 bg-white rounded-full p-1 shadow-md border border-gray-200 hover:bg-gray-50
+              className={`absolute top-9 right-4 bg-white rounded-full p-2 shadow-md border border-gray-200 hover:bg-gray-50
                 ${isOpen ? "block" : "hidden md:block md:relative md:top-0 md:right-0 md:mx-auto md:my-4"}
               `}
               aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
             >
-              {isOpen ? <FaTimes className="text-gray-600" /> : <FaBars className="text-gray-600" />}
+              {isOpen ? <FaTimes className="text-gray-900" /> : <FaBars className="text-gray-900" />}
             </button>
 
             {/* Logo/Título */}
             <div className={`font-bold text-white mb-8 transition-all
               ${isOpen ? "text-2xl tracking-tight" : "text-center text-sm mt-8"}`}>
-              {isOpen ? "Shaddai App" : "MAMS"}
+              {isOpen ? "Shaddai App" : "Shaddai APP"}
             </div>
 
             {/* Opciones menú */}
-            <ul className="flex flex-col gap-1">
+            <ul className="flex flex-col gap-2">
               {menuItems.map(({ name, path }) => (
                 <li key={path}>
                   <NavLink
                     to={path}
                     className={({ isActive }) =>
-                      `flex items-center px-4 py-2 rounded-md transition
+                      `flex items-center p-2 mx-1 rounded-md transition
                        hover:bg-indigo-500 hover:text-white
                        ${isActive ? "bg-indigo-500 text-white font-semibold" : "text-indigo-100"}
                        ${!isOpen && "justify-center"}`

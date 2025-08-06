@@ -14,14 +14,14 @@ export default function Layout() {
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
       />
       
-      <div className="flex flex-1 mx-auto w-full sm:px-6 lg:px-0 overflow-hidden">
+      <div className="flex flex-1 mx-auto w-full overflow-hidden">
         <Sidebar 
           isOpen={sidebarOpen} 
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         />
         
         {/* Contenido principal */}
-        <main className={`flex-1 bg-green-200 shadow-md p-8 transition-all duration-300 overflow-y-auto ${
+        <main className={`flex-1 shadow-md transition-all duration-300 overflow-y-auto ${
           sidebarOpen ? "ml-0" : "ml-0"
         }`}>
           <Outlet />
