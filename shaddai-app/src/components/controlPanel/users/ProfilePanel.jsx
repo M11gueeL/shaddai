@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import * as authApi from "./../../api/authApi";
-import { useAuth } from "./../../context/AuthContext";
+import * as authApi from "./../../../api/authApi";
+import { useAuth } from "./../../../context/AuthContext";
 import MyProfile from "./MyProfile";
 
 export default function () {

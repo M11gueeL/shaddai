@@ -11,6 +11,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (!hasRole(allowedRoles)) {
+    // Redirigir al dashboard en lugar de mostrar error
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -119,7 +119,7 @@ class UserModel {
 
     // Obtener usuario por ID con roles y datos medicos (similar a getAll pero para un usuario)
     public function getUserById($id) {
-        $user = $this->db->query("SELECT first_name, last_name, cedula, birth_date, gender, address,
+        $user = $this->db->query("SELECT id, first_name, last_name, cedula, birth_date, gender, address,
                 phone, email, created_by, created_at, updated_at, active FROM users WHERE id = :id", [':id' => $id]);
         if (empty($user)) return null;
 
@@ -237,7 +237,7 @@ class UserModel {
             }
 
             $this->db->execute("COMMIT");
-            return true;
+            return $this->getUserById($id);
 
         } catch (Exception $e) {
             $this->db->execute("ROLLBACK");

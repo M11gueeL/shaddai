@@ -7,10 +7,13 @@ import Login from "./components/auth/Login";
 import Dashboard from "./components/dashboard/Dashboard";
 import ControlPanel from "./components/controlPanel/ControlPanel";
 import ReceptionPanel from "./components/reception/ReceptionPanel";
-import PaymentePanel from "./components/payments/PaymentPanel";
+import PaymentPanel from "./components/payments/PaymentPanel";
+import PaymentOperations from "./components/payments/PaymentOperations";
+import PaymentAudit from "./components/payments/PaymentAudit";
 import MedicalRecordsPanel from "./components/medicalRecords/MedicalRecordsPanel";
 import InventoryPanel from "./components/inventory/InventoryPanel";
-import ProfilePanel from "./components/users/ProfilePanel";
+import UserPanel from "./components/controlPanel/users/UserPanel";
+import ProfilePanel from "./components/controlPanel/users/ProfilePanel";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -34,7 +37,9 @@ export default function App() {
                 <RoleProtectedRoute allowedRoles={['admin']}>
                   <ControlPanel />
                 </RoleProtectedRoute>
-              } />
+              } >
+                <Route path="users" element={<UserPanel />} />
+              </Route>
               
               {/* Recepción - Admin + Recepcionista */}
               <Route path="/reception" element={
@@ -50,12 +55,25 @@ export default function App() {
                 </RoleProtectedRoute>
               } />
               
-              {/* Pago - Admin + Recepcionista */}
+              {/* Pago - Admin + Recepcionista 
+                  ejemplo de subrutas protegidas para implementar en el futuro en otros modulos...
+              */}
               <Route path="/payment" element={
                 <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
-                  <PaymentePanel />
+                  <PaymentPanel />
                 </RoleProtectedRoute>
-              } />
+              }>
+                <Route index element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                    <PaymentOperations />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="audit" element={
+                  <RoleProtectedRoute allowedRoles={['admin']}>
+                    <PaymentAudit />
+                  </RoleProtectedRoute>
+                } />
+              </Route>
               
               {/* Inventario - Admin + Recepcionista */}
               <Route path="/inventory" element={

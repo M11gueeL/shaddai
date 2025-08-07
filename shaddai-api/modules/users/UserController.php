@@ -68,17 +68,19 @@ class UsersController {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
 
-            // Validaciones básicas
             $requiredFields = ['first_name', 'last_name', 'cedula', 'phone', 'email', 'roles'];
+            
             foreach ($requiredFields as $field) {
+                
                 if (empty($data[$field])) {
                     throw new Exception("El campo $field es obligatorio");
                 }
             }
 
-            $updated = $this->model->updateUser($id, $data);
-            if ($updated) {
-                echo json_encode(['message' => 'Usuario actualizado']);
+            $updatedUser = $this->model->updateUser($id, $data); // <--- Recibe el objeto actualizado
+            
+            if ($updatedUser) {
+                echo json_encode($updatedUser); // <--- Devuelve el objeto completo
             } else {
                 throw new Exception('No se pudo actualizar el usuario');
             }

@@ -22,7 +22,7 @@ export default function Layout() {
         
         {/* Contenido principal */}
         <main className={`flex-1 shadow-md transition-all duration-300 overflow-y-auto ${
-          sidebarOpen ? "ml-0" : "ml-0"
+          sidebarOpen 
         }`}>
           <Outlet />
         </main>
