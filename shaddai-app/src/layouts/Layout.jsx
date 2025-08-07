@@ -9,19 +9,21 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
-      <Header 
-        sidebarOpen={sidebarOpen} 
-        toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-      />
+      <div className="sticky top-0 z-50">
+        <Header 
+          sidebarOpen={sidebarOpen} 
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        />
+      </div>
       
-      <div className="flex flex-1 mx-auto w-full overflow-hidden">
+      <div className="flex flex-1"> {/* Añadido mt-16 aquí */}
         <Sidebar 
           isOpen={sidebarOpen} 
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         />
         
         {/* Contenido principal */}
-        <main className={`flex-1 shadow-md transition-all duration-300 overflow-y-auto ${
+        <main className={`flex-1 min-h-0 overflow-y-auto ${
           sidebarOpen 
         }`}>
           <Outlet />

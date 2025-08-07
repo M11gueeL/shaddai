@@ -158,7 +158,7 @@ export default function UserPanel() {
 
       {/* Formulario para crear usuario (modal) */}
       {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm 400 bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <UserForm 
               onSubmit={handleCreateSubmit} 
@@ -172,7 +172,7 @@ export default function UserPanel() {
 
       {/* Formulario para editar usuario (modal) */}
       {showEditForm && editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <UserEditForm 
               user={editingUser}

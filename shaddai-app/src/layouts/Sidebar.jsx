@@ -31,9 +31,9 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
       <aside
         className={`transform transition-transform duration-300 ease-in-out
-          fixed md:relative z-50 h-screen
+          fixed md:sticky h-screen md:h-[calc(100vh-4rem)] top-16 z-40
           ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-          top-0 left-0
+          left-0
         `}
       >
         <nav
@@ -42,7 +42,8 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             overflow-hidden transition-all duration-300
           `}
         >
-          <div className={`${isOpen ? "py-10 px-5" : "p-2"} transition-all`}>
+          {/* Cabecera fija */}
+          <div className={`${isOpen ? "pt-10 px-5" : "p-2"} transition-all relative shrink-0`}>
             <button
               onClick={toggleSidebar}
               className={`absolute top-9 right-4 bg-white rounded-full p-2 shadow-md border border-gray-200 hover:bg-gray-50
@@ -57,8 +58,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               ${isOpen ? "text-2xl tracking-tight" : "text-center text-sm mt-8"}`}>
               {isOpen ? "Shaddai App" : "Shaddai APP"}
             </div>
-
-            <ul className="flex flex-col gap-2">
+          </div>
+          
+          {/* Contenido desplazable */}
+          <div className="flex-1 overflow-y-auto">
+            <ul className="flex flex-col gap-2 px-4 pb-4">
               {menuItems.map(({ name, path }) => (
                 <li key={path}>
                   <NavLink

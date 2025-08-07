@@ -133,6 +133,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="first_name"
               value={formData.first_name}
               onChange={handleChange}
+              required
               className={`w-full px-3 py-2 border rounded-md ${
                 errors.first_name ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -150,6 +151,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="last_name"
               value={formData.last_name}
               onChange={handleChange}
+              required
               className={`w-full px-3 py-2 border rounded-md ${
                 errors.last_name ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -167,6 +169,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="cedula"
               value={formData.cedula}
               onChange={handleChange}
+              required
               className={`w-full px-3 py-2 border rounded-md ${
                 errors.cedula ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -184,6 +187,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="birth_date"
               value={formData.birth_date}
               onChange={handleChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -197,9 +201,10 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="gender"
               value={formData.gender}
               onChange={handleChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
-              <option value="">Seleccionar</option>
+              <option value="">Seleccion una opción</option>
               <option value="Masculino">Masculino</option>
               <option value="Femenino">Femenino</option>
             </select>
@@ -215,6 +220,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="phone"
               value={formData.phone}
               onChange={handleChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
@@ -229,6 +235,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="email"
               value={formData.email}
               onChange={handleChange}
+              required
               className={`w-full px-3 py-2 border rounded-md ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -246,6 +253,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="password"
               value={formData.password}
               onChange={handleChange}
+              required
               className={`w-full px-3 py-2 border rounded-md ${
                 errors.password ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -263,6 +271,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
               name="address"
               value={formData.address}
               onChange={handleChange}
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>
