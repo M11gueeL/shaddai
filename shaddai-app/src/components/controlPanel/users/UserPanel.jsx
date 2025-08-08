@@ -56,18 +56,6 @@ export default function UserPanel() {
     setShowCreateForm(true);
   };
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
-      try {
-        await userApi.delete(userId, token);
-        setUsers(users.filter(user => user.id !== userId));
-      } catch (err) {
-        console.error('Error al eliminar usuario:', err);
-        alert('Error al eliminar usuario: ' + (err.response?.data?.message || err.message));
-      }
-    }
-  };
-
   const handleToggleStatus = async (userId) => {
     try {
       await userApi.toggleStatus(userId, token);
@@ -81,51 +69,41 @@ export default function UserPanel() {
   };
 
   const handleCreateSubmit = async (formData) => {
-  try {
-    await userApi.create(formData, token);
-    // Recarga la lista completa de usuarios
-    const usersRes = await userApi.getAll(token);
-    setUsers(usersRes.data);
-    setShowCreateForm(false);
-    alert('Usuario creado exitosamente');
-  } catch (err) {
-    console.error('Error al crear usuario:', err);
-    alert('Error al crear: ' + (err.response?.data?.message || err.message));
-  }
-};
-
+    try {
+      await userApi.create(formData, token);
+      const usersRes = await userApi.getAll(token);
+      setUsers(usersRes.data);
+      setShowCreateForm(false);
+      alert('Usuario creado exitosamente');
+    } catch (err) {
+      console.error('Error al crear usuario:', err);
+      alert('Error al crear: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   const handleEditSubmit = async (formData) => {
-  try {
-    if (formData.birth_date === '') formData.birth_date = null;
-
-    // response is already the user object updated (response.data)
-    const updatedUser = await userApi.update(editingUser.id, formData, token);
-
-    setUsers(users.map(user =>
-      user.id === editingUser.id ? updatedUser : user
-    ));
-
-    setShowEditForm(false);
-    setEditingUser(null);
-    alert('Usuario actualizado exitosamente');
-  } catch (err) {
-    console.error('Error al actualizar usuario:', err);
-    // manejo de errores como antes
-    let errorMessage = 'Error al actualizar';
-    if (err.response) {
-      if (err.response.data && err.response.data.error) {
-        errorMessage += `: ${err.response.data.error}`;
-      } else {
-        errorMessage += `: ${err.response.status} ${err.response.statusText}`;
+    try {
+      if (formData.birth_date === '') formData.birth_date = null;
+      const updatedUser = await userApi.update(editingUser.id, formData, token);
+      setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
+      setShowEditForm(false);
+      setEditingUser(null);
+      alert('Usuario actualizado exitosamente');
+    } catch (err) {
+      console.error('Error al actualizar usuario:', err);
+      let errorMessage = 'Error al actualizar';
+      if (err.response) {
+        if (err.response.data && err.response.data.error) {
+          errorMessage += `: ${err.response.data.error}`;
+        } else {
+          errorMessage += `: ${err.response.status} ${err.response.statusText}`;
+        }
+      } else if (err.message) {
+        errorMessage += `: ${err.message}`;
       }
-    } else if (err.message) {
-      errorMessage += `: ${err.message}`;
+      alert(errorMessage);
     }
-    alert(errorMessage);
-  }
-};
-
+  };
 
   const handleFormClose = () => {
     setShowCreateForm(false);
@@ -142,7 +120,7 @@ export default function UserPanel() {
         <h1 className="text-2xl font-bold text-gray-800">Gestión de Usuarios</h1>
         <button
           onClick={handleCreate}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition"
+          className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
         >
           + Nuevo Usuario
         </button>
@@ -152,14 +130,14 @@ export default function UserPanel() {
       <UserTable 
         users={users} 
         onEdit={handleEdit} 
-        onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
+        medicalColleges={medicalColleges} // Pasamos los colegios médicos
       />
 
       {/* Formulario para crear usuario (modal) */}
       {showCreateForm && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm 400 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-2 w-full max-w-3xl max-h-[95vh] overflow-y-auto">
             <UserForm 
               onSubmit={handleCreateSubmit} 
               onCancel={handleFormClose}
@@ -172,8 +150,8 @@ export default function UserPanel() {
 
       {/* Formulario para editar usuario (modal) */}
       {showEditForm && editingUser && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-2 w-full max-w-3xl max-h-[95vh] overflow-y-auto">
             <UserEditForm 
               user={editingUser}
               onSubmit={handleEditSubmit} 

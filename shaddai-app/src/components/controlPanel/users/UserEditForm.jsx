@@ -95,288 +95,405 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-bold mb-6">Editar Usuario</h2>
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre *
-            </label>
-            <input
-              type="text"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.first_name ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+    <div className="min-h-screen flex items-start justify-center">
+      <div className="w-full max-w-4xl">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+            <h2 className="text-2xl font-bold text-white">
+              {user ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+            </h2>
+            <p className="text-indigo-100 mt-1">
+              {user ? 'Actualiza la información del usuario' : 'Completa los datos para crear un nuevo usuario'}
+            </p>
           </div>
           
-
-          {/* Apellido */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Apellido *
-            </label>
-            <input
-              type="text"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.last_name ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
-          </div>
-          
-          {/* Cédula */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cédula *
-            </label>
-            <input
-              type="text"
-              name="cedula"
-              value={formData.cedula}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.cedula ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.cedula && <p className="text-red-500 text-sm mt-1">{errors.cedula}</p>}
-          </div>
-          
-          {/* Fecha de Nacimiento */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de Nacimiento
-            </label>
-            <input
-              type="date"
-              name="birth_date"
-              value={formData.birth_date}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          {/* Género */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Género
-            </label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            >
-              <option value="">Seleccionar</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Femenino">Femenino</option>
-            </select>
-          </div>
-          
-          {/* Teléfono */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono
-            </label>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${
-                errors.email ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-          
-          {/* Dirección */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dirección
-            </label>
-            <input
-              type="text"
-              name="address"
-              value={formData.address}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-        </div>
-        
-        {/* Roles */}
-        <div className="border-t pt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Roles *
-          </label>
-          {errors.roles && <p className="text-red-500 text-sm mb-2">{errors.roles}</p>}
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                value={1} // ID de admin
-                checked={formData.roles.includes(1)}
-                onChange={handleRoleChange}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-gray-700">Administrador</span>
-            </label>
-            
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                value={2} // ID de médico
-                checked={formData.roles.includes(2)}
-                onChange={handleRoleChange}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-gray-700">Médico</span>
-            </label>
-            
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                value={3} // ID de recepcionista
-                checked={formData.roles.includes(3)}
-                onChange={handleRoleChange}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-              />
-              <span className="ml-2 text-gray-700">Recepcionista</span>
-            </label>
-          </div>
-        </div>
-        
-        {/* Campos específicos para médicos */}
-        {isMedico && (
-          <div className="border-t pt-4 space-y-6">
-            <h3 className="text-lg font-medium text-gray-900">Información Médica</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Código MPPS */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Código MPPS *
-                </label>
-                <input
-                  type="text"
-                  name="mpps_code"
-                  value={formData.mpps_code}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    errors.mpps_code ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.mpps_code && <p className="text-red-500 text-sm mt-1">{errors.mpps_code}</p>}
-              </div>
-              
-              {/* Colegio Médico */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Colegio Médico *
-                </label>
-                <select
-                  name="medical_college_id"
-                  value={formData.medical_college_id}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    errors.medical_college_id ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Seleccionar colegio</option>
-                  {medicalColleges.map(college => (
-                    <option key={college.id} value={college.id}>
-                      {college.full_name} ({college.abbreviation})
-                    </option>
-                  ))}
-                </select>
-                {errors.medical_college_id && <p className="text-red-500 text-sm mt-1">{errors.medical_college_id}</p>}
-              </div>
-              
-              {/* Código de Colegio */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Código de Colegio *
-                </label>
-                <input
-                  type="text"
-                  name="college_code"
-                  value={formData.college_code}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md ${
-                    errors.college_code ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {errors.college_code && <p className="text-red-500 text-sm mt-1">{errors.college_code}</p>}
-              </div>
-            </div>
-            
-            {/* Especialidades */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Especialidades *
-              </label>
-              {errors.specialties && <p className="text-red-500 text-sm mb-2">{errors.specialties}</p>}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-3 border border-gray-200 rounded-md">
-                {specialties.map(specialty => (
-                  <label key={specialty.id} className="flex items-center">
+          <div className="p-6">
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="space-y-6">
+                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                  Información Personal
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Nombre */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Nombre *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleChange}
+                        required
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                          errors.first_name ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                    </div>
+                    {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+                  </div>
+                  
+                  {/* Apellido */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Apellido *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    </div>
                     <input
-                      type="checkbox"
-                      value={specialty.id}
-                      checked={formData.specialties.includes(specialty.id)}
-                      onChange={handleSpecialtyChange}
-                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      required
+                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                        errors.last_name ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     />
-                    <span className="ml-2 text-gray-700">{specialty.name}</span>
-                  </label>
-                ))}
+                    {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
+                  </div>
+                  
+                  {/* Cédula */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Cédula *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="cedula"
+                        value={formData.cedula}
+                        onChange={handleChange}
+                        required
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                          errors.cedula ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                    </div>
+                    {errors.cedula && <p className="text-red-500 text-sm mt-1">{errors.cedula}</p>}
+                  </div>
+                  
+                  {/* Fecha de Nacimiento */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Fecha de Nacimiento
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="date"
+                        name="birth_date"
+                        value={formData.birth_date}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Género */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Género
+                    </label>
+                    <select
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
+                    >
+                      <option value="">Seleccion una opción</option>
+                      <option value="Masculino">Masculino</option>
+                      <option value="Femenino">Femenino</option>
+                    </select>
+                  </div>
+                  
+                  {/* Teléfono */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Teléfono
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Email */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Email *
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                          errors.email ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                    </div>
+                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                  </div>
+                  
+                  {/* Dirección */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                      Dirección
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-1 left-0 pl-3 pt-3 flex items-start pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+              
+              {/* Roles */}
+              <div className="border-t pt-6">
+                <div className="flex items-center mb-4">
+                  <div className="bg-indigo-100 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">Roles del Usuario</h3>
+                </div>
+                
+                {errors.roles && <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                  <p className="text-red-700 text-sm">{errors.roles}</p>
+                </div>}
+                
+                <div className="flex flex-wrap gap-6 bg-gray-50 p-4 rounded-xl">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        value={1}
+                        checked={formData.roles.includes(1)}
+                        onChange={handleRoleChange}
+                        className="sr-only"
+                      />
+                      <div className={`block w-12 h-6 rounded-full transition-colors ${
+                        formData.roles.includes(1) ? 'bg-indigo-500' : 'bg-gray-300'
+                      }`}></div>
+                      <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                        formData.roles.includes(1) ? 'transform translate-x-6' : ''
+                      }`}></div>
+                    </div>
+                    <span className="text-gray-700 font-medium">Administrador</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        value={2}
+                        checked={formData.roles.includes(2)}
+                        onChange={handleRoleChange}
+                        className="sr-only"
+                      />
+                      <div className={`block w-12 h-6 rounded-full transition-colors ${
+                        formData.roles.includes(2) ? 'bg-indigo-500' : 'bg-gray-300'
+                      }`}></div>
+                      <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                        formData.roles.includes(2) ? 'transform translate-x-6' : ''
+                      }`}></div>
+                    </div>
+                    <span className="text-gray-700 font-medium">Médico</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        value={3}
+                        checked={formData.roles.includes(3)}
+                        onChange={handleRoleChange}
+                        className="sr-only"
+                      />
+                      <div className={`block w-12 h-6 rounded-full transition-colors ${
+                        formData.roles.includes(3) ? 'bg-indigo-500' : 'bg-gray-300'
+                      }`}></div>
+                      <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${
+                        formData.roles.includes(3) ? 'transform translate-x-6' : ''
+                      }`}></div>
+                    </div>
+                    <span className="text-gray-700 font-medium">Recepcionista</span>
+                  </label>
+                </div>
+              </div>
+              
+              {/* Campos específicos para médicos */}
+              {isMedico && (
+                <div className="border-t pt-6 space-y-6">
+                  <div className="flex items-center">
+                    <div className="bg-indigo-100 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800">Información Médica</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Código MPPS */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                        Código MPPS *
+                      </label>
+                      <input
+                        type="text"
+                        name="mpps_code"
+                        value={formData.mpps_code}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                          errors.mpps_code ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {errors.mpps_code && <p className="text-red-500 text-sm mt-1">{errors.mpps_code}</p>}
+                    </div>
+                    
+                    {/* Colegio Médico */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                        Colegio Médico *
+                      </label>
+                      <select
+                        name="medical_college_id"
+                        value={formData.medical_college_id}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                          errors.medical_college_id ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      >
+                        <option value="">Seleccionar colegio</option>
+                        {medicalColleges.map(college => (
+                          <option key={college.id} value={college.id}>
+                            {college.full_name} ({college.abbreviation})
+                          </option>
+                        ))}
+                      </select>
+                      {errors.medical_college_id && <p className="text-red-500 text-sm mt-1">{errors.medical_college_id}</p>}
+                    </div>
+                    
+                    {/* Código de Colegio */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
+                        Código de Colegio *
+                      </label>
+                      <input
+                        type="text"
+                        name="college_code"
+                        value={formData.college_code}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                          errors.college_code ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {errors.college_code && <p className="text-red-500 text-sm mt-1">{errors.college_code}</p>}
+                    </div>
+                  </div>
+                  
+                  {/* Especialidades */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 pl-1">
+                      Especialidades *
+                    </label>
+                    {errors.specialties && <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                      <p className="text-red-700 text-sm">{errors.specialties}</p>
+                    </div>}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-60 overflow-y-auto p-4 border border-gray-200 rounded-xl bg-gray-50">
+                      {specialties.map(specialty => (
+                        <label key={specialty.id} className="flex items-center bg-white p-3 rounded-lg border border-gray-200 hover:border-indigo-300 transition">
+                          <input
+                            type="checkbox"
+                            value={specialty.id}
+                            checked={formData.specialties.includes(specialty.id)}
+                            onChange={handleSpecialtyChange}
+                            className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          />
+                          <span className="ml-3 text-gray-700">{specialty.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Botones */}
+              <div className="flex justify-end space-x-4 pt-6 border-t">
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-6 py-3 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl shadow-md text-sm font-medium hover:from-indigo-600 hover:to-purple-700 transition-all"
+                >
+                  {user ? 'Actualizar Usuario' : 'Crear Usuario'}
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-        
-        {/* Botones */}
-        <div className="flex justify-end space-x-4 pt-6 border-t">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-indigo-700"
-          >
-            Actualizar Usuario
-
-          </button>
         </div>
-      </form>
+      </div>
     </div>
-  );
+  ); 
 }
