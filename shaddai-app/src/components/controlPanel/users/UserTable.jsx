@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { 
   FiUser, FiMail, FiPhone, FiFilter, 
   FiSearch, FiEdit2, FiToggleLeft, FiToggleRight, 
-  FiInfo, FiShield, FiBook, FiAward, FiX, FiKey
+  FiInfo, FiShield, FiBook, FiAward, FiX
 } from 'react-icons/fi';
 
 const UserTable = ({ 
   users, 
   onEdit, 
   onToggleStatus,
-  medicalColleges // Recibimos la lista de colegios médicos
+  medicalColleges
 }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchField, setSearchField] = useState('all'); // Campo seleccionado para búsqueda
+  const [searchField, setSearchField] = useState('all');
   const [filters, setFilters] = useState({
     role: '',
     status: '',
@@ -52,7 +52,6 @@ const UserTable = ({
   // Determina si un usuario es médico
   const isMedico = (user) => {
     if (user.roles) {
-      // Si los roles son objetos
       if (user.roles[0] && typeof user.roles[0] === 'object') {
         return user.roles.some(role => role.name === 'medico');
       } else {
@@ -80,7 +79,6 @@ const UserTable = ({
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       
-      // Si se seleccionó un campo específico
       if (searchField !== 'all') {
         result = result.filter(user => {
           switch (searchField) {
@@ -102,7 +100,6 @@ const UserTable = ({
           }
         });
       } 
-      // Búsqueda en todos los campos
       else {
         result = result.filter(user => 
           (user.first_name && user.first_name.toLowerCase().includes(term)) ||
@@ -123,9 +120,10 @@ const UserTable = ({
       });
     }
     
+    // CORRECCIÓN: Filtrar por estado activo/inactivo (1/0)
     if (filters.status) {
-      const statusFilter = filters.status === 'active';
-      result = result.filter(user => user.active === statusFilter);
+      const statusValue = filters.status === 'active' ? 1 : 0;
+      result = result.filter(user => user.active === statusValue);
     }
     
     if (filters.isMedico) {
@@ -177,18 +175,26 @@ const UserTable = ({
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <select
-              className="border border-l-0 border-gray-300 rounded-r-lg px-3 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
-              value={searchField}
-              onChange={(e) => setSearchField(e.target.value)}
-            >
-              <option value="all">Todos los campos</option>
-              <option value="id">ID</option>
-              <option value="name">Nombre</option>
-              <option value="cedula">Cédula</option>
-              <option value="email">Email</option>
-              <option value="phone">Teléfono</option>
-            </select>
+            {/* MEJORA: Selector con mejor diseño */}
+            <div className="relative">
+              <select
+                className="appearance-none w-full border border-l-0 border-gray-300 rounded-r-lg pl-3 pr-8 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+                value={searchField}
+                onChange={(e) => setSearchField(e.target.value)}
+              >
+                <option value="all">Todos los campos</option>
+                <option value="id">ID</option>
+                <option value="name">Nombre</option>
+                <option value="cedula">Cédula</option>
+                <option value="email">Email</option>
+                <option value="phone">Teléfono</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+              </div>
+            </div>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -215,31 +221,47 @@ const UserTable = ({
         {showFilters && (
           <div className="mt-4 bg-white p-4 rounded-lg border border-gray-200">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* MEJORA: Selector de rol con mejor diseño */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  value={filters.role}
-                  onChange={(e) => setFilters({...filters, role: e.target.value})}
-                >
-                  <option value="">Todos los roles</option>
-                  <option value="Administrador">Administrador</option>
-                  <option value="Médico">Médico</option>
-                  <option value="Recepcionista">Recepcionista</option>
-                </select>
+                <div className="relative">
+                  <select
+                    className="appearance-none w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 pl-3 pr-8"
+                    value={filters.role}
+                    onChange={(e) => setFilters({...filters, role: e.target.value})}
+                  >
+                    <option value="">Todos los roles</option>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Médico">Médico</option>
+                    <option value="Recepcionista">Recepcionista</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                    </svg>
+                  </div>
+                </div>
               </div>
               
+              {/* MEJORA: Selector de estado con mejor diseño */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  value={filters.status}
-                  onChange={(e) => setFilters({...filters, status: e.target.value})}
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="active">Activo</option>
-                  <option value="inactive">Inactivo</option>
-                </select>
+                <div className="relative">
+                  <select
+                    className="appearance-none w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 pl-3 pr-8"
+                    value={filters.status}
+                    onChange={(e) => setFilters({...filters, status: e.target.value})}
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activo</option>
+                    <option value="inactive">Inactivo</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                    </svg>
+                  </div>
+                </div>
               </div>
               
               <div className="flex items-end">
@@ -346,12 +368,12 @@ const UserTable = ({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.active
+                        user.active === 1
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {user.active ? "Activo" : "Inactivo"}
+                      {user.active === 1 ? "Activo" : "Inactivo"}
                     </span>
                   </td>
                 </tr>
@@ -401,17 +423,17 @@ const UserTable = ({
             <button
               onClick={() => onToggleStatus(selectedUser.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                selectedUser.active 
+                selectedUser.active === 1
                   ? 'bg-yellow-50 border border-yellow-200 text-yellow-700 hover:bg-yellow-100'
                   : 'bg-green-50 border border-green-200 text-green-700 hover:bg-green-100'
               }`}
             >
-              {selectedUser.active ? (
+              {selectedUser.active === 1 ? (
                 <FiToggleLeft className="text-yellow-600" />
               ) : (
                 <FiToggleRight className="text-green-600" />
               )}
-              {selectedUser.active ? 'Desactivar' : 'Activar'}
+              {selectedUser.active === 1 ? 'Desactivar' : 'Activar'}
             </button>
             
             {isMedico(selectedUser) && (
@@ -436,7 +458,7 @@ const UserTable = ({
 
       {/* Modal para Información Médica */}
       {showMedicalInfo && viewingMedicalUser && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
               <div className="flex justify-between items-center">
@@ -450,7 +472,7 @@ const UserTable = ({
               </div>
               <div className="mt-4 flex items-center">
                 <div className="bg-white bg-opacity-20 rounded-full p-3 mr-4">
-                  <FiUser className='text-gray-600' size={24} /> {/* Icono de usuario actualizado */}
+                  <FiUser className="text-white" size={24} />
                 </div>
                 <div>
                   <p className="text-lg font-semibold">{viewingMedicalUser.first_name} {viewingMedicalUser.last_name}</p>
@@ -517,6 +539,12 @@ const UserTable = ({
               </div>
               
               <div className="mt-8 flex justify-end">
+                <button
+                  onClick={() => setShowMedicalInfo(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Cerrar
+                </button>
               </div>
             </div>
           </div>
