@@ -120,9 +120,9 @@ const UserTable = ({
       });
     }
     
-    // CORRECCIÓN: Filtrar por estado activo/inactivo (1/0)
+    // Filtrar por estado activo/inactivo (1/0)
     if (filters.status) {
-      const statusValue = filters.status === 'active' ? 1 : 0;
+      const statusValue = filters.status === 'active' ? 1 : 0; 
       result = result.filter(user => user.active === statusValue);
     }
     
@@ -458,21 +458,15 @@ const UserTable = ({
 
       {/* Modal para Información Médica */}
       {showMedicalInfo && viewingMedicalUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-bold">Información Médica</h2>
-                <button 
-                  onClick={() => setShowMedicalInfo(false)} 
-                  className="text-white hover:text-gray-200"
-                >
-                  <FiX size={24} />
-                </button>
               </div>
               <div className="mt-4 flex items-center">
                 <div className="bg-white bg-opacity-20 rounded-full p-3 mr-4">
-                  <FiUser className="text-white" size={24} />
+                  <FiUser className="text-gray-500 " size={24} />
                 </div>
                 <div>
                   <p className="text-lg font-semibold">{viewingMedicalUser.first_name} {viewingMedicalUser.last_name}</p>

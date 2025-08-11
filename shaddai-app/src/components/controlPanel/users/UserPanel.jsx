@@ -56,11 +56,15 @@ export default function UserPanel() {
     setShowCreateForm(true);
   };
 
+  // UserPanel.jsx
   const handleToggleStatus = async (userId) => {
     try {
       await userApi.toggleStatus(userId, token);
       setUsers(users.map(user => 
-        user.id === userId ? { ...user, active: !user.active } : user
+        user.id === userId ? { 
+          ...user, 
+          active: user.active === 1 ? 0 : 1  // Cambio clave aquí
+        } : user
       ));
     } catch (err) {
       console.error('Error al cambiar estado:', err);
