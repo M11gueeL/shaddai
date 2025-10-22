@@ -66,7 +66,13 @@ class AppointmentsController {
 
     public function createAppointment() {
         try {
-            $data = $_POST;
+            // Manejar JSON
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
+            
+            if (empty($data)) {
+                $data = $_POST;
+            }
 
             // Obtener el usuario autenticado desde JWT
             $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
@@ -80,16 +86,6 @@ class AppointmentsController {
             // Validaciones básicas
             $this->validateAppointmentData($data);
 
-            // Validar disponibilidad de consultorio
-            if (!$this->model->isOfficeAvailable($data['appointment_date'], $data['appointment_time'], $data['office_number'], $data['duration'] ?? 30)) {
-                throw new Exception('El consultorio no está disponible en esa fecha y hora');
-            }
-
-            // Validar disponibilidad de médico
-            if (!$this->model->isDoctorAvailable($data['doctor_id'], $data['appointment_date'], $data['appointment_time'], $data['duration'] ?? 30)) {
-                throw new Exception('El médico no está disponible en esa fecha y hora');
-            }
-            
             $result = $this->model->createAppointment($data);
             if ($result) {
                 http_response_code(201);
@@ -103,22 +99,19 @@ class AppointmentsController {
         }
     }
 
+
+
     public function updateAppointment($id) {
         try {
-            $data = $_POST;
             
-            // Validaciones básicas
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
+            
+            if (empty($data)) {
+                $data = $_POST;
+            }
+            
             $this->validateAppointmentData($data);
-
-            // Validar disponibilidad de consultorio (excluyendo la cita actual)
-            if (!$this->model->isOfficeAvailable($data['appointment_date'], $data['appointment_time'], $data['office_number'], $data['duration'] ?? 30, $id)) {
-                throw new Exception('El consultorio no está disponible en esa fecha y hora');
-            }
-
-            // Validar disponibilidad de médico (excluyendo la cita actual)
-            if (!$this->model->isDoctorAvailable($data['doctor_id'], $data['appointment_date'], $data['appointment_time'], $data['duration'] ?? 30, $id)) {
-                throw new Exception('El médico no está disponible en esa fecha y hora');
-            }
             
             $result = $this->model->updateAppointment($id, $data);
             if ($result) {
@@ -131,6 +124,8 @@ class AppointmentsController {
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
+
+
 
     public function confirmAppointment($id) {
         try {

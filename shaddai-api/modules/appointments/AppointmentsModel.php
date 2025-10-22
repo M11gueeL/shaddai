@@ -10,66 +10,60 @@ class AppointmentsModel {
     }
 
     public function createAppointment($data) {
-        try {
-            $this->db->execute("START TRANSACTION");
+        $query = "INSERT INTO appointments (
+            patient_id,
+            doctor_id,
+            appointment_date,
+            appointment_time,
+            office_number,
+            specialty_id,
+            duration,
+            status,
+            appointment_type,
+            chief_complaint,
+            symptoms,
+            notes,
+            created_by
+        ) VALUES (
+            :patient_id,
+            :doctor_id,
+            :appointment_date,
+            :appointment_time,
+            :office_number,
+            :specialty_id,
+            :duration,
+            :status,
+            :appointment_type,
+            :chief_complaint,
+            :symptoms,
+            :notes,
+            :created_by
+        )";
 
-            $query = "INSERT INTO appointments (
-                patient_id,
-                doctor_id,
-                appointment_date,
-                appointment_time,
-                office_number,
-                specialty_id,
-                duration,
-                status,
-                appointment_type,
-                chief_complaint,
-                symptoms,
-                notes,
-                created_by
-            ) VALUES (
-                :patient_id,
-                :doctor_id,
-                :appointment_date,
-                :appointment_time,
-                :office_number,
-                :specialty_id,
-                :duration,
-                :status,
-                :appointment_type,
-                :chief_complaint,
-                :symptoms,
-                :notes,
-                :created_by
-            )";
+        $params = [
+            ':patient_id' => $data['patient_id'],
+            ':doctor_id' => $data['doctor_id'],
+            ':appointment_date' => $data['appointment_date'],
+            ':appointment_time' => $data['appointment_time'],
+            ':office_number' => $data['office_number'],
+            ':specialty_id' => $data['specialty_id'],
+            ':duration' => $data['duration'] ?? 30,
+            ':status' => $data['status'] ?? 'programada',
+            ':appointment_type' => $data['appointment_type'] ?? 'primera_vez',
+            ':chief_complaint' => $data['chief_complaint'] ?? null,
+            ':symptoms' => $data['symptoms'] ?? null,
+            ':notes' => $data['notes'] ?? null,
+            ':created_by' => $data['created_by']
+        ];
 
-            $params = [
-                ':patient_id' => $data['patient_id'],
-                ':doctor_id' => $data['doctor_id'],
-                ':appointment_date' => $data['appointment_date'],
-                ':appointment_time' => $data['appointment_time'],
-                ':office_number' => $data['office_number'],
-                ':specialty_id' => $data['specialty_id'],
-                ':duration' => $data['duration'] ?? 30,
-                ':status' => $data['status'] ?? 'programada',
-                ':appointment_type' => $data['appointment_type'] ?? 'primera_vez',
-                ':chief_complaint' => $data['chief_complaint'] ?? null,
-                ':symptoms' => $data['symptoms'] ?? null,
-                ':notes' => $data['notes'] ?? null,
-                ':created_by' => $data['created_by']
-            ];
-
-            $this->db->execute($query, $params);
-            $appointmentId = $this->db->lastInsertId();
-
-            $this->db->execute("COMMIT");
-            return $appointmentId;
-
-        } catch (Exception $e) {
-            $this->db->execute("ROLLBACK");
-            throw $e;
+        $result = $this->db->execute($query, $params);
+        if ($result) {
+            return $this->db->lastInsertId();
         }
+        return false;
     }
+
+
 
     public function getAllAppointments() {
         $query = "SELECT 
@@ -196,8 +190,8 @@ class AppointmentsModel {
             ':office_number' => $data['office_number'],
             ':specialty_id' => $data['specialty_id'],
             ':duration' => $data['duration'] ?? 30,
-            ':status' => $data['status'],
-            ':appointment_type' => $data['appointment_type'],
+            ':status' => $data['status'] ?? 'programada',
+            ':appointment_type' => $data['appointment_type'] ?? 'primera_vez',
             ':chief_complaint' => $data['chief_complaint'] ?? null,
             ':symptoms' => $data['symptoms'] ?? null,
             ':notes' => $data['notes'] ?? null,
@@ -207,14 +201,17 @@ class AppointmentsModel {
         return $this->db->execute($query, $params);
     }
 
+
+
     public function confirmAppointment($id, $confirmedBy) {
         $query = "UPDATE appointments SET
-            status = 'confirmada',
+            status = :status,
             confirmed_by = :confirmed_by,
             confirmation_date = NOW()
         WHERE id = :id";
 
         $params = [
+            ':status' => 'confirmada',
             ':confirmed_by' => $confirmedBy,
             ':id' => $id
         ];
@@ -222,14 +219,16 @@ class AppointmentsModel {
         return $this->db->execute($query, $params);
     }
 
+
     public function cancelAppointment($id, $cancelledBy, $reason = null) {
         $query = "UPDATE appointments SET
-            status = 'cancelada',
+            status = :status,
             cancelled_by = :cancelled_by,
             cancellation_reason = :reason
         WHERE id = :id";
 
         $params = [
+            ':status' => 'cancelada',
             ':cancelled_by' => $cancelledBy,
             ':reason' => $reason,
             ':id' => $id
@@ -237,6 +236,7 @@ class AppointmentsModel {
 
         return $this->db->execute($query, $params);
     }
+
 
     public function updateAppointmentStatus($id, $status) {
         $validStatuses = ['programada', 'confirmada', 'en_progreso', 'completada', 'cancelada', 'no_se_presento'];
@@ -253,17 +253,19 @@ class AppointmentsModel {
 
     public function sendReminder($id, $reminderDate) {
         $query = "UPDATE appointments SET
-            reminder_sent = 1,
+            reminder_sent = :reminder_sent,
             reminder_date = :reminder_date
         WHERE id = :id";
 
         $params = [
+            ':reminder_sent' => 1,
             ':reminder_date' => $reminderDate,
             ':id' => $id
         ];
 
         return $this->db->execute($query, $params);
     }
+
 
     public function deleteAppointment($id) {
         $query = "DELETE FROM appointments WHERE id = :id";
