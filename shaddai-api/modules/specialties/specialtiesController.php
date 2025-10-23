@@ -34,6 +34,16 @@ class SpecialtiesController {
         }
     }
 
+    public function getEspecialtiesByDoctorId($doctorId) {
+        try {
+            $specialties = $this->model->getEspecialtiesByDoctorId($doctorId);
+            echo json_encode($specialties);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function create() {
         try {
             $data = $_POST;

@@ -8,6 +8,8 @@ class UserRoutes {
     public static function register($router) {
         $controller = new UsersController();
         
+        $router->add('GET', 'users/doctors/', [$controller, 'getDoctors'], ['auth', 'role:admin,recepcionista']);
+        
         $router->add('GET', 'users', [$controller, 'getAllUsers'], ['auth', 'role:admin']);
         $router->add('GET', 'users/{id}', [$controller, 'getUserByID'], ['auth', 'role:admin']);
         $router->add('GET', 'users/cedula/{cedula}', [$controller, 'findUserByCedula'], ['auth', 'role:admin']);

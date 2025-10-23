@@ -16,6 +16,12 @@ export default {
   
   // Obtener usuario por ID
   getById: (id, token) => axios.get(`${API_URL}/users/${id}`, getAuthHeaders(token)),
+
+  // Obtener usuarios que son médicos
+  getDoctors: (token) => axios.get(`${API_URL}/users/doctors`, getAuthHeaders(token)),
+
+  // Obtener todas las especialidades de un usuario (médico)
+  getSpecialtiesByDoctorId: (doctorId, token) => axios.get(`${API_URL}/specialties/doctor/${doctorId}`, getAuthHeaders(token)), 
   
   // Crear usuario
   create: (userData, token) => axios.post(`${API_URL}/users`, userData, getAuthHeaders(token)),

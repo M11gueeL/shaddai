@@ -34,6 +34,16 @@ class UsersController {
         }
     } 
 
+    public function getDoctors() {
+        try {
+            $doctors = $this->model->getDoctors();
+            echo json_encode($doctors);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function createUser() {
         try {
             $data = json_decode(file_get_contents('php://input'), true);

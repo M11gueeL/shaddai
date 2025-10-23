@@ -40,6 +40,15 @@ class SpecialtiesModel {
         return !empty($result) ? $result[0] : null; 
     }
 
+    // Metodo para obtener las especialidades de un medico, cometiste un error, es la tabla users y user_specialties
+    public function getEspecialtiesByDoctorId($doctorId) {
+        $query = "SELECT ms.* FROM medical_specialties ms
+                  INNER JOIN user_specialties us ON ms.id = us.specialty_id
+                  WHERE us.user_id = :doctor_id";
+        $params = [':doctor_id' => $doctorId];
+        return $this->db->query($query, $params);
+    }
+
     public function delete($id) {
         $query = "DELETE FROM medical_specialties WHERE id = :id";
         $params = [':id' => $id];

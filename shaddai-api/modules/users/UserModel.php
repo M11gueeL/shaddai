@@ -266,6 +266,31 @@ class UserModel {
         return !empty($result) ? $result[0] : null;
     }
 
+    public function getDoctors() {
+        $query = "SELECT u.id, u.first_name, u.last_name, u.cedula, u.birth_date, u.gender, u.address,
+                u.phone, u.email, u.created_by, u.created_at, u.updated_at, u.active
+                FROM users u
+                JOIN user_roles ur ON u.id = ur.user_id
+                WHERE ur.role_id = 2"; // role_id 2 es medico   
+        $doctors = $this->db->query($query);
+        foreach ($doctors as &$doctor) {
+            // Traer medical_info
+            $doctor['medical_info'] = $this->db->query(
+                "SELECT * FROM user_medical_info WHERE user_id = :user_id",
+                [':user_id' => $doctor['id']]
+            )[0] ?? null;
+
+            // Traer specialties
+            $doctor['specialties'] = $this->db->query(
+                "SELECT ms.id, ms.name FROM medical_specialties ms 
+                 JOIN user_specialties us ON us.specialty_id = ms.id 
+                 WHERE us.user_id = :user_id",
+                 [':user_id' => $doctor['id']]
+            );
+        }
+        return $doctors;
+    }
+
     // Metodo para activar o desactivar un usuario
     public function toggleUserStatus($id) {
         try {

@@ -24,7 +24,17 @@ class AppointmentsModel {
             'office_number', 'specialty_id', 'duration', 'status', 'appointment_type', 'created_by'
         ];
         $values = [];
-        foreach ($mainFields as $f) $values[$f] = $data[$f] ?? null;
+        foreach ($mainFields as $f) {
+            if ($f === 'status') {
+                $values[$f] = $data[$f] ?? 'programada'; 
+            } elseif ($f === 'duration') {
+                $values[$f] = $data[$f] ?? 30;
+            } elseif ($f === 'appointment_type') {
+                $values[$f] = $data[$f] ?? 'primera_vez';
+            } else {
+                $values[$f] = $data[$f] ?? null;
+            }
+        }
 
         $sql = "INSERT INTO appointments (
             patient_id, doctor_id, appointment_date, appointment_time, office_number,
@@ -34,10 +44,17 @@ class AppointmentsModel {
             :specialty_id, :duration, :status, :appointment_type, :created_by
         )";
         $params = [];
-        foreach ($mainFields as $f) $params[":$f"] = $values[$f];
+        $params = [];
+        foreach ($mainFields as $f) {
+            $params[":$f"] = $values[$f];
+        }
 
         $result = $this->db->execute($sql, $params);
-        if (!$result) { $this->db->rollBack(); return false; }
+        if (!$result) { 
+            $this->db->rollBack(); 
+            return false; 
+        }
+        
         $id = $this->db->lastInsertId();
 
         // crear record en información médica si hay datos

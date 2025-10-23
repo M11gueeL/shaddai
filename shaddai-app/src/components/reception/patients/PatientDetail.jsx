@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import PatientsApi from './../../api/PatientsApi';
+import PatientsApi from '../../../api/PatientsApi';
 
 export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
   const [isEditing, setIsEditing] = useState(false);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import PatientRegistration from './PatientRegistration';
-import PatientList from './PatientsList';
+import PatientRegistration from './patients/PatientRegistration';
+import PatientList from './patients/PatientsList';
+import AppointmentForm from './appointments/AppointmentForm';
 
 export default function ReceptionPanel() {
   const [activeModal, setActiveModal] = useState(null); // 'register', 'list', null
@@ -50,6 +51,15 @@ export default function ReceptionPanel() {
             </div>
         </div>
         )}
+
+        {/* Modal de Agendar Cita */}
+      {activeModal === 'schedule' && (
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-95">
+            <AppointmentForm onClose={closeModal} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

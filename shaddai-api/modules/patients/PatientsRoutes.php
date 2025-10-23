@@ -11,6 +11,7 @@ class PatientsRoutes {
 
         $router->add('GET', 'patients', [$controller, 'getAllPatients'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'patients/{id}', [$controller, 'getPatient'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'patients/cedula/{cedula}', [$controller, 'getPatientByCedula'], ['auth', 'role:admin,recepcionista']);
         $router->add('POST', 'patients', [$controller, 'createPatient'], ['auth', 'role:admin,recepcionista']);
         $router->add('PUT', 'patients/{id}', [$controller, 'updatePatient'], ['auth', 'role:admin,recepcionista']);
         $router->add('DELETE', 'patients/{id}', [$controller, 'deletePatient'], ['auth', 'role:admin,recepcionista']);

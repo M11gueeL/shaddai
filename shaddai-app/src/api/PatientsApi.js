@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public/';
+const API_URL = 'http://localhost/shaddai/shaddai-api/public';
 
 const getAuthHeaders = (token) => ({
   headers: {
@@ -15,6 +15,9 @@ export default {
 
     // Obtener paciente por ID
   getById: (id, token) => axios.get(`${API_URL}/patients/${id}`, getAuthHeaders(token)),
+
+  // Obtener paciente por cédula
+  getByCedula: (cedula, token) => axios.get(`${API_URL}/patients/cedula/${cedula}`, getAuthHeaders(token)),
   
   // Crear paciente
   create: (patientData, token) => axios.post(`${API_URL}/patients`, patientData, getAuthHeaders(token)),

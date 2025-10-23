@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import PatientsApi from './../../api/PatientsApi';
+import PatientsApi from '../../../api/PatientsApi';
 import PatientDetail from './PatientDetail';
 
 export default function PatientList({ onClose }) {
