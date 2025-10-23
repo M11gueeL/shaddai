@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* Asegurar que el sidebar esté por encima de todo */
+.sidebar-overlay {
+  backdrop-filter: blur(8px);
+}
+
+/* Animaciones suaves para el contenido principal */
+.main-content-transition {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Sombra más pronunciada para el sidebar */
+.sidebar-shadow {
+  box-shadow: 4px 0 15px -3px rgba(0, 0, 0, 0.1), 2px 0 6px -2px rgba(0, 0, 0, 0.05);
+}

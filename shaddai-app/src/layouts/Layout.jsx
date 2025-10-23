@@ -8,29 +8,33 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="sticky top-0 z-50">
-        <Header 
-          sidebarOpen={sidebarOpen} 
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-        />
-      </div>
+    <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-100">
       
-      <div className="flex flex-1"> {/* Añadido mt-16 aquí */}
-        <Sidebar 
-          isOpen={sidebarOpen} 
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-        />
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+      />
+      
+      <div className={`flex flex-col flex-1 transition-all duration-300
+        ${sidebarOpen 
+          ? 'md:ml-64' 
+          : 'md:ml-20'  
+        }
+      `}>
         
-        {/* Contenido principal */}
-        <main className={`flex-1 min-h-0 overflow-y-auto ${
-          sidebarOpen 
-        }`}>
+        <div className="sticky top-0 z-30">
+          <Header 
+            sidebarOpen={sidebarOpen} 
+            toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+          />
+        </div>
+        
+        <main className="flex-1 min-h-0 overflow-y-auto">
           <Outlet />
         </main>
+        
+        <Footer />
       </div>
-      
-      <Footer />
     </div>
   );
 }

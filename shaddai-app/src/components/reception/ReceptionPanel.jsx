@@ -69,7 +69,7 @@ export default function ReceptionPanel() {
 
       {/* Modals */}
       {activeModal === 'register' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black bg-opacity-25 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] transform transition-all duration-300">
             <PatientRegistration onClose={closeModal} />
           </div>
@@ -77,7 +77,7 @@ export default function ReceptionPanel() {
       )}
 
       {activeModal === 'list' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black bg-opacity-25 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-all duration-300">
             <PatientList onClose={closeModal} />
           </div>
@@ -85,7 +85,7 @@ export default function ReceptionPanel() {
       )}
 
       {activeModal === 'schedule' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black bg-opacity-25 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
             <AppointmentForm onClose={closeModal} />
           </div>
