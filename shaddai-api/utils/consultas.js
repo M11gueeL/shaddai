@@ -45,3 +45,11 @@ usuarioMedico = {
 }
 
 
+// adsdasdas/
+
+o = {
+    "specialty_name": "Cardiología",
+    "description": "Especialidad médica que se encarga del estudio, diagnóstico y tratamiento de las enfermedades del corazón y del sistema circulatorio."
+}
+
+

@@ -403,7 +403,7 @@ const AppointmentForm = ({ onClose }) => {
         </div>
 
         {/* 👈 BOTONES DENTRO DEL FORM */}
-        <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+        <div className="flex justify-end space-x-4">
           <button
             type="button"
             onClick={onClose}
