@@ -58,6 +58,20 @@ class Database {
         return $stmt->execute($params);
     }
 
+    // Métodos para transacciones
+    public function beginTransaction() {
+        return $this->pdo->beginTransaction();
+    }
+
+    public function commit() {
+        return $this->pdo->commit();
+    }
+
+    public function rollBack() {
+        return $this->pdo->rollBack();
+    }
+
+
     // Método para obtener el último ID insertado
     public function lastInsertId() {
         return $this->pdo->lastInsertId();

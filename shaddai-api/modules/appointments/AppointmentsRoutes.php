@@ -21,9 +21,7 @@ class AppointmentsRoutes {
         $router->add('GET', 'appointments/doctor/{doctorId}', [$controller, 'getAppointmentsByDoctor'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/patient/{patientId}', [$controller, 'getAppointmentsByPatient'], ['auth', 'role:admin,recepcionista']);
 
-        // Acciones específicas
-        $router->add('POST', 'appointments/{id}/confirm', [$controller, 'confirmAppointment'], ['auth', 'role:admin,recepcionista']);
-        $router->add('POST', 'appointments/{id}/cancel', [$controller, 'cancelAppointment'], ['auth', 'role:admin,recepcionista']);
-        $router->add('POST', 'appointments/{id}/status', [$controller, 'updateStatus'], ['auth', 'role:admin,recepcionista']);
+       $router->add('POST', 'appointments/{id}/status', [$controller, 'updateStatus'], ['auth', 'role:admin,recepcionista']);
+
     }
 }

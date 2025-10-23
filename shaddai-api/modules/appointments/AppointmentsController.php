@@ -125,58 +125,24 @@ class AppointmentsController {
         }
     }
 
-
-
-    public function confirmAppointment($id) {
-        try {
-            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
-            if (!$jwtPayload) {
-                throw new Exception('No autorizado para confirmar citas');
-            }
-
-            $result = $this->model->confirmAppointment($id, $jwtPayload->sub);
-            if ($result) {
-                echo json_encode(['message' => 'Appointment confirmed successfully']);
-            } else {
-                throw new Exception('Failed to confirm appointment');
-            }
-        } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
-        }
-    }
-
-    public function cancelAppointment($id) {
-        try {
-            $data = $_POST;
-            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
-            if (!$jwtPayload) {
-                throw new Exception('No autorizado para cancelar citas');
-            }
-
-            $reason = $data['cancellation_reason'] ?? null;
-            $result = $this->model->cancelAppointment($id, $jwtPayload->sub, $reason);
-            
-            if ($result) {
-                echo json_encode(['message' => 'Appointment cancelled successfully']);
-            } else {
-                throw new Exception('Failed to cancel appointment');
-            }
-        } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
-        }
-    }
-
     public function updateStatus($id) {
         try {
-            $data = $_POST;
-            
+            $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+
             if (empty($data['status'])) {
                 throw new Exception('Status is required');
             }
-            
-            $result = $this->model->updateAppointmentStatus($id, $data['status']);
+
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$jwtPayload) {
+                throw new Exception('No autorizado para cambiar el estado');
+            }
+
+            $changedBy = $jwtPayload->sub;
+            $changeReason = $data['change_reason'] ?? null;
+
+            $result = $this->model->updateAppointmentStatus($id, $data['status'], $changedBy, $changeReason);
             if ($result) {
                 echo json_encode(['message' => 'Appointment status updated successfully']);
             } else {

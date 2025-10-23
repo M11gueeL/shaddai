@@ -10,67 +10,60 @@ class AppointmentsModel {
     }
 
     public function createAppointment($data) {
-        $query = "INSERT INTO appointments (
-            patient_id,
-            doctor_id,
-            appointment_date,
-            appointment_time,
-            office_number,
-            specialty_id,
-            duration,
-            status,
-            appointment_type,
-            chief_complaint,
-            symptoms,
-            notes,
-            created_by
-        ) VALUES (
-            :patient_id,
-            :doctor_id,
-            :appointment_date,
-            :appointment_time,
-            :office_number,
-            :specialty_id,
-            :duration,
-            :status,
-            :appointment_type,
-            :chief_complaint,
-            :symptoms,
-            :notes,
-            :created_by
-        )";
+        $this->db->beginTransaction();
 
+        $mainFields = [
+            'patient_id', 'doctor_id', 'appointment_date', 'appointment_time',
+            'office_number', 'specialty_id', 'duration', 'status', 'appointment_type', 'created_by'
+        ];
+        $values = [];
+        foreach ($mainFields as $f) $values[$f] = $data[$f] ?? null;
+
+        $sql = "INSERT INTO appointments (
+            patient_id, doctor_id, appointment_date, appointment_time, office_number,
+            specialty_id, duration, status, appointment_type, created_by
+        ) VALUES (
+            :patient_id, :doctor_id, :appointment_date, :appointment_time, :office_number,
+            :specialty_id, :duration, :status, :appointment_type, :created_by
+        )";
+        $params = [];
+        foreach ($mainFields as $f) $params[":$f"] = $values[$f];
+
+        $result = $this->db->execute($sql, $params);
+        if (!$result) { $this->db->rollBack(); return false; }
+        $id = $this->db->lastInsertId();
+
+        // crear record en información médica si hay datos
+        if (!empty($data['chief_complaint']) || !empty($data['symptoms']) || !empty($data['notes'])) {
+            $this->createAppointmentMedicalInfo($id, $data);
+        }
+
+        $this->db->commit();
+        return $id;
+    }
+
+    public function createAppointmentMedicalInfo($appointmentId, $data) {
+        $sql = "INSERT INTO appointment_medical_info
+            (appointment_id, chief_complaint, symptoms, notes)
+        VALUES
+            (:appointment_id, :chief_complaint, :symptoms, :notes)";
         $params = [
-            ':patient_id' => $data['patient_id'],
-            ':doctor_id' => $data['doctor_id'],
-            ':appointment_date' => $data['appointment_date'],
-            ':appointment_time' => $data['appointment_time'],
-            ':office_number' => $data['office_number'],
-            ':specialty_id' => $data['specialty_id'],
-            ':duration' => $data['duration'] ?? 30,
-            ':status' => $data['status'] ?? 'programada',
-            ':appointment_type' => $data['appointment_type'] ?? 'primera_vez',
+            ':appointment_id' => $appointmentId,
             ':chief_complaint' => $data['chief_complaint'] ?? null,
             ':symptoms' => $data['symptoms'] ?? null,
-            ':notes' => $data['notes'] ?? null,
-            ':created_by' => $data['created_by']
+            ':notes' => $data['notes'] ?? null
         ];
-
-        $result = $this->db->execute($query, $params);
-        if ($result) {
-            return $this->db->lastInsertId();
-        }
-        return false;
+        $this->db->execute($sql, $params);
     }
+
 
 
 
     public function getAllAppointments() {
         $query = "SELECT 
             a.*,
-            p.full_name as patient_name,
-            p.cedula as patient_cedula,
-            p.phone as patient_phone,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
             ms.name as specialty_name,
             CONCAT(uc.first_name, ' ', uc.last_name) as created_by_name
@@ -79,193 +72,180 @@ class AppointmentsModel {
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN users uc ON a.created_by = uc.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
         ORDER BY a.appointment_date DESC, a.appointment_time DESC";
-
         return $this->db->query($query);
     }
+
 
     public function getAppointmentById($id) {
         $query = "SELECT 
             a.*,
-            p.full_name as patient_name,
-            p.cedula as patient_cedula,
-            p.phone as patient_phone,
-            p.email as patient_email,
-            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
-            u.cedula as doctor_cedula,
-            ms.name as specialty_name,
-            CONCAT(uc.first_name, ' ', uc.last_name) as created_by_name,
-            CONCAT(uconf.first_name, ' ', uconf.last_name) as confirmed_by_name,
-            CONCAT(ucanc.first_name, ' ', ucanc.last_name) as cancelled_by_name
-        FROM appointments a
-        INNER JOIN patients p ON a.patient_id = p.id
-        INNER JOIN users u ON a.doctor_id = u.id
-        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
-        LEFT JOIN users uc ON a.created_by = uc.id
-        LEFT JOIN users uconf ON a.confirmed_by = uconf.id
-        LEFT JOIN users ucanc ON a.cancelled_by = ucanc.id
-        WHERE a.id = :id";
-
-        $params = [':id' => $id];
-        $result = $this->db->query($query, $params);
-        return !empty($result) ? $result[0] : null;
-    }
-
-    public function getAppointmentsByDate($date) {
-        $query = "SELECT 
-            a.*,
-            p.full_name as patient_name,
-            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
             ms.name as specialty_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.id = :id";
+        $params = [':id' => $id];
+        $result = $this->db->query($query, $params);
+        return !empty($result) ? $result[0] : null;
+    }
+
+
+    public function getAppointmentsByDate($date) {
+        $query = "SELECT 
+            a.*,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
+            ms.name as specialty_name
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
         WHERE a.appointment_date = :date
         ORDER BY a.appointment_time ASC";
-
         $params = [':date' => $date];
+        return $this->db->query($query, $params);
+    }
+
+
+    public function getAppointmentsByPatient($patientId) {
+        $query = "SELECT 
+            a.*,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
+            ms.name as specialty_name
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.patient_id = :patient_id
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+        $params = [':patient_id' => $patientId];
         return $this->db->query($query, $params);
     }
 
     public function getAppointmentsByDoctor($doctorId, $date = null) {
         $query = "SELECT 
             a.*,
-            p.full_name as patient_name,
-            p.phone as patient_phone,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.phone as patient_phone, p.email as patient_email,
             ms.name as specialty_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
         WHERE a.doctor_id = :doctor_id";
-
         $params = [':doctor_id' => $doctorId];
-
         if ($date) {
             $query .= " AND a.appointment_date = :date";
             $params[':date'] = $date;
         }
-
         $query .= " ORDER BY a.appointment_date DESC, a.appointment_time ASC";
-
-        return $this->db->query($query, $params);
-    }
-
-    public function getAppointmentsByPatient($patientId) {
-        $query = "SELECT 
-            a.*,
-            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
-            ms.name as specialty_name
-        FROM appointments a
-        INNER JOIN users u ON a.doctor_id = u.id
-        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
-        WHERE a.patient_id = :patient_id
-        ORDER BY a.appointment_date DESC, a.appointment_time DESC";
-
-        $params = [':patient_id' => $patientId];
         return $this->db->query($query, $params);
     }
 
     public function updateAppointment($id, $data) {
-        $query = "UPDATE appointments SET
-            patient_id = :patient_id,
-            doctor_id = :doctor_id,
-            appointment_date = :appointment_date,
-            appointment_time = :appointment_time,
-            office_number = :office_number,
-            specialty_id = :specialty_id,
-            duration = :duration,
-            status = :status,
-            appointment_type = :appointment_type,
-            chief_complaint = :chief_complaint,
-            symptoms = :symptoms,
-            notes = :notes
-        WHERE id = :id";
+        $fields = [
+            'patient_id', 'doctor_id', 'appointment_date', 'appointment_time',
+            'office_number', 'specialty_id', 'duration', 'status', 'appointment_type'
+        ];
+        $set = [];
+        $params = [];
+        foreach ($fields as $f) {
+            $set[] = "$f = :$f";
+            $params[":$f"] = $data[$f];
+        }
+        $params[':id'] = $id;
 
-        $params = [
-            ':patient_id' => $data['patient_id'],
-            ':doctor_id' => $data['doctor_id'],
-            ':appointment_date' => $data['appointment_date'],
-            ':appointment_time' => $data['appointment_time'],
-            ':office_number' => $data['office_number'],
-            ':specialty_id' => $data['specialty_id'],
-            ':duration' => $data['duration'] ?? 30,
-            ':status' => $data['status'] ?? 'programada',
-            ':appointment_type' => $data['appointment_type'] ?? 'primera_vez',
+        $sql = "UPDATE appointments SET " . implode(', ', $set) . " WHERE id = :id";
+        $this->db->execute($sql, $params);
+
+        // Actualizar o crear registro en medical info
+        $hasMedical = $this->db->query("SELECT 1 FROM appointment_medical_info WHERE appointment_id = :id", [':id'=>$id]);
+        if ($hasMedical) {
+            $sql = "UPDATE appointment_medical_info SET
+                chief_complaint = :chief_complaint,
+                symptoms = :symptoms,
+                notes = :notes
+            WHERE appointment_id = :id";
+        } else {
+            $sql = "INSERT INTO appointment_medical_info
+                (appointment_id, chief_complaint, symptoms, notes)
+            VALUES
+                (:id, :chief_complaint, :symptoms, :notes)";
+        }
+        $mparams = [
+            ':id' => $id,
             ':chief_complaint' => $data['chief_complaint'] ?? null,
             ':symptoms' => $data['symptoms'] ?? null,
-            ':notes' => $data['notes'] ?? null,
-            ':id' => $id
+            ':notes' => $data['notes'] ?? null
         ];
-
-        return $this->db->execute($query, $params);
+        $this->db->execute($sql, $mparams);
+        return true;
     }
 
-
-
-    public function confirmAppointment($id, $confirmedBy) {
-        $query = "UPDATE appointments SET
-            status = :status,
-            confirmed_by = :confirmed_by,
-            confirmation_date = NOW()
-        WHERE id = :id";
-
-        $params = [
-            ':status' => 'confirmada',
-            ':confirmed_by' => $confirmedBy,
-            ':id' => $id
-        ];
-
-        return $this->db->execute($query, $params);
-    }
-
-
-    public function cancelAppointment($id, $cancelledBy, $reason = null) {
-        $query = "UPDATE appointments SET
-            status = :status,
-            cancelled_by = :cancelled_by,
-            cancellation_reason = :reason
-        WHERE id = :id";
-
-        $params = [
-            ':status' => 'cancelada',
-            ':cancelled_by' => $cancelledBy,
-            ':reason' => $reason,
-            ':id' => $id
-        ];
-
-        return $this->db->execute($query, $params);
-    }
-
-
-    public function updateAppointmentStatus($id, $status) {
+    public function updateAppointmentStatus($id, $status, $changedBy, $changeReason = null) {
         $validStatuses = ['programada', 'confirmada', 'en_progreso', 'completada', 'cancelada', 'no_se_presento'];
-        
         if (!in_array($status, $validStatuses)) {
             throw new Exception('Estado de cita inválido');
         }
 
-        $query = "UPDATE appointments SET status = :status WHERE id = :id";
-        $params = [':status' => $status, ':id' => $id];
-        
-        return $this->db->execute($query, $params);
+        try {
+            $this->db->beginTransaction();
+
+            // Obtener estado previo
+            $prev = $this->db->query("SELECT status FROM appointments WHERE id = :id", [':id' => $id]);
+            $previousStatus = !empty($prev) ? $prev[0]['status'] : null;
+
+            // Actualizar estado
+            $update = $this->db->execute(
+                "UPDATE appointments SET status = :status WHERE id = :id",
+                [':status' => $status, ':id' => $id]
+            );
+
+            if (!$update) {
+                $this->db->rollBack();
+                return false;
+            }
+
+            // Insertar en historial solo si el estado cambia realmente
+            if ($previousStatus !== $status) {
+                $insertHist = $this->db->execute(
+                    "INSERT INTO appointment_status_history 
+                    (appointment_id, previous_status, new_status, changed_by, change_reason)
+                    VALUES (:appointment_id, :prev_status, :new_status, :changed_by, :change_reason)",
+                    [
+                        ':appointment_id' => $id,
+                        ':prev_status' => $previousStatus,
+                        ':new_status' => $status,
+                        ':changed_by' => $changedBy,
+                        ':change_reason' => $changeReason
+                    ]
+                );
+
+                if (!$insertHist) {
+                    $this->db->rollBack();
+                    return false;
+                }
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
-
-    public function sendReminder($id, $reminderDate) {
-        $query = "UPDATE appointments SET
-            reminder_sent = :reminder_sent,
-            reminder_date = :reminder_date
-        WHERE id = :id";
-
-        $params = [
-            ':reminder_sent' => 1,
-            ':reminder_date' => $reminderDate,
-            ':id' => $id
-        ];
-
-        return $this->db->execute($query, $params);
-    }
-
 
     public function deleteAppointment($id) {
         $query = "DELETE FROM appointments WHERE id = :id";
@@ -273,63 +253,5 @@ class AppointmentsModel {
         return $this->db->execute($query, $params);
     }
 
-    // Validar disponibilidad de consultorio
-    public function isOfficeAvailable($date, $time, $officeNumber, $duration = 30, $excludeId = null) {
-        $endTime = date('H:i:s', strtotime($time) + ($duration * 60));
-        
-        $query = "SELECT COUNT(*) as count FROM appointments 
-                 WHERE appointment_date = :date 
-                 AND office_number = :office_number 
-                 AND status NOT IN ('cancelada', 'no_se_presento')
-                 AND (
-                     (appointment_time <= :time AND DATE_ADD(CONCAT(appointment_date, ' ', appointment_time), INTERVAL duration MINUTE) > :time)
-                     OR 
-                     (appointment_time < :end_time AND appointment_time >= :time)
-                 )";
-
-        $params = [
-            ':date' => $date,
-            ':office_number' => $officeNumber,
-            ':time' => $time,
-            ':end_time' => $endTime
-        ];
-
-        if ($excludeId) {
-            $query .= " AND id != :exclude_id";
-            $params[':exclude_id'] = $excludeId;
-        }
-
-        $result = $this->db->query($query, $params);
-        return $result[0]['count'] == 0;
-    }
-
-    // Validar disponibilidad de médico
-    public function isDoctorAvailable($doctorId, $date, $time, $duration = 30, $excludeId = null) {
-        $endTime = date('H:i:s', strtotime($time) + ($duration * 60));
-        
-        $query = "SELECT COUNT(*) as count FROM appointments 
-                 WHERE doctor_id = :doctor_id 
-                 AND appointment_date = :date 
-                 AND status NOT IN ('cancelada', 'no_se_presento')
-                 AND (
-                     (appointment_time <= :time AND DATE_ADD(CONCAT(appointment_date, ' ', appointment_time), INTERVAL duration MINUTE) > :time)
-                     OR 
-                     (appointment_time < :end_time AND appointment_time >= :time)
-                 )";
-
-        $params = [
-            ':doctor_id' => $doctorId,
-            ':date' => $date,
-            ':time' => $time,
-            ':end_time' => $endTime
-        ];
-
-        if ($excludeId) {
-            $query .= " AND id != :exclude_id";
-            $params[':exclude_id'] = $excludeId;
-        }
-
-        $result = $this->db->query($query, $params);
-        return $result[0]['count'] == 0;
-    }
+    
 }
