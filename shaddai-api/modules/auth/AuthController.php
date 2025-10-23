@@ -48,7 +48,7 @@ class AuthController {
             'email' => $user['email'],
             'roles' => $roleNames,
             'iat' => time(),
-            'exp' => time() + 3600
+            'exp' => time() + 86400
         ];
         $jwt = JWT::encode($payload, $_ENV['JWT_SECRET'], 'HS256');
 

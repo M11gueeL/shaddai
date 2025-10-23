@@ -10,6 +10,13 @@ class AppointmentsModel {
     }
 
     public function createAppointment($data) {
+
+        // Validar disponibilidad ANTES de iniciar transacción
+        $errors = $this->validateAppointmentAvailability($data);
+        if (!empty($errors)) {
+            throw new Exception(implode('. ', $errors));
+        }
+
         $this->db->beginTransaction();
 
         $mainFields = [
@@ -55,9 +62,6 @@ class AppointmentsModel {
         ];
         $this->db->execute($sql, $params);
     }
-
-
-
 
     public function getAllAppointments() {
         $query = "SELECT 
@@ -115,7 +119,6 @@ class AppointmentsModel {
         return $this->db->query($query, $params);
     }
 
-
     public function getAppointmentsByPatient($patientId) {
         $query = "SELECT 
             a.*,
@@ -155,6 +158,13 @@ class AppointmentsModel {
     }
 
     public function updateAppointment($id, $data) {
+
+        // Validar disponibilidad excluyendo la cita actual
+        $errors = $this->validateAppointmentAvailability($data, $id);
+        if (!empty($errors)) {
+            throw new Exception(implode('. ', $errors));
+        }
+        
         $fields = [
             'patient_id', 'doctor_id', 'appointment_date', 'appointment_time',
             'office_number', 'specialty_id', 'duration', 'status', 'appointment_type'
@@ -245,6 +255,133 @@ class AppointmentsModel {
             $this->db->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Validar disponibilidad completa antes de crear/actualizar cita
+     */
+    public function validateAppointmentAvailability($data, $excludeId = null) {
+        $errors = [];
+        
+        // 1. Validar disponibilidad de consultorio
+        if (!$this->isOfficeAvailable($data['appointment_date'], $data['appointment_time'], 
+                                    $data['office_number'], $data['duration'] ?? 30, $excludeId)) {
+            $errors[] = "El consultorio {$data['office_number']} no está disponible en esa fecha y hora";
+        }
+        
+        // 2. Validar disponibilidad de médico
+        if (!$this->isDoctorAvailable($data['doctor_id'], $data['appointment_date'], 
+                                    $data['appointment_time'], $data['duration'] ?? 30, $excludeId)) {
+            $errors[] = "El médico no está disponible en esa fecha y hora";
+        }
+        
+        return $errors;
+    }
+
+    /**
+     * Verificar disponibilidad de consultorio
+     */
+    public function isOfficeAvailable($date, $time, $officeNumber, $duration = 30, $excludeId = null) {
+        $startTime = $time;
+        $endTime = date('H:i:s', strtotime($time) + ($duration * 60));
+        
+        $query = "SELECT COUNT(*) as count FROM appointments 
+                WHERE appointment_date = :date 
+                AND office_number = :office_number 
+                AND status NOT IN ('cancelada', 'no_se_presento')
+                AND (
+                    (appointment_time < :end_time AND ADDTIME(appointment_time, SEC_TO_TIME(duration * 60)) > :start_time)
+                )";
+        
+        $params = [
+            ':date' => $date,
+            ':office_number' => $officeNumber,
+            ':start_time' => $startTime,
+            ':end_time' => $endTime
+        ];
+        
+        if ($excludeId) {
+            $query .= " AND id != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+        
+        $result = $this->db->query($query, $params);
+        return $result[0]['count'] == 0;
+    }
+
+    /**
+     * Verificar disponibilidad de médico
+     */
+    public function isDoctorAvailable($doctorId, $date, $time, $duration = 30, $excludeId = null) {
+        $startTime = $time;
+        $endTime = date('H:i:s', strtotime($time) + ($duration * 60));
+        
+        $query = "SELECT COUNT(*) as count FROM appointments 
+                WHERE doctor_id = :doctor_id 
+                AND appointment_date = :date 
+                AND status NOT IN ('cancelada', 'no_se_presento')
+                AND (
+                    (appointment_time < :end_time AND ADDTIME(appointment_time, SEC_TO_TIME(duration * 60)) > :start_time)
+                )";
+        
+        $params = [
+            ':doctor_id' => $doctorId,
+            ':date' => $date,
+            ':start_time' => $startTime,
+            ':end_time' => $endTime
+        ];
+        
+        if ($excludeId) {
+            $query .= " AND id != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+        
+        $result = $this->db->query($query, $params);
+        return $result[0]['count'] == 0;
+    }
+
+
+    /**
+     * Obtener consultorios disponibles para una fecha/hora específica
+     */
+    public function getAvailableOffices($date, $time, $duration = 30, $excludeId = null) {
+        $availableOffices = [];
+        $totalOffices = [1, 2, 3]; // Assuming 3 offices
+        
+        foreach ($totalOffices as $office) {
+            if ($this->isOfficeAvailable($date, $time, $office, $duration, $excludeId)) {
+                $availableOffices[] = $office;
+            }
+        }
+        
+        return $availableOffices;
+    }
+
+    /**
+     * Sugerir horarios disponibles para un médico en una fecha
+     */
+    public function suggestAvailableTimes($doctorId, $date, $duration = 30, $startHour = 8, $endHour = 18) {
+        $availableTimes = [];
+        $intervalMinutes = 30; // Intervalos de 30 minutos
+        
+        for ($hour = $startHour; $hour < $endHour; $hour++) {
+            for ($minute = 0; $minute < 60; $minute += $intervalMinutes) {
+                $time = sprintf('%02d:%02d:00', $hour, $minute);
+                
+                if ($this->isDoctorAvailable($doctorId, $date, $time, $duration)) {
+                    $availableOffices = $this->getAvailableOffices($date, $time, $duration);
+                    
+                    if (!empty($availableOffices)) {
+                        $availableTimes[] = [
+                            'time' => $time,
+                            'available_offices' => $availableOffices
+                        ];
+                    }
+                }
+            }
+        }
+        
+        return $availableTimes;
     }
 
     public function deleteAppointment($id) {

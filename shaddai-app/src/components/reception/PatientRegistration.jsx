@@ -141,7 +141,6 @@ export default function PatientRegistration({ onClose }) {
                 <option value="">Seleccione...</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
-                <option value="Otro">Otro</option>
               </select>
             </div>
 
@@ -161,7 +160,6 @@ export default function PatientRegistration({ onClose }) {
                 <option value="Casado">Casado</option>
                 <option value="Divorciado">Divorciado</option>
                 <option value="Viudo">Viudo</option>
-                <option value="Unión Libre">Unión Libre</option>
               </select>
             </div>
 

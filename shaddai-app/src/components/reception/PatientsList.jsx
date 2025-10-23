@@ -93,6 +93,9 @@ export default function PatientList({ onClose }) {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Nombres
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -113,6 +116,9 @@ export default function PatientList({ onClose }) {
                 {patients.map((patient) => (
                   <tr key={patient.id} className="hover:bg-gray-50 transition duration-300">
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{patient.id}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {patient.full_name}
                       </div>
@@ -131,8 +137,7 @@ export default function PatientList({ onClose }) {
                         onClick={() => handleViewPatient(patient.id)}
                         className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition duration-300 flex items-center space-x-2 font-medium"
                       >
-                        <span>👁️</span>
-                        <span>Ver Detalles</span>
+                        <span>Más Información</span>
                       </button>
                     </td>
                   </tr>

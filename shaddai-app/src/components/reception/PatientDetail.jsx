@@ -46,7 +46,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
       {/* Header del Modal */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200">
         <h2 className="text-2xl font-bold text-gray-800">
-          {isEditing ? 'Editar Paciente' : 'Detalles del Paciente'}
+          {isEditing ? 'Modificar Datos' : 'Detalles del Paciente'}
         </h2>
         <button
           onClick={onClose}
@@ -125,7 +125,6 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
               >
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
-                <option value="Otro">Otro</option>
               </select>
             </div>
 
@@ -250,7 +249,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
               onClick={() => setIsEditing(true)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 font-medium"
             >
-              Editar Paciente
+              Modificar Datos
             </button>
           </div>
         )}

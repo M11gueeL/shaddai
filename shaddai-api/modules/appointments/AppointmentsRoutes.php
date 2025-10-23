@@ -21,7 +21,10 @@ class AppointmentsRoutes {
         $router->add('GET', 'appointments/doctor/{doctorId}', [$controller, 'getAppointmentsByDoctor'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/patient/{patientId}', [$controller, 'getAppointmentsByPatient'], ['auth', 'role:admin,recepcionista']);
 
-       $router->add('POST', 'appointments/{id}/status', [$controller, 'updateStatus'], ['auth', 'role:admin,recepcionista']);
+        $router->add('POST', 'appointments/{id}/status', [$controller, 'updateStatus'], ['auth', 'role:admin,recepcionista']);
+
+        $router->add('GET', 'appointments/availability', [$controller, 'checkAvailability'], ['auth', 'role:admin,recepcionista']);
+        $router->add('POST', 'appointments/validate-slot', [$controller, 'validateSlot'], ['auth', 'role:admin,recepcionista']);
 
     }
 }

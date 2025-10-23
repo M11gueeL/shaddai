@@ -45,7 +45,7 @@ export default function ReceptionPanel() {
 
         {activeModal === 'list' && (
         <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95 hover:scale-100">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95">
             <PatientList onClose={closeModal} />
             </div>
         </div>
@@ -135,7 +135,7 @@ function Header() {
         Menú de Recepción
       </h1>
       <p className="text-xl text-gray-600">
-        Gestión integral de pacientes y citas médicas
+        Gestión de pacientes y citas médicas
       </p>
     </div>
   );

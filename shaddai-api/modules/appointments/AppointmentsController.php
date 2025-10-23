@@ -153,6 +153,62 @@ class AppointmentsController {
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
+    
+    public function checkAvailability() {
+        try {
+            $data = json_decode(file_get_contents('php://input'), true) ?: $_GET;
+            
+            if (empty($data['doctor_id']) || empty($data['appointment_date'])) {
+                throw new Exception('Doctor ID y fecha son requeridos');
+            }
+            
+            $duration = $data['duration'] ?? 30;
+            $availableTimes = $this->model->suggestAvailableTimes(
+                $data['doctor_id'], 
+                $data['appointment_date'], 
+                $duration
+            );
+            
+            echo json_encode([
+                'available_times' => $availableTimes,
+                'date' => $data['appointment_date'],
+                'doctor_id' => $data['doctor_id']
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function validateSlot() {
+        try {
+            $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+            
+            $required = ['doctor_id', 'appointment_date', 'appointment_time', 'office_number'];
+            foreach ($required as $field) {
+                if (empty($data[$field])) {
+                    throw new Exception("Campo requerido: $field");
+                }
+            }
+            
+            $errors = $this->model->validateAppointmentAvailability($data);
+            
+            echo json_encode([
+                'available' => empty($errors),
+                'errors' => $errors,
+                'alternative_offices' => empty($errors) ? [] : $this->model->getAvailableOffices(
+                    $data['appointment_date'], 
+                    $data['appointment_time'], 
+                    $data['duration'] ?? 30
+                )
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
 
     public function deleteAppointment($id) {
         try {
