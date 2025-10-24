@@ -15,6 +15,7 @@ import {
 import PatientRegistration from './patients/PatientRegistration';
 import PatientList from './patients/PatientsList';
 import AppointmentForm from './appointments/AppointmentForm';
+import AppointmentsList from './appointments/AppointmentsList';
 
 export default function ReceptionPanel() {
   const [activeModal, setActiveModal] = useState(null);
@@ -88,6 +89,14 @@ export default function ReceptionPanel() {
         <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
             <AppointmentForm onClose={closeModal} />
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'consult' && (
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
+            <AppointmentsList onClose={closeModal} />
           </div>
         </div>
       )}
