@@ -1,4 +1,11 @@
 <?php
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
+
+require_once __DIR__ . '/../../vendor/autoload.php';
+
 require_once __DIR__ . '/AuthModel.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -39,7 +46,7 @@ class AuthController {
             return;
         }
         
-        // Generar payload del JWT
+        // Generar payload del JWT 
         $roles = $this->model->getUserRoles($user['id']);
         $roleNames = array_column($roles, 'name');
 
@@ -48,7 +55,7 @@ class AuthController {
             'email' => $user['email'],
             'roles' => $roleNames,
             'iat' => time(),
-            'exp' => time() + 86400
+            'exp' => time() + 86400 // 24 horas
         ];
         $jwt = JWT::encode($payload, $_ENV['JWT_SECRET'], 'HS256');
 
@@ -84,6 +91,7 @@ class AuthController {
         echo json_encode(['message' => $result ? 'Sesión cerrada' : 'No se pudo cerrar sesión, ya estaba cerrada o token inválido']);
     }
 
+    // GETPROFILE
     public function getProfile() {
         
         $payload = $_REQUEST['jwt_payload'] ?? null;
@@ -102,13 +110,14 @@ class AuthController {
             return;
         }
 
+        // Esta lógica ya está en tu getUserProfile, pero la mantenemos por consistencia
         $roles = $this->model->getUserRoles($userProfile['id']);
-        unset($userProfile['password']);
+        unset($userProfile['password']); 
         $userProfile['roles'] = array_column($roles, 'name');
         echo json_encode($userProfile);
     }
-
     
+    // LISTSESSIONS
     public function listSessions() {
         $payload = $_REQUEST['jwt_payload'] ?? null;
         
@@ -118,7 +127,7 @@ class AuthController {
             return;
         }
         
-        // Validar que tenga rol admin
+        // Validar que tenga rol admin (Tu lógica existente)
         if (!in_array('admin', $payload->roles)) {
             http_response_code(403);
             echo json_encode(['error' => 'Acceso denegado, solo admin pueder ver las sesiones']);
@@ -127,4 +136,138 @@ class AuthController {
         $sessions = $this->model->getAllSessions();
         echo json_encode($sessions);
     }
+
+
+    // --- INICIO DE MÉTODOS PARA RESET DE CONTRASEÑA ---
+
+    /**
+     * Paso 1: Solicitar reseteo.
+     * Recibe un JSON: { "email": "..." }
+     * Usamos json_decode aquí
+     */
+    public function requestPasswordReset() {
+        $data = json_decode(file_get_contents("php://input"));
+
+        $genericResponse = ['message' => 'Si el correo está registrado, recibirás instrucciones.'];
+
+        if (empty($data->email) || !filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Email inválido.']);
+            return;
+        }
+
+        $user = $this->model->findUserByEmailAnyStatus($data->email);
+
+        // Si no existe, o si existe PERO está inactivo, no hacemos nada.
+        // Solo enviamos el correo si el usuario existe Y está activo.
+        // Esto previene que usuarios inactivos restablezcan su clave.
+        if (!$user || !$user['active']) {
+            http_response_code(200);
+            echo json_encode($genericResponse);
+            return;
+        }
+
+        // --- Si el usuario es válido, procedemos ---
+        try {
+            $token = bin2hex(random_bytes(32)); // El token que enviamos por email
+            $hashed_token = hash('sha256', $token); // El token que guardamos en BD
+            $expires_at = date('Y-m-d H:i:s', time() + 3600); // 1 hora de validez
+
+            // Usamos el nuevo método del modelo
+            $this->model->savePasswordResetToken($user['id'], $hashed_token, $expires_at);
+
+            // Configuración de PHPMailer
+            $mail = new PHPMailer(true);
+            
+            $mail->isSMTP();
+            $mail->Host       = $_ENV['SMTP_HOST'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $_ENV['SMTP_USER'];
+            $mail->Password   = $_ENV['SMTP_PASS'];
+            $mail->SMTPSecure = ($_ENV['SMTP_SECURE'] == 'tls') 
+                                ? PHPMailer::ENCRYPTION_STARTTLS 
+                                : PHPMailer::ENCRYPTION_SMTPS;
+                                
+            $mail->Port       = (int)($_ENV['SMTP_PORT']); // Convertimos a entero
+            $mail->CharSet    = 'UTF-8';
+
+            $mail->setFrom('no-reply@shaddai.com', 'Sistema Shaddai');
+            $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Restablecimiento de Contraseña - Shaddai';
+            
+            $resetLink = ($_ENV['FRONTEND_URL'] ?? 'http://localhost:5173') . "/reset-password/" . $token;
+
+            $mail->Body    = "Hola " . htmlspecialchars($user['first_name']) . ",<br><br>" .
+                             "Solicitaste restablecer tu contraseña.<br>" .
+                             "Haz clic en el siguiente enlace para crear una nueva:<br><br>" .
+                             "<a href='" . $resetLink . "' style='padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>Restablecer Contraseña</a><br><br>" .
+                             "Este enlace expirará en 1 hora.<br><br>" .
+                             "Si no solicitaste esto, ignora este mensaje.";
+
+            $mail->send();
+
+            http_response_code(200);
+            echo json_encode($genericResponse);
+
+        } catch (Exception $e) {
+            // Si falla el email, loggeamos el error pero enviamos la respuesta genérica
+            error_log("PHPMailer Error: " . $mail->ErrorInfo);
+            http_response_code(200);
+            echo json_encode($genericResponse);
+        }
+    }
+
+    /**
+     * Paso 2: Restablecer la contraseña.
+     * Recibe un JSON: { "token": "...", "new_password": "..." }
+     */
+    public function resetPassword() {
+        $data = json_decode(file_get_contents("php://input"));
+
+        if (empty($data->token) || empty($data->new_password)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Token y nueva contraseña son requeridos.']);
+            return;
+        }
+
+        if (strlen($data->new_password) < 8) {
+             http_response_code(400);
+             echo json_encode(['error' => 'La contraseña debe tener al menos 8 caracteres.']);
+             return;
+        }
+
+        $hashed_token = hash('sha256', $data->token);
+
+        // Usamos el nuevo método del modelo
+        $resetRequest = $this->model->findValidResetToken($hashed_token);
+
+        if (!$resetRequest) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Token inválido o expirado.']);
+            return;
+        }
+
+        try {
+            // Hasheamos la nueva contraseña
+            $new_password_hash = password_hash($data->new_password, PASSWORD_DEFAULT);
+            $user_id = $resetRequest['user_id'];
+
+            // Actualizamos la contraseña del usuario
+            $this->model->updateUserPassword($user_id, $new_password_hash);
+
+            // Borramos el token para que no se reutilice
+            $this->model->deleteResetToken($hashed_token);
+
+            http_response_code(200);
+            echo json_encode(['message' => 'Contraseña actualizada con éxito.']);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error interno del servidor.']);
+            error_log('Error al resetear password: ' . $e->getMessage());
+        }
+    }
 }
+?>

@@ -11,9 +11,19 @@ class AuthRoutes {
         $authController = new AuthController();
 
         $router->add('POST', 'auth/login', [$authController, 'login']);
-
         $router->add('POST', 'auth/logout', [$authController, 'logout'], 'auth');
         $router->add('GET', 'auth/profile', [$authController, 'getProfile'], 'auth');
-        $router->add('GET', 'auth/sessions', [$authController, 'listSessions'], ['auth', 'role:admin']); // deben ser todas las sesiones de todos los usuarios, no la del usuairo actual logeado
+        $router->add('GET', 'auth/sessions', [$authController, 'listSessions'], ['auth', 'role:admin']);
+
+        // --- RUTAS PARA RESET DE CONTRASEÑA ---
+
+        // Ruta para solicitar el correo de reseteo
+        $router->add('POST', 'auth/request-reset', [$authController, 'requestPasswordReset']);
+
+        // Ruta para enviar el token y la nueva clave
+        $router->add('POST', 'auth/reset-password', [$authController, 'resetPassword']);
+
     }
 }
+?>
+

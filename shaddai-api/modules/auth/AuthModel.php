@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../../config/Database.php';
 
 class AuthModel {
@@ -33,7 +34,7 @@ class AuthModel {
         $sessionId = bin2hex(random_bytes(32));
         $loginTime = date('Y-m-d H:i:s');
         $sql = "INSERT INTO user_sessions (id, user_id, ip_address, device_info, login_time, session_status, token)
-                 VALUES (:id, :user_id, :ip, :device, :login_time, 'active', :token)";
+                VALUES (:id, :user_id, :ip, :device, :login_time, 'active', :token)";
         $this->db->execute($sql, [
             ':id' => $sessionId,
             ':user_id' => $userId,
@@ -57,10 +58,10 @@ class AuthModel {
 
     public function getAllSessions() {
         $sql = "SELECT us.*,
-                    u.email 
+                       u.email 
                 FROM user_sessions us
                 JOIN users u ON us.user_id = u.id
-            ORDER BY us.login_time DESC";
+                ORDER BY us.login_time DESC";
         return $this->db->query($sql);
     }
 
@@ -68,7 +69,7 @@ class AuthModel {
         $user = $this->db->query(
             "SELECT id, first_name, last_name, cedula, birth_date, gender, address,
                     phone, email, created_by, created_at, updated_at, active
-            FROM users WHERE id = :id",
+             FROM users WHERE id = :id",
             [':id' => $userId]
         );
 
@@ -105,4 +106,60 @@ class AuthModel {
         return $user;
     }
 
+
+    // --- INICIO DE MÉTODOS PARA RESET DE CONTRASEÑA ---
+
+    /**
+     * Guarda un token de reseteo en la nueva tabla 'password_resets'.
+     */
+    public function savePasswordResetToken($user_id, $hashed_token, $expires_at) {
+        $sql = "INSERT INTO password_resets (user_id, token, expires_at)
+                VALUES (:user_id, :token, :expires_at)";
+        
+        $params = [
+            ':user_id' => $user_id,
+            ':token' => $hashed_token,
+            ':expires_at' => $expires_at
+        ];
+        
+        return $this->db->execute($sql, $params);
+    }
+
+    /**
+     * Busca un token de reseteo válido por su HASH.
+     */
+    public function findValidResetToken($hashed_token) {
+        $sql = "SELECT * FROM password_resets 
+                WHERE token = :token AND expires_at > NOW() 
+                LIMIT 1";
+        
+        $params = [':token' => $hashed_token];
+        $result = $this->db->query($sql, $params);
+        
+        return $result[0] ?? null;
+    }
+
+    /**
+     * Actualiza la contraseña del usuario en la tabla 'users'.
+     */
+    public function updateUserPassword($user_id, $new_password_hash) {
+        $sql = "UPDATE users SET password = :password WHERE id = :id";
+        
+        $params = [
+            ':password' => $new_password_hash,
+            ':id' => $user_id
+        ];
+        
+        return $this->db->execute($sql, $params);
+    }
+
+    /**
+     * Elimina un token de reseteo después de ser usado.
+     */
+    public function deleteResetToken($hashed_token) {
+        $sql = "DELETE FROM password_resets WHERE token = :token";
+        $params = [':token' => $hashed_token];
+        return $this->db->execute($sql, $params);
+    }
 }
+?>
