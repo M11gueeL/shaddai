@@ -2,7 +2,7 @@ import React from "react";
 import { NavLink } from "react-router-dom";
 import { 
   FaBars, 
-  FaTimes, 
+  FaArrowLeft, 
   FaHome, 
   FaUser, 
   FaUserNurse, 
@@ -97,7 +97,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
               `}
               aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
             >
-              {isOpen ? <FaTimes className="text-gray-900 w-4 h-4" /> : <FaBars className="text-gray-900 w-4 h-4" />}
+              {isOpen ? <FaArrowLeft className="text-gray-900 w-4 h-4" /> : <FaBars className="text-gray-900 w-4 h-4" />}
             </button>
 
             <div className={`font-bold text-white mb-8 transition-all
