@@ -23,6 +23,15 @@ const UserTable = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showMedicalInfo, setShowMedicalInfo] = useState(false);
   const [viewingMedicalUser, setViewingMedicalUser] = useState(null);
+  
+  // Sincroniza el usuario seleccionado cuando cambia la lista de usuarios (evita que quede desactualizado)
+  useEffect(() => {
+    if (!selectedUser) return;
+    const updated = users?.find(u => u.id === selectedUser.id);
+    if (updated && updated.active !== selectedUser.active) {
+      setSelectedUser(updated);
+    }
+  }, [users, selectedUser]);
 
   // Función para obtener el nombre de los roles
   const getRoleNames = (roles) => {
@@ -155,6 +164,26 @@ const UserTable = ({
   const openMedicalInfo = (user) => {
     setViewingMedicalUser(user);
     setShowMedicalInfo(true);
+  };
+
+  // Toggle de estado con actualización optimista del botón
+  const handleToggleStatusClick = async () => {
+    if (!selectedUser) return;
+    const prevActive = selectedUser.active;
+    const nextActive = prevActive === 1 ? 0 : 1;
+
+    // Actualización optimista del botón (cambia inmediatamente)
+    setSelectedUser({ ...selectedUser, active: nextActive });
+
+    try {
+      const maybePromise = onToggleStatus(selectedUser.id);
+      if (maybePromise && typeof maybePromise.then === 'function') {
+        await maybePromise;
+      }
+    } catch (err) {
+      // Si falla, revertir el estado del botón
+      setSelectedUser({ ...selectedUser, active: prevActive });
+    }
   };
 
   return (
@@ -421,7 +450,7 @@ const UserTable = ({
             </button>
             
             <button
-              onClick={() => onToggleStatus(selectedUser.id)}
+              onClick={handleToggleStatusClick}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
                 selectedUser.active === 1
                   ? 'bg-yellow-50 border border-yellow-200 text-yellow-700 hover:bg-yellow-100'

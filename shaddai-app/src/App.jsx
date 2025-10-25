@@ -13,6 +13,7 @@ import PaymentAudit from "./components/payments/PaymentAudit";
 import MedicalRecordsPanel from "./components/medicalRecords/MedicalRecordsPanel";
 import InventoryPanel from "./components/inventory/InventoryPanel";
 import UserPanel from "./components/controlPanel/users/UserPanel";
+import AllSessionsPanel from "./components/controlPanel/sessions/AllSessionsPanel";
 import ProfilePanel from "./components/controlPanel/users/ProfilePanel";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
@@ -43,6 +44,7 @@ export default function App() {
                 </RoleProtectedRoute>
               } >
                 <Route path="users" element={<UserPanel />} />
+                <Route path="sessions" element={<AllSessionsPanel />} />
               </Route>
               
               {/* Recepción - Admin + Recepcionista */}

@@ -1,4 +1,6 @@
 export default function TodayScheduleCard({ items = [], loading, error, onItemClick, onViewAll }) {
+  // Asegurar que siempre trabajamos con un arreglo
+  const list = Array.isArray(items) ? items : [];
   const getStatusColor = (status) => {
     switch (status) {
       case 'confirmada': return 'bg-green-100 text-green-800';
@@ -25,10 +27,10 @@ export default function TodayScheduleCard({ items = [], loading, error, onItemCl
         {!loading && error && (
           <div className="text-sm text-red-600 p-4">{error}</div>
         )}
-        {!loading && !error && items.length === 0 && (
+        {!loading && !error && list.length === 0 && (
           <div className="text-sm text-gray-500 p-4">No hay citas programadas para hoy.</div>
         )}
-        {!loading && !error && items.map((appointment, index) => {
+        {!loading && !error && list.map((appointment, index) => {
           const time = appointment.appointment_time || appointment.time || '';
           const patientName = appointment.patient_name || appointment.patient || 'Paciente';
           const doctorName = appointment.doctor_name || appointment.doctor || '';

@@ -56,7 +56,15 @@ export default function ReceptionPanel() {
         if (isMounted) setLoadingToday(true);
         const res = await appointmentsApi.getToday(token);
         if (isMounted) {
-          setTodayAppointments(Array.isArray(res.data?.data) ? res.data.data : (res.data || []));
+          const data = res?.data;
+          // Normalizar para asegurar siempre un arreglo
+          let list = [];
+          if (Array.isArray(data)) list = data;
+          else if (Array.isArray(data?.data)) list = data.data;
+          else if (Array.isArray(data?.appointments)) list = data.appointments;
+          else list = [];
+
+          setTodayAppointments(list);
           setTodayError(null);
         }
       } catch (err) {

@@ -5,6 +5,7 @@ import PatientSearch from './PatientSearch';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
+import TimePicker from './TimePicker';
 
 const AppointmentForm = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -275,15 +276,19 @@ const AppointmentForm = ({ onClose }) => {
                 <Clock className="inline w-4 h-4 mr-1" />
                 Hora de Cita *
               </label>
-              <input
-                type="time"
-                name="appointment_time"
+              <TimePicker
                 value={formData.appointment_time}
-                onChange={handleInputChange}
+                onChange={(t) => {
+                  setFormData((prev) => ({ ...prev, appointment_time: t }));
+                  if (errors.appointment_time) {
+                    setErrors((prev) => ({ ...prev, appointment_time: '' }));
+                  }
+                }}
                 min={getMinTime()}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  errors.appointment_time ? 'border-red-500' : 'border-gray-300'
-                }`}
+                start="08:00"
+                end="19:00"
+                step={15}
+                error={errors.appointment_time}
               />
               {errors.appointment_time && (
                 <p className="text-red-500 text-sm flex items-center">
