@@ -1,14 +1,5 @@
 import { useState, useEffect } from 'react';
-import { 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  UserPlus,
-  CalendarPlus,
-  Search,
-  FileText
-} from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import PatientRegistration from './patients/PatientRegistration';
 import PatientList from './patients/PatientsList';
 import AppointmentForm from './appointments/AppointmentForm';
@@ -19,6 +10,7 @@ import appointmentsApi from '../../api/appointments';
 import { useAuth } from '../../context/AuthContext';
 import StatsCard from './appointments/StatsCard';
 import RecentActivityCard from './RecentActivityCard';
+import QuickActionsCard from './QuickActionsCard';
 
 // Estilos base para tarjetas para mantener simetría y consistencia
 const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
@@ -122,7 +114,6 @@ export default function ReceptionPanel() {
           {/* Quick Actions - Left Sidebar */}
           <div className="lg:col-span-3 space-y-6">
             <QuickActionsCard onAction={openModal} />
-            <StatsCard />
           </div>
 
           {/* Main Content Area */}
@@ -139,7 +130,7 @@ export default function ReceptionPanel() {
 
           {/* Right Sidebar */}
           <div className="lg:col-span-3 space-y-6">
-            <NotificationsCard />
+            <StatsCard />
           </div>
         </div>
       </div>
@@ -217,109 +208,4 @@ function Header() {
   );
 }
 
-// Quick Actions Card
-function QuickActionsCard({ onAction }) {
-  const actions = [
-    {
-      id: 'register',
-      title: "Registrar Paciente",
-      icon: UserPlus,
-      color: "bg-green-500 hover:bg-green-600",
-      description: "Nuevo paciente"
-    },
-    {
-      id: 'schedule',
-      title: "Agendar Cita",
-      icon: CalendarPlus,
-      color: "bg-blue-500 hover:bg-blue-600",
-      description: "Nueva cita"
-    },
-    {
-      id: 'list',
-      title: "Buscar Pacientes",
-      icon: Search,
-      color: "bg-purple-500 hover:bg-purple-600",
-      description: "Ver listado"
-    },
-    {
-      id: 'consult',
-      title: "Consultar Citas",
-      icon: FileText,
-      color: "bg-orange-500 hover:bg-orange-600",
-      description: "Ver agenda"
-    }
-  ];
-
-  return (
-    <div className={cardBase}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-      <div className="space-y-3">
-        {actions.map((action) => {
-          const Icon = action.icon;
-          return (
-            <button
-              key={action.id}
-              onClick={() => onAction(action.id)}
-              className={`w-full ${action.color} text-white p-4 h-14 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center group`}
-            >
-              <Icon className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
-              <div className="text-left flex-1">
-                <div className="font-medium">{action.title}</div>
-                <div className="text-xs opacity-90">{action.description}</div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-
-
-// RecentActivityCard moved to its own file
-
-// Notifications Card
-function NotificationsCard() {
-  const notifications = [
-    {
-      type: "warning",
-      title: "Cita próxima",
-      message: "Juan Pérez en 30 minutos",
-      icon: AlertCircle,
-      color: "text-yellow-600"
-    },
-    {
-      type: "info",
-      title: "Recordatorio",
-      message: "Confirmar citas de mañana",
-      icon: Clock,
-      color: "text-blue-600"
-    }
-  ];
-
-  return (
-    <div className={cardBase}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Notificaciones</h3>
-      
-      <div className="space-y-3">
-        {notifications.map((notification, index) => {
-          const Icon = notification.icon;
-          return (
-            <div key={index} className="p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <Icon className={`w-5 h-5 ${notification.color} mt-0.5`} />
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900 text-sm">{notification.title}</div>
-                  <div className="text-xs text-gray-600">{notification.message}</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// (Eliminado componente de Estado del Sistema)
+// (Eliminado componente de Notificaciones)
