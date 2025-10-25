@@ -36,18 +36,35 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const res = await authApi.login(credentials);
-      
-      // Asegurar que roles sea siempre un array
-      const userData = {
+
+      const tokenFromLogin = res.data.token;
+      const baseUser = {
         ...res.data.user,
-        roles: Array.isArray(res.data.user.roles) 
-          ? res.data.user.roles 
-          : [res.data.user.roles]
+        roles: Array.isArray(res.data.user.roles)
+          ? res.data.user.roles
+          : [res.data.user.roles],
       };
-      
-      setUser(userData);
-      setToken(res.data.token);
+
+      // Guardar de inmediato para tener sesión activa
+      setUser(baseUser);
+      setToken(tokenFromLogin);
       setSessionId(res.data.session_id);
+
+      // Intentar enriquecer con el perfil completo (nombre, apellido, género, etc.)
+      try {
+        const profileRes = await authApi.getProfile(tokenFromLogin);
+        const profile = profileRes.data || {};
+        const merged = {
+          ...baseUser,
+          ...profile,
+          roles: Array.isArray(profile.roles) ? profile.roles : baseUser.roles,
+        };
+        setUser(merged);
+      } catch (e) {
+        // Si falla, mantenemos el baseUser sin romper el flujo
+        console.warn("No se pudo cargar el perfil completo:", e?.response?.data || e?.message);
+      }
+
       setLoading(false);
       return { success: true };
     } catch (error) {
@@ -74,6 +91,33 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAuthenticated = !!token;
+
+  // Cargar/Refrescar perfil si ya hay token y faltan nombres en user
+  useEffect(() => {
+    const needsProfile = token && (!user || (!user.first_name && !user.firstName && !user.name));
+    if (!needsProfile) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await authApi.getProfile(token);
+        if (cancelled) return;
+        const profile = res.data || {};
+        const merged = {
+          ...(user || {}),
+          ...profile,
+          roles: Array.isArray(profile.roles) ? profile.roles : (user?.roles || []),
+        };
+        setUser(merged);
+      } catch (e) {
+        console.warn("No se pudo refrescar el perfil:", e?.response?.data || e?.message);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   return (
     <AuthContext.Provider value={{ 

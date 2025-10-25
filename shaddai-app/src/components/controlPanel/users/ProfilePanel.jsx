@@ -3,21 +3,21 @@ import * as authApi from "./../../../api/authApi";
 import { useAuth } from "./../../../context/AuthContext";
 import MyProfile from "./MyProfile";
 
-export default function () {
-
-    const { token } = useAuth(); 
+export default function ProfilePanel() {
+    const { token, sessionId } = useAuth();
     const [profile, setProfile] = useState(null);
 
     useEffect(() => {
         if (!token) return;
-        authApi.getProfile(token)
-        .then((res) => setProfile(res.data))
-        .catch(() => setProfile(null));
+        authApi
+            .getProfile(token)
+            .then((res) => setProfile(res.data))
+            .catch(() => setProfile(null));
     }, [token]);
 
     return (
         <div>
-            <MyProfile profile={profile} />
+            <MyProfile profile={profile} sessionId={sessionId} />
         </div>
-    )
+    );
 }
