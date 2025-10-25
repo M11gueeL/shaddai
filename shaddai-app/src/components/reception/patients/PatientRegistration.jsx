@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
+import { useToast } from '../../../context/ToastContext';
 
 export default function PatientRegistration({ onClose }) {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     full_name: '',
     cedula: '',
@@ -13,7 +15,7 @@ export default function PatientRegistration({ onClose }) {
     email: ''
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,31 +28,16 @@ export default function PatientRegistration({ onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
       const token = localStorage.getItem('token');
       await PatientsApi.create(formData, token);
-      setMessage('Paciente registrado con éxito');
-      
-      // Limpiar formulario después de éxito
-      setTimeout(() => {
-        setFormData({
-          full_name: '',
-          cedula: '',
-          birth_date: '',
-          gender: '',
-          marital_status: '',
-          address: '',
-          phone: '',
-          email: ''
-        });
-        setMessage('');
-        onClose(); // Cerrar modal después de registro exitoso
-      }, 1500);
+      toast.success('Paciente registrado con éxito');
+      onClose(); // Cerrar modal inmediatamente tras éxito
       
     } catch (error) {
-      setMessage('Error al registrar el paciente: ' + (error.response?.data?.message || error.message));
+      const errMsg = 'Error al registrar el paciente: ' + (error.response?.data?.message || error.message);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -71,15 +58,6 @@ export default function PatientRegistration({ onClose }) {
 
       {/* Contenido del Modal */}
       <div className="p-6 max-h-[calc(90vh-80px)]">
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.includes('éxito') 
-              ? 'bg-green-100 text-green-700 border border-green-200' 
-              : 'bg-red-100 text-red-700 border border-red-200'
-          }`}>
-            {message}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

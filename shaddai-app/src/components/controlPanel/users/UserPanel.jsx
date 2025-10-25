@@ -5,9 +5,11 @@ import UserTable from './UserTable';
 import UserForm from './UserForm';
 import UserEditForm from './UserEditForm';
 import { useAuth } from '../../../context/AuthContext';
+import { useToast } from '../../../context/ToastContext';
 
 export default function UserPanel() {
   const { token } = useAuth();
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,7 +70,7 @@ export default function UserPanel() {
       ));
     } catch (err) {
       console.error('Error al cambiar estado:', err);
-      alert('Error al cambiar estado: ' + (err.response?.data?.message || err.message));
+      toast.error('Error al cambiar estado: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -78,10 +80,10 @@ export default function UserPanel() {
       const usersRes = await userApi.getAll(token);
       setUsers(usersRes.data);
       setShowCreateForm(false);
-      alert('Usuario creado exitosamente');
+      toast.success('Usuario creado exitosamente');
     } catch (err) {
       console.error('Error al crear usuario:', err);
-      alert('Error al crear: ' + (err.response?.data?.message || err.message));
+      toast.error('Error al crear: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -92,7 +94,7 @@ export default function UserPanel() {
       setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
       setShowEditForm(false);
       setEditingUser(null);
-      alert('Usuario actualizado exitosamente');
+      toast.success('Usuario actualizado exitosamente');
     } catch (err) {
       console.error('Error al actualizar usuario:', err);
       let errorMessage = 'Error al actualizar';
@@ -105,7 +107,7 @@ export default function UserPanel() {
       } else if (err.message) {
         errorMessage += `: ${err.message}`;
       }
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

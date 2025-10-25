@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
+import { useToast } from '../../../context/ToastContext';
 
 export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(patient);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,16 +19,16 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
     
     try {
       const token = localStorage.getItem('token');
       await PatientsApi.update(patient.id, formData, token);
-      setMessage('Paciente actualizado con éxito');
+      toast.success('Paciente actualizado con éxito');
       setIsEditing(false);
       onPatientUpdated();
     } catch (error) {
-      setMessage('Error al actualizar el paciente: ' + (error.response?.data?.message || error.message));
+      const errMsg = 'Error al actualizar el paciente: ' + (error.response?.data?.message || error.message);
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -58,15 +59,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
 
       {/* Contenido del Modal */}
       <div className="flex-1 p-6 overflow-y-auto">
-        {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.includes('éxito') 
-              ? 'bg-green-100 text-green-700 border border-green-200' 
-              : 'bg-red-100 text-red-700 border border-red-200'
-          }`}>
-            {message}
-          </div>
-        )}
+        
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -219,7 +212,6 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
                 onClick={() => {
                   setIsEditing(false);
                   setFormData(patient);
-                  setMessage('');
                 }}
                 className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-300 font-medium"
               >

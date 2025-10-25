@@ -18,6 +18,7 @@ import AppointmentDetailModal from './appointments/AppointmentDetailModal';
 import appointmentsApi from '../../api/appointments';
 import { useAuth } from '../../context/AuthContext';
 import StatsCard from './appointments/StatsCard';
+import RecentActivityCard from './RecentActivityCard';
 
 // Estilos base para tarjetas para mantener simetría y consistencia
 const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
@@ -276,54 +277,7 @@ function QuickActionsCard({ onAction }) {
 
 
 
-// Recent Activity Card
-function RecentActivityCard() {
-  const activities = [
-    {
-      action: "Cita agendada",
-      details: "María García - Dr. Rodríguez",
-      time: "Hace 5 min",
-      icon: CalendarPlus,
-      color: "text-green-600"
-    },
-    {
-      action: "Paciente registrado",
-      details: "Carlos Silva",
-      time: "Hace 12 min",
-      icon: UserPlus,
-      color: "text-blue-600"
-    },
-    {
-      action: "Cita confirmada",
-      details: "Ana Martínez - Dr. López",
-      time: "Hace 18 min",
-      icon: CheckCircle,
-      color: "text-emerald-600"
-    }
-  ];
-
-  return (
-    <div className={cardBase}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
-      
-      <div className="space-y-4">
-        {activities.map((activity, index) => {
-          const Icon = activity.icon;
-          return (
-            <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-              <Icon className={`w-5 h-5 ${activity.color} mt-0.5`} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900">{activity.action}</div>
-                <div className="text-sm text-gray-600">{activity.details}</div>
-                <div className="text-xs text-gray-500">{activity.time}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// RecentActivityCard moved to its own file
 
 // Notifications Card
 function NotificationsCard() {

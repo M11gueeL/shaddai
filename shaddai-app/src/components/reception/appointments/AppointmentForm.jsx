@@ -5,9 +5,11 @@ import PatientSearch from './PatientSearch';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
+import { useToast } from '../../../context/ToastContext';
 import TimePicker from './TimePicker';
 
 const AppointmentForm = ({ onClose }) => {
+  const toast = useToast();
   const [formData, setFormData] = useState({
     patient_id: '',
     doctor_id: '',
@@ -141,9 +143,8 @@ const AppointmentForm = ({ onClose }) => {
         
         console.log('Data being sent:', dataToSend); // 👈 DEBUG
         
-        const response = await appointmentsAPI.create(dataToSend, token);
-        
-        alert('Cita agendada exitosamente');
+    const response = await appointmentsAPI.create(dataToSend, token);
+    toast.success('Cita agendada exitosamente');
         onClose(); // Cerrar modal
         
     } catch (error) {
@@ -151,7 +152,7 @@ const AppointmentForm = ({ onClose }) => {
         // 👈 MOSTRAR MÁS DETALLES DEL ERROR
         const errorMessage = error.response?.data?.error || error.message || 'Error al crear la cita';
         console.log('Full error response:', error.response?.data);
-        alert(errorMessage);
+    toast.error(errorMessage);
     } finally {
         setIsLoading(false);
     }

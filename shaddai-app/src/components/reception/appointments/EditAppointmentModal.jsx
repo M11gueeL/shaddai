@@ -17,8 +17,12 @@ import PatientSearch from './PatientSearch';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
+import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 
 const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => {
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [formData, setFormData] = useState({
     patient_id: '',
     doctor_id: '',
@@ -209,15 +213,14 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
     try {
       const token = localStorage.getItem('token');
       const response = await appointmentsAPI.update(appointment.id, formData, token);
-      
-      alert('Cita actualizada exitosamente');
+      toast.success('Cita actualizada exitosamente');
       onUpdate?.(response.data); // Callback para actualizar la lista
       onClose();
       
     } catch (error) {
       console.error('Error updating appointment:', error);
       const errorMessage = error.response?.data?.error || 'Error al actualizar la cita';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -236,11 +239,11 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
       }, token);
       
       setFormData(prev => ({ ...prev, status: newStatus }));
-      alert(`Estado cambiado a ${newStatus} exitosamente`);
+      toast.success(`Estado cambiado a ${newStatus} exitosamente`);
       
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error al cambiar el estado');
+      toast.error('Error al cambiar el estado');
     } finally {
       setIsLoading(false);
     }
@@ -248,20 +251,26 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
 
   // Eliminar cita
   const handleDelete = async () => {
-    const confirmed = confirm('¿Estás seguro de que quieres eliminar esta cita? Esta acción no se puede deshacer.');
+    const confirmed = await confirm({
+      title: 'Eliminar cita',
+      message: '¿Estás seguro de que quieres eliminar esta cita? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      tone: 'danger',
+    });
     if (!confirmed) return;
 
     setIsDeleting(true);
     try {
       const token = localStorage.getItem('token');
       await appointmentsAPI.delete(appointment.id, token);
-      alert('Cita eliminada exitosamente');
+      toast.success('Cita eliminada exitosamente');
       onDeleted?.(appointment.id);
       onClose();
     } catch (error) {
       console.error('Error deleting appointment:', error);
       const msg = error.response?.data?.error || 'Error al eliminar la cita';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setIsDeleting(false);
     }
