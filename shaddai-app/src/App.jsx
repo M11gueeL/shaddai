@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./layouts/Layout";
 import PublicRoute from "./routes/PublicRoute";
-import RoleProtectedRoute from "./routes/RoleProtectedRoute"; // Nuevo componente
+import RoleProtectedRoute from "./routes/RoleProtectedRoute"; 
 import Login from "./components/auth/Login";
 import Dashboard from "./components/dashboard/Dashboard";
 import ControlPanel from "./components/controlPanel/ControlPanel";
@@ -16,6 +16,8 @@ import UserPanel from "./components/controlPanel/users/UserPanel";
 import ProfilePanel from "./components/controlPanel/users/ProfilePanel";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 
 export default function App() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
         <Routes>
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
           </Route>
 
           <Route element={<ProtectedRoute />}>
@@ -86,7 +90,9 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        
         </Routes>
       </BrowserRouter>
     </AuthProvider>

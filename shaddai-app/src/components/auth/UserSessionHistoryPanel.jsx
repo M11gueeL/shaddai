@@ -1,4 +1,3 @@
-// src/users/UserSessionHistoryPanel.jsx
 import React from "react";
 
 export default function UserSessionHistoryPanel({ sessions }) {

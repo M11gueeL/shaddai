@@ -1,37 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { resetPassword } from "../../api/authApi"; // Importamos la nueva función
 
-export default function Login() {
-  const { login, loading } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "" });
+export default function ResetPassword() {
+  const { token } = useParams(); // Obtenemos el token de la URL
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const displayDuration = 3000;
   const fadeDuration = 500;
 
+  // Efecto para el error
   useEffect(() => {
     if (!error) return;
-
-    // Timer para iniciar fade
-    const fadeTimer = setTimeout(() => {
-      setFadeOut(true);
-    }, displayDuration - fadeDuration);
-
-    // Timer para limpiar error
-    const clearTimer = setTimeout(() => {
-      setError(null);
-      setFadeOut(false);
-    }, displayDuration);
-
-    return () => {
-      clearTimeout(fadeTimer);
-      clearTimeout(clearTimer);
-    };
+    const fadeTimer = setTimeout(() => setFadeOut(true), displayDuration - fadeDuration);
+    const clearTimer = setTimeout(() => { setError(null); setFadeOut(false); }, displayDuration);
+    return () => { clearTimeout(fadeTimer); clearTimeout(clearTimer); };
   }, [error]);
 
   const handleChange = (e) =>
@@ -40,12 +30,32 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    const result = await login(form);
-    if (result.success) {
-      const from = location.state?.from?.pathname || "/dashboard";
-      navigate(from, { replace: true });
-    } else {
-      setError(result.message);
+    setMessage(null);
+
+    // Validación de frontend
+    if (form.password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError("Las contraseñas no coinciden.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await resetPassword(token, form.password);
+      setMessage(response.data.message + ". Serás redirigido...");
+
+      // Redirigimos al Login después del éxito
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 3000);
+
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Error al restablecer la contraseña.";
+      setError(errorMsg);
+      setLoading(false); // Solo paramos de cargar en error
     }
   };
 
@@ -54,40 +64,22 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="mx-auto w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+            {/* Icono de Llave */}
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H5v-2H3v-2H1v-4a6 6 0 016-6h1V7a2 2 0 012-2h1V3a2 2 0 012 2v1z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">Bienvenido de vuelta</h1>
-          <p className="text-gray-600 mt-2">Por favor ingresa tus credenciales</p>
+          <h1 className="text-3xl font-bold text-gray-800">Crear Nueva Contraseña</h1>
+          <p className="text-gray-600 mt-2">Por favor ingresa tu nueva contraseña</p>
         </div>
         
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="tu@email.com"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                    onChange={handleChange}
-                    value={form.email}
-                    required
-                  />
-                </div>
-              </div>
               
+              {/* Campo Nueva Contraseña */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -98,17 +90,20 @@ export default function Login() {
                     type={showPassword ? "text" : "password"}
                     id="password"
                     name="password"
-                    placeholder="••••••••"
+                    placeholder="Mínimo 8 caracteres"
                     className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                     onChange={handleChange}
                     value={form.password}
                     required
+                    disabled={loading || message}
                   />
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading || message}
                   >
+                    {/* Lógica de Show/Hide copiada de tu Login */}
                     {showPassword ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -123,29 +118,30 @@ export default function Login() {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center"> 
+              {/* Campo Confirmar Contraseña */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
                   <input
-                    id="remember-me"
-                    name="remember-me"
-                    type="checkbox"
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    type={showPassword ? "text" : "password"}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    placeholder="Repite la contraseña"
+                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                    onChange={handleChange}
+                    value={form.confirmPassword}
+                    required
+                    disabled={loading || message}
                   />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                    Recordarme
-                  </label>
                 </div>
-
-                {/* --- ESTA ES LA LÍNEA MODIFICADA --- */}
-                <div className="text-sm">
-                  <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500 transition">
-                    ¿Olvidaste tu contraseña?
-                  </Link>
-                </div>
-                {/* --- FIN DE LÍNEA MODIFICADA --- */}
-
               </div>
-              
+
+              {/* Mensaje de Error (Rojo) */}
               {error && (
                   <div
                     className={`
@@ -158,11 +154,23 @@ export default function Login() {
                   </div>
               )}
 
+              {/* Mensaje de Éxito (Verde) */}
+              {message && (
+                  <div
+                    className={`
+                      bg-green-50 border border-green-200 rounded-lg p-4
+                      transition-opacity duration-500
+                    `}
+                  >
+                    <p className="text-sm text-green-700">{message}</p>
+                  </div>
+              )}
+
               <div>
                 <button
-                  disabled={loading}
+                  disabled={loading || message}
                   className={`w-full py-3.5 px-4 rounded-xl text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 ${
-                    loading 
+                    loading || message
                       ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed" 
                       : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
                   }`}
@@ -170,18 +178,15 @@ export default function Login() {
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Ingresando...
+                      {/* ... SVG de carga ... */}
+                      Actualizando...
                     </span>
                   ) : (
                     <span className="flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      Iniciar Sesión
+                      Guardar Contraseña
                     </span>
                   )}
                 </button>
@@ -190,12 +195,9 @@ export default function Login() {
           </div>
           
           <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-500">
-              © 2025 Centro de Especialidades Médicas Shaddai Rafa. 
-            </p>
-            <p className="text-xs text-gray-500">
-              Todos los derechos reservados.
-            </p>
+             <Link to="/login" className="text-xs text-indigo-600 hover:text-indigo-500 transition font-medium">
+                Volver a Iniciar Sesión
+             </Link>
           </div>
         </div>
       </div>

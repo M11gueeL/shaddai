@@ -148,8 +148,6 @@ class AuthController {
     public function requestPasswordReset() {
         $data = json_decode(file_get_contents("php://input"));
 
-        $genericResponse = ['message' => 'Si el correo está registrado, recibirás instrucciones.'];
-
         if (empty($data->email) || !filter_var($data->email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
             echo json_encode(['error' => 'Email inválido.']);
@@ -158,16 +156,21 @@ class AuthController {
 
         $user = $this->model->findUserByEmailAnyStatus($data->email);
 
-        // Si no existe, o si existe PERO está inactivo, no hacemos nada.
-        // Solo enviamos el correo si el usuario existe Y está activo.
-        // Esto previene que usuarios inactivos restablezcan su clave.
-        if (!$user || !$user['active']) {
+        // Si no está registrado
+        if (!$user) {
             http_response_code(200);
-            echo json_encode($genericResponse);
+            echo json_encode(['message' => 'Este correo no está registrado.']);
             return;
         }
 
-        // --- Si el usuario es válido, procedemos ---
+        // Si está registrado pero inactivo
+        if (!$user['active']) {
+            http_response_code(200);
+            echo json_encode(['message' => 'Usuario inactivo. Contacta al administrador.']);
+            return;
+        }
+
+        // --- Si el usuario es válido y activo, procedemos ---
         try {
             $token = bin2hex(random_bytes(32)); // El token que enviamos por email
             $hashed_token = hash('sha256', $token); // El token que guardamos en BD
@@ -209,13 +212,13 @@ class AuthController {
             $mail->send();
 
             http_response_code(200);
-            echo json_encode($genericResponse);
+            echo json_encode(['message' => 'Se ha enviado un correo con instrucciones para restablecer la contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).']);
 
         } catch (Exception $e) {
-            // Si falla el email, loggeamos el error pero enviamos la respuesta genérica
-            error_log("PHPMailer Error: " . $mail->ErrorInfo);
+            // Si falla el email, logueamos el error y devolvemos el mismo mensaje para el usuario
+            error_log("PHPMailer Error: " . ($mail->ErrorInfo ?? $e->getMessage()));
             http_response_code(200);
-            echo json_encode($genericResponse);
+            echo json_encode(['message' => 'Se ha enviado un correo con instrucciones para restablecer la contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).']);
         }
     }
 
