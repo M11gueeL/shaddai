@@ -9,12 +9,13 @@ import {
   FaCashRegister, 
   FaBoxes, 
   FaFileMedical, 
-  FaCog 
+  FaCog,
+  FaSignOutAlt
 } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
-  const { hasRole } = useAuth();
+  const { hasRole, logout } = useAuth();
 
   const allMenuItems = [
     { 
@@ -143,11 +144,27 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           </div>
 
           {/* Footer del sidebar */}
-          <div className={`${isOpen ? "p-4" : "p-2"} border-t border-slate-700`}>
+          <div className={`${isOpen ? "p-4" : "p-2"} border-t border-slate-700`}
+          >
+            {/* Info de versión */}
             <div className={`text-center ${!isOpen && "md:hidden"}`}>
               <p className="text-slate-400 text-xs">Versión Beta</p>
               <p className="text-slate-500 text-xs">Shaddai Medical</p>
             </div>
+
+            {/* Botón de cerrar sesión al final */}
+            <button
+              onClick={logout}
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className={`mt-3 w-full flex items-center ${isOpen ? "justify-center gap-2" : "justify-center"} 
+                p-3 rounded-lg border border-red-500 text-red-400 
+                hover:bg-red-600 hover:text-white hover:border-red-600 
+                transition-all duration-200 hover:shadow-lg`}
+            >
+              <FaSignOutAlt className="w-5 h-5" />
+              {isOpen && <span className="text-sm font-medium">Cerrar sesión</span>}
+            </button>
           </div>
         </nav>
       </aside>

@@ -401,6 +401,69 @@ class AppointmentsModel {
         return $availableTimes;
     }
 
+    // requiero de una funcion para obtener todas las citas del dia, sin importar el status, necesitamos entregar datos como: hora, status, tipo de cita, dr y paciente.
+    public function getAppointmentsForToday() {
+        $today = date('Y-m-d');
+        $query = "SELECT 
+            a.id,
+            a.appointment_time,
+            a.status,
+            a.appointment_type,
+            p.full_name AS patient_name,
+            CONCAT(u.first_name, ' ', u.last_name) AS doctor_name,
+            ms.name AS specialty_name
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        LEFT JOIN medical_specialties ms ON a.specialty_id = ms.id
+        WHERE a.appointment_date = :today
+        ORDER BY a.appointment_time ASC";
+        $params = [':today' => $today];
+        return $this->db->query($query, $params);
+    }
+
+    /**
+     * Obtener estadísticas generales para el panel de recepción:
+     * - Total de pacientes registrados
+     * - Total de citas registradas (todas)
+     * - Total de citas del día de hoy (todas, sin importar estado)
+     * - Total de citas confirmadas (en general)
+     * - Total de citas canceladas (en general)
+     */
+    public function getStatistics() {
+        $today = date('Y-m-d');
+
+        // Conteo de pacientes
+        $patients = $this->db->query("SELECT COUNT(*) AS c FROM patients");
+
+        // Conteo total de citas
+        $appointments = $this->db->query("SELECT COUNT(*) AS c FROM appointments");
+
+        // Conteo de citas para hoy (todas sin importar estado)
+        $todayAppointments = $this->db->query(
+            "SELECT COUNT(*) AS c FROM appointments WHERE appointment_date = :today",
+            [':today' => $today]
+        );
+
+        // Conteo de citas confirmadas (general)
+        $confirmed = $this->db->query(
+            "SELECT COUNT(*) AS c FROM appointments WHERE status = 'confirmada'"
+        );
+
+        // Conteo de citas canceladas (general)
+        $canceled = $this->db->query(
+            "SELECT COUNT(*) AS c FROM appointments WHERE status = 'cancelada'"
+        );
+
+        return [
+            'total_patients'     => (int)($patients[0]['c'] ?? 0),
+            'total_appointments'         => (int)($appointments[0]['c'] ?? 0),
+            'today_appointments'           => (int)($todayAppointments[0]['c'] ?? 0),
+            'confirmed_appointments'   => (int)($confirmed[0]['c'] ?? 0),
+            'canceled_appointments'    => (int)($canceled[0]['c'] ?? 0),
+        ];
+    }
+
     public function deleteAppointment($id) {
         $query = "DELETE FROM appointments WHERE id = :id";
         $params = [':id' => $id];

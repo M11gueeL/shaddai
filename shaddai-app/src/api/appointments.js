@@ -52,4 +52,10 @@ export default {
   
   // Validar slot específico
   validateSlot: (slotData, token) => axios.post(`${API_URL}/appointments/validate-slot`, slotData, getAuthHeaders(token))
+  ,
+  // Obtener citas de hoy
+  getToday: (token) => axios.get(`${API_URL}/appointments/today`, getAuthHeaders(token)),
+
+  // Obtener estadísticas de citas/pacientes
+  getStats: (token) => axios.get(`${API_URL}/appointments/stats`, getAuthHeaders(token))
 };

@@ -9,14 +9,17 @@ class AppointmentsRoutes {
         
         $controller = new AppointmentsController();
 
-        // Rutas básicas CRUD
+        
+        $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'appointments/stats', [$controller, 'getStatistics'], ['auth', 'role:admin,recepcionista']);
+
         $router->add('GET', 'appointments', [$controller, 'getAllAppointments'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/{id}', [$controller, 'getAppointment'], ['auth', 'role:admin,recepcionista']);
         $router->add('POST', 'appointments', [$controller, 'createAppointment'], ['auth', 'role:admin,recepcionista']);
         $router->add('PUT', 'appointments/{id}', [$controller, 'updateAppointment'], ['auth', 'role:admin,recepcionista']);
         $router->add('DELETE', 'appointments/{id}', [$controller, 'deleteAppointment'], ['auth', 'role:admin']);
 
-        // Rutas especializadas
+      
         $router->add('GET', 'appointments/date/{date}', [$controller, 'getAppointmentsByDate'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/doctor/{doctorId}', [$controller, 'getAppointmentsByDoctor'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/patient/{patientId}', [$controller, 'getAppointmentsByPatient'], ['auth', 'role:admin,recepcionista']);
@@ -25,6 +28,7 @@ class AppointmentsRoutes {
 
         $router->add('GET', 'appointments/availability', [$controller, 'checkAvailability'], ['auth', 'role:admin,recepcionista']);
         $router->add('POST', 'appointments/validate-slot', [$controller, 'validateSlot'], ['auth', 'role:admin,recepcionista']);
-
+        
+        
     }
 }

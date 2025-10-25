@@ -18,7 +18,7 @@ import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
 
-const EditAppointmentModal = ({ appointment, onClose, onUpdate }) => {
+const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => {
   const [formData, setFormData] = useState({
     patient_id: '',
     doctor_id: '',
@@ -40,6 +40,7 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate }) => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [availableSpecialties, setAvailableSpecialties] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'medical', 'status'
 
@@ -245,6 +246,27 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate }) => {
     }
   };
 
+  // Eliminar cita
+  const handleDelete = async () => {
+    const confirmed = confirm('¿Estás seguro de que quieres eliminar esta cita? Esta acción no se puede deshacer.');
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await appointmentsAPI.delete(appointment.id, token);
+      alert('Cita eliminada exitosamente');
+      onDeleted?.(appointment.id);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting appointment:', error);
+      const msg = error.response?.data?.error || 'Error al eliminar la cita';
+      alert(msg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getChangedFields = () => {
     const changes = [];
     Object.keys(formData).forEach(key => {
@@ -268,7 +290,7 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate }) => {
               <Edit3 className="w-6 h-6 text-blue-600" />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Editar Cita</h2>
-                <p className="text-gray-600">ID: #{appointment.id} | {appointment.patient_name}</p>
+                <p className="text-gray-600">{appointment.patient_name}</p>
               </div>
               {hasChanges && (
                 <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">
@@ -686,16 +708,21 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate }) => {
               <div className="flex space-x-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (confirm('¿Estás seguro de que quieres eliminar esta cita?')) {
-                      // Implementar eliminación
-                      console.log('Eliminar cita', appointment.id);
-                    }
-                  }}
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Eliminar
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-700 mr-2"></div>
+                      Eliminando...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Eliminar
+                    </>
+                  )}
                 </button>
               </div>
 

@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
   Calendar, 
-  Users, 
   Clock, 
-  Activity, 
   AlertCircle, 
   CheckCircle, 
-  XCircle,
   UserPlus,
   CalendarPlus,
   Search,
@@ -16,9 +13,24 @@ import PatientRegistration from './patients/PatientRegistration';
 import PatientList from './patients/PatientsList';
 import AppointmentForm from './appointments/AppointmentForm';
 import AppointmentsList from './appointments/AppointmentsList';
+import TodayScheduleCard from './appointments/TodayScheduleCard';
+import AppointmentDetailModal from './appointments/AppointmentDetailModal';
+import appointmentsApi from '../../api/appointments';
+import { useAuth } from '../../context/AuthContext';
+import StatsCard from './appointments/StatsCard';
+
+// Estilos base para tarjetas para mantener simetría y consistencia
+const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
 
 export default function ReceptionPanel() {
   const [activeModal, setActiveModal] = useState(null);
+  const { token } = useAuth();
+  const [todayAppointments, setTodayAppointments] = useState([]);
+  const [loadingToday, setLoadingToday] = useState(false);
+  const [todayError, setTodayError] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [showAppointmentDetail, setShowAppointmentDetail] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Efecto para controlar el scroll del body
   useEffect(() => {
@@ -32,6 +44,56 @@ export default function ReceptionPanel() {
       document.body.style.overflow = 'unset';
     };
   }, [activeModal]);
+
+  // Cargar agenda de hoy + auto refresh
+  useEffect(() => {
+    let isMounted = true;
+    let intervalId;
+
+    const fetchToday = async () => {
+      if (!token) return; // requiere autenticación
+      try {
+        if (isMounted) setLoadingToday(true);
+        const res = await appointmentsApi.getToday(token);
+        if (isMounted) {
+          setTodayAppointments(Array.isArray(res.data?.data) ? res.data.data : (res.data || []));
+          setTodayError(null);
+        }
+      } catch (err) {
+        if (isMounted) setTodayError(err.response?.data?.message || 'No se pudo cargar la agenda de hoy');
+      } finally {
+        if (isMounted) setLoadingToday(false);
+      }
+    };
+
+    fetchToday();
+    // refrescar cada 15s
+    intervalId = setInterval(fetchToday, 15000);
+
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [token]);
+
+  const openAppointmentDetail = async (appt) => {
+    if (!appt) return;
+    setLoadingDetail(true);
+    try {
+      let full = appt;
+      if (!appt.patient_name || !appt.doctor_name || !appt.appointment_date) {
+        // Cargar detalles si la respuesta es mínima
+        const res = await appointmentsApi.getById(appt.id || appt.appointment_id, token);
+        full = res.data?.data || res.data;
+      }
+      setSelectedAppointment(full);
+      setShowAppointmentDetail(true);
+    } catch (err) {
+      console.error('Error cargando detalles de la cita', err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   const openModal = (modalName) => {
     setActiveModal(modalName);
@@ -51,19 +113,24 @@ export default function ReceptionPanel() {
           {/* Quick Actions - Left Sidebar */}
           <div className="lg:col-span-3 space-y-6">
             <QuickActionsCard onAction={openModal} />
-            <TodayStatsCard />
+            <StatsCard />
           </div>
 
           {/* Main Content Area */}
           <div className="lg:col-span-6 space-y-6">
-            <TodayScheduleCard />
+            <TodayScheduleCard 
+              items={todayAppointments}
+              loading={loadingToday}
+              error={todayError}
+              onItemClick={openAppointmentDetail}
+              onViewAll={() => setActiveModal('consult')}
+            />
             <RecentActivityCard />
           </div>
 
           {/* Right Sidebar */}
           <div className="lg:col-span-3 space-y-6">
             <NotificationsCard />
-            <SystemStatusCard />
           </div>
         </div>
       </div>
@@ -100,6 +167,17 @@ export default function ReceptionPanel() {
           </div>
         </div>
       )}
+
+      {/* Modal Detalle de Cita */}
+      {showAppointmentDetail && selectedAppointment && (
+        <AppointmentDetailModal 
+          appointment={selectedAppointment}
+          onClose={() => {
+            setShowAppointmentDetail(false);
+            setSelectedAppointment(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -114,7 +192,7 @@ function Header() {
   });
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className={cardBase}>
       <div className="flex flex-col md:flex-row md:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -124,12 +202,6 @@ function Header() {
             <Calendar className="w-4 h-4 mr-2" />
             {currentDate}
           </p>
-        </div>
-        <div className="mt-4 md:mt-0 flex items-center space-x-4">
-          <div className="flex items-center text-green-600">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-            <span className="text-sm font-medium">Sistema Activo</span>
-          </div>
         </div>
       </div>
     </div>
@@ -170,7 +242,7 @@ function QuickActionsCard({ onAction }) {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className={cardBase}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
       <div className="space-y-3">
         {actions.map((action) => {
@@ -179,7 +251,7 @@ function QuickActionsCard({ onAction }) {
             <button
               key={action.id}
               onClick={() => onAction(action.id)}
-              className={`w-full ${action.color} text-white p-4 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center group`}
+              className={`w-full ${action.color} text-white p-4 h-14 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center group`}
             >
               <Icon className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
               <div className="text-left flex-1">
@@ -194,126 +266,7 @@ function QuickActionsCard({ onAction }) {
   );
 }
 
-// Today Stats Card
-function TodayStatsCard() {
-  const stats = [
-    { label: "Citas Hoy", value: "12", icon: Calendar, color: "text-blue-600" },
-    { label: "Pacientes", value: "156", icon: Users, color: "text-green-600" },
-    { label: "Confirmadas", value: "8", icon: CheckCircle, color: "text-emerald-600" },
-    { label: "Pendientes", value: "4", icon: Clock, color: "text-yellow-600" }
-  ];
 
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas</h3>
-      <div className="space-y-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center">
-                <Icon className={`w-5 h-5 ${stat.color} mr-3`} />
-                <span className="text-sm text-gray-700">{stat.label}</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">{stat.value}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Today Schedule Card
-function TodayScheduleCard() {
-  const todayAppointments = [
-    {
-      time: "09:00",
-      patient: "María García",
-      doctor: "Dr. Rodríguez",
-      type: "Control",
-      status: "confirmada"
-    },
-    {
-      time: "09:30",
-      patient: "Juan Pérez",
-      doctor: "Dr. López",
-      type: "Primera vez",
-      status: "programada"
-    },
-    {
-      time: "10:00",
-      patient: "Ana Martínez",
-      doctor: "Dr. Rodríguez",
-      type: "Urgencia",
-      status: "en_progreso"
-    },
-    {
-      time: "10:30",
-      patient: "Carlos Silva",
-      doctor: "Dr. López",
-      type: "Control",
-      status: "programada"
-    },
-    {
-      time: "11:00",
-      patient: "Lucía Fernández",
-      doctor: "Dr. Rodríguez",
-      type: "Primera vez",
-      status: "programada"
-    }
-  ];
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'confirmada': return 'bg-green-100 text-green-800';
-      case 'programada': return 'bg-blue-100 text-blue-800';
-      case 'en_progreso': return 'bg-yellow-100 text-yellow-800';
-      case 'completada': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Agenda de Hoy</h3>
-        <span className="text-sm text-gray-500">23 de octubre, 2025</span>
-      </div>
-
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {todayAppointments.map((appointment, index) => (
-          <div key={index} className="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-            <div className="flex-shrink-0 w-16 text-center">
-              <div className="text-lg font-bold text-gray-900">{appointment.time}</div>
-            </div>
-            
-            <div className="flex-1 ml-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-gray-900">{appointment.patient}</div>
-                  <div className="text-sm text-gray-600">{appointment.doctor}</div>
-                </div>
-                <div className="text-right">
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(appointment.status)}`}>
-                    {appointment.status}
-                  </span>
-                  <div className="text-xs text-gray-500 mt-1">{appointment.type}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <button className="w-full text-center text-blue-600 hover:text-blue-700 font-medium text-sm">
-          Ver agenda completa →
-        </button>
-      </div>
-    </div>
-  );
-}
 
 // Recent Activity Card
 function RecentActivityCard() {
@@ -342,7 +295,7 @@ function RecentActivityCard() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className={cardBase}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
       
       <div className="space-y-4">
@@ -384,7 +337,7 @@ function NotificationsCard() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className={cardBase}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Notificaciones</h3>
       
       <div className="space-y-3">
@@ -407,37 +360,4 @@ function NotificationsCard() {
   );
 }
 
-// System Status Card
-function SystemStatusCard() {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Estado del Sistema</h3>
-      
-      <div className="space-y-3">
-        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-sm text-gray-700">Base de Datos</span>
-          </div>
-          <span className="text-sm font-medium text-green-600">Activo</span>
-        </div>
-        
-        <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-sm text-gray-700">API</span>
-          </div>
-          <span className="text-sm font-medium text-green-600">Activo</span>
-        </div>
-        
-        <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-          <div className="flex items-center">
-            <Activity className="w-4 h-4 text-blue-600 mr-3" />
-            <span className="text-sm text-gray-700">Rendimiento</span>
-          </div>
-          <span className="text-sm font-medium text-blue-600">Óptimo</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+// (Eliminado componente de Estado del Sistema)

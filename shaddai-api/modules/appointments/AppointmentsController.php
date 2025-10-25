@@ -249,8 +249,10 @@ class AppointmentsController {
             throw new Exception('Specialty ID is required');
         }
 
-        // Validar fecha no sea en el pasado
-        if (strtotime($data['appointment_date']) < strtotime(date('Y-m-d'))) {
+        // Validar fecha no sea en el pasado (usando timezone actual del servidor)
+        $today = (new DateTime('now'))->format('Y-m-d');
+        // Permitir el mismo día; solo fechas estrictamente menores se consideran pasado
+        if (!empty($data['appointment_date']) && $data['appointment_date'] < $today) {
             throw new Exception('Cannot schedule appointments in the past');
         }
 
@@ -266,4 +268,52 @@ class AppointmentsController {
             throw new Exception('Invalid appointment status');
         }
     }
+
+    public function getTodaysAppointments() {
+        try {
+            // Obtener la fecha de hoy en formato YYYY-MM-DD
+            $today = (new DateTime('now'))->format('Y-m-d');
+
+            $appointments = $this->model->getAppointmentsByDate($today);
+
+            // Si la consulta falló (por ejemplo retornó false), devolver error 500
+            if ($appointments === false) {
+                http_response_code(500);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['error' => 'Error al obtener las citas']);
+                return;
+            }
+
+            // Si no hay citas para hoy, devolver un mensaje claro
+            if (empty($appointments)) {
+                http_response_code(200);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['message' => 'No hay citas para hoy']);
+                return;
+            }
+
+            // Responder con las citas encontradas
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($appointments);
+        } catch (Exception $e) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function getStatistics() {
+        try {
+            $stats = $this->model->getStatistics();
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($stats);
+        } catch (Exception $e) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
 }

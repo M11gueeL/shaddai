@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import EditAppointmentModal from './EditAppointmentModal';
 
-const AppointmentDetailModal = ({ appointment, onClose }) => {
+const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   
   if (!appointment) return null;
@@ -244,6 +244,12 @@ const AppointmentDetailModal = ({ appointment, onClose }) => {
             setShowEditModal(false);
             onClose(); // Cerrar también el modal de detalles
             window.location.reload(); // Por ahora, recargar la página
+          }}
+          onDeleted={(id) => {
+            // Cerrar ambos modales y notificar al padre
+            setShowEditModal(false);
+            onClose();
+            onDeleted?.(id);
           }}
         />
       )}

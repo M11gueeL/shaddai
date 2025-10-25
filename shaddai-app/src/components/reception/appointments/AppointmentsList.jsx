@@ -145,6 +145,13 @@ const AppointmentsList = ({ onClose }) => {
     setShowDetailModal(true);
   };
 
+  // Eliminar cita de la lista tras borrado en modal
+  const handleAppointmentDeleted = (deletedId) => {
+    setAppointments(prev => prev.filter(a => a.id !== deletedId));
+    setShowDetailModal(false);
+    setSelectedAppointment(null);
+  };
+
   // Paginación
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -310,6 +317,7 @@ const AppointmentsList = ({ onClose }) => {
         <AppointmentDetailModal
           appointment={selectedAppointment}
           onClose={() => setShowDetailModal(false)}
+          onDeleted={handleAppointmentDeleted}
         />
       )}
     </div>
