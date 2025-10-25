@@ -89,8 +89,15 @@ class AuthModel {
         // Si es medico (asumiendo rol id 2)
         $roleIds = array_column($roles, 'id');
         if (in_array(2, $roleIds)) {
+            // Incluir datos del colegio médico (nombre, siglas, estado)
             $user['medical_info'] = $this->db->query(
-                "SELECT * FROM user_medical_info WHERE user_id = :user_id",
+                "SELECT umi.user_id, umi.mpps_code, umi.medical_college_id, umi.college_code,
+                        mc.full_name AS college_full_name,
+                        mc.abbreviation AS college_abbreviation,
+                        mc.state_name AS college_state
+                 FROM user_medical_info umi
+                 LEFT JOIN medical_colleges mc ON mc.id = umi.medical_college_id
+                 WHERE umi.user_id = :user_id",
                 [':user_id' => $userId]
             )[0] ?? null;
 

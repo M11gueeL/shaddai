@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { User, BadgeCheck, Mail, Copy, Shield, IdCard, Phone, Calendar, MapPin } from "lucide-react";
+import { User, BadgeCheck, Mail, Copy, Shield, IdCard, Phone, Calendar, MapPin, Stethoscope, Hash, Award } from "lucide-react";
 
 export default function MyProfile({ profile, sessionId }) {
   if (!profile) return (
@@ -15,6 +15,8 @@ export default function MyProfile({ profile, sessionId }) {
     </div>
   );
   const [copied, setCopied] = useState(null);
+  const rolesNormalized = useMemo(() => Array.isArray(profile.roles) ? profile.roles.map(r => String(r).toLowerCase()) : [], [profile.roles]);
+  const isMedico = useMemo(() => rolesNormalized.some(r => ["medico", "doctor", "doctora"].includes(r)), [rolesNormalized]);
   const initials = useMemo(() => {
     const f = (profile.first_name || '').trim();
     const l = (profile.last_name || '').trim();
@@ -129,30 +131,13 @@ export default function MyProfile({ profile, sessionId }) {
             </ProfileSection>
           </div>
 
-          {profile.medical_info && (
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Información Médica</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <InfoItem label="Código MPPS" value={profile.medical_info.mpps_code} />
-                <InfoItem label="Código Colegio Médico" value={profile.medical_info.college_code} />
-              </div>
-              
-              {profile.specialties?.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="font-semibold text-gray-700 mb-3">Especialidades</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.specialties.map((s) => (
-                      <span 
-                        key={s.id} 
-                        className="bg-purple-100 text-purple-800 py-1 px-3 rounded-full text-sm"
-                      >
-                        {s.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+          {(isMedico || profile.medical_info || (profile.specialties?.length > 0)) && (
+            <MedicalSection 
+              medicalInfo={profile.medical_info}
+              specialties={profile.specialties}
+              onCopy={handleCopy}
+              copied={copied}
+            />
           )}
         </div>
       </div>
@@ -162,14 +147,14 @@ export default function MyProfile({ profile, sessionId }) {
 
 // Componentes auxiliares actualizados
 const ProfileSection = ({ title, icon: Icon, children }) => (
-  <div className="rounded-2xl border border-gray-200/80 bg-white/70 backdrop-blur p-5 shadow-sm">
+  <div className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-5 sm:p-6 shadow-sm">
     <div className="flex items-center gap-3 mb-4">
       {Icon && (
-        <div className="w-9 h-9 rounded-full border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600 flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5" />
+        <div className="w-9 h-9 rounded-full border border-indigo-100 bg-white text-indigo-600 flex items-center justify-center">
+          <Icon className="w-5 h-5" />
         </div>
       )}
-      <h2 className="text-base font-semibold text-gray-800 tracking-tight">{title}</h2>
+      <h2 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {children}
@@ -181,9 +166,9 @@ const ProfileSection = ({ title, icon: Icon, children }) => (
 const InfoItem = ({ label, value, icon: Icon, copy = false, copyKey, onCopy, copied }) => {
   const hasValue = Boolean(value);
   return (
-    <div className="group relative flex items-start gap-3 p-3 rounded-xl border border-gray-200 bg-white hover:shadow-sm transition">
+    <div className="group relative flex items-start gap-3 p-3 rounded-xl border border-indigo-100 bg-white/80 backdrop-blur hover:border-indigo-200 hover:shadow-sm transition">
       {Icon && (
-        <div className="mt-0.5 shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+        <div className="mt-0.5 shrink-0 w-9 h-9 rounded-full bg-white text-indigo-600 flex items-center justify-center border border-indigo-200">
           <Icon className="w-4.5 h-4.5" />
         </div>
       )}
@@ -197,7 +182,7 @@ const InfoItem = ({ label, value, icon: Icon, copy = false, copyKey, onCopy, cop
         <button
           type="button"
           onClick={() => onCopy(value, copyKey)}
-          className="absolute right-2 top-2 inline-flex items-center justify-center p-1.5 rounded-md border border-gray-200 bg-white text-gray-400 hover:text-indigo-600 hover:border-indigo-200 opacity-0 group-hover:opacity-100 transition"
+          className="absolute right-2 top-2 inline-flex items-center justify-center p-1.5 rounded-md border border-indigo-100 bg-white text-indigo-400 hover:text-indigo-600 hover:border-indigo-200 opacity-0 group-hover:opacity-100 transition"
           title={`Copiar ${label.toLowerCase()}`}
         >
           <Copy className={`w-3.5 h-3.5 ${copied === copyKey ? 'text-green-600' : ''}`} />
@@ -209,8 +194,107 @@ const InfoItem = ({ label, value, icon: Icon, copy = false, copyKey, onCopy, cop
 
 // Small summary pill card
 const SummaryCard = ({ label, value, clip }) => (
-  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-    <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">{label}</div>
+  <div className="bg-white/85 backdrop-blur border border-indigo-100 rounded-xl p-4 shadow-sm">
+    <div className="text-xs uppercase tracking-wide text-gray-600 mb-1">{label}</div>
     <div className={`text-sm font-semibold text-gray-900 ${clip ? 'truncate' : ''}`}>{value || '—'}</div>
   </div>
+);
+
+// Sección de información médica con diseño mejorado para médicos
+const MedicalSection = ({ medicalInfo, specialties = [], onCopy, copied }) => {
+  const hasMPPS = Boolean(medicalInfo?.mpps_code);
+  const hasCollege = Boolean(medicalInfo?.college_code);
+  const hasSpecialties = Array.isArray(specialties) && specialties.length > 0;
+  const collegeName = medicalInfo?.college_full_name
+    ? `${medicalInfo.college_full_name}${medicalInfo.college_abbreviation ? ` (${medicalInfo.college_abbreviation})` : ''}`
+    : '—';
+
+  return (
+    <div className="mt-8">
+      <div className="rounded-2xl border border-sky-100/70 bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50 p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-white text-indigo-600 border border-indigo-100 flex items-center justify-center shadow-sm">
+            <Stethoscope className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900">Información Médica</h3>
+            <p className="text-sm text-gray-600">Datos de colegiatura y especialidades</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CodeCard
+            icon={Hash}
+            label="Código MPPS"
+            value={hasMPPS ? medicalInfo.mpps_code : '—'}
+            copyKey="mpps_code"
+            onCopy={onCopy}
+            copied={copied}
+          />
+          <CodeCard
+            icon={Award}
+            label="Código Colegio Médico"
+            value={hasCollege ? medicalInfo.college_code : '—'}
+            copyKey="college_code"
+            onCopy={onCopy}
+            copied={copied}
+          />
+          <CodeCard
+            label="Colegio Médico"
+            value={hasCollege ? collegeName : '—'}
+            containerClass="md:col-span-2"
+          />
+        </div>
+
+        <div className="mt-6">
+          <h4 className="font-semibold text-gray-800 mb-3">Especialidades</h4>
+          {hasSpecialties ? (
+            <div className="flex flex-wrap gap-2.5">
+              {specialties.map((s, i) => {
+                const name = typeof s === 'string' ? s : (s?.name || '—');
+                const key = (s && typeof s === 'object' && s.id) ? s.id : `${name}-${i}`;
+                return <SpecialtyChip key={key} name={name} />;
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">Sin especialidades registradas.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CodeCard = ({ icon: Icon, label, value, onCopy, copyKey, copied, containerClass = "" }) => {
+  const hasValue = value && value !== '—';
+  return (
+    <div className={`relative flex items-center gap-3 rounded-xl bg-white/80 backdrop-blur border border-indigo-100 p-4 shadow-sm ${containerClass}`}>
+      <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
+        {Icon ? <Icon className="w-4.5 h-4.5" /> : <IdCard className="w-4.5 h-4.5" />}
+      </div>
+      <div className="min-w-0">
+        <div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
+        <div className="text-base font-semibold text-indigo-700 truncate" title={String(value)}>
+          {value}
+        </div>
+      </div>
+      {hasValue && (
+        <button
+          type="button"
+          onClick={() => onCopy?.(value, copyKey)}
+          className="ml-auto inline-flex items-center justify-center p-1.5 rounded-md border border-indigo-100 bg-white text-indigo-500 hover:text-indigo-700 hover:border-indigo-200 transition"
+          title={`Copiar ${label.toLowerCase()}`}
+        >
+          <Copy className={`w-3.5 h-3.5 ${copied === copyKey ? 'text-green-600' : ''}`} />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const SpecialtyChip = ({ name }) => (
+  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-purple-50 to-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
+    <Stethoscope className="w-3.5 h-3.5 text-indigo-500" />
+    {name}
+  </span>
 );
