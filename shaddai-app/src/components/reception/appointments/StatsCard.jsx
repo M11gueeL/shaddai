@@ -82,7 +82,7 @@ export default function StatsCard() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Estadísticas</h3>
         {loading && (
@@ -96,7 +96,7 @@ export default function StatsCard() {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-4 flex-1 overflow-y-auto pr-1">
         {items.map((stat) => {
           const Icon = stat.icon;
           return (

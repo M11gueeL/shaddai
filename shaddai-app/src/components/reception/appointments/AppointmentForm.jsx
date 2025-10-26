@@ -1,11 +1,13 @@
 // src/components/reception/appointments/AppointmentForm.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, User, Stethoscope, FileText, AlertCircle, X } from 'lucide-react';
 import PatientSearch from './PatientSearch';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
+import schedulesAPI from '../../../api/medicalSchedules';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 import TimePicker from './TimePicker';
 
 const AppointmentForm = ({ onClose }) => {
@@ -30,6 +32,8 @@ const AppointmentForm = ({ onClose }) => {
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [availableSpecialties, setAvailableSpecialties] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOutsidePreferred, setIsOutsidePreferred] = useState(false);
+  const { confirm } = useConfirm();
 
   // Obtener token del localStorage
   const getToken = () => localStorage.getItem('token');
@@ -123,6 +127,64 @@ const AppointmentForm = ({ onClose }) => {
     }
   };
 
+  // Utilidad: convertir HH:MM a minutos
+  const toMinutes = (hhmm) => {
+    if (!hhmm || typeof hhmm !== 'string') return null;
+    const [h, m] = hhmm.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+
+  // Utilidad: día de la semana API (1=Lunes ... 7=Domingo)
+  const apiDayOfWeek = (dateStr) => {
+    if (!dateStr) return null;
+    const js = new Date(dateStr).getDay(); // 0=Domingo..6=Sábado
+    return ((js + 6) % 7) + 1; // -> 1..7 (Lunes..Domingo)
+  };
+
+  // Checar si la cita está fuera de los horarios preferidos del médico
+  const checkOutsidePreferred = async () => {
+    try {
+      const token = getToken();
+      if (!token || !formData.doctor_id || !formData.appointment_date || !formData.appointment_time) {
+        setIsOutsidePreferred(false);
+        return false;
+      }
+
+      const res = await schedulesAPI.list(token, { doctorId: formData.doctor_id });
+      const schedules = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      if (!schedules.length) {
+        setIsOutsidePreferred(true);
+        return true;
+      }
+
+      const dow = apiDayOfWeek(formData.appointment_date);
+      const startMin = toMinutes(formData.appointment_time);
+      const endMin = startMin != null ? startMin + Number(formData.duration || 30) : null;
+
+      const daySchedules = schedules.filter(s => Number(s.day_of_week) === Number(dow));
+      if (!daySchedules.length) {
+        setIsOutsidePreferred(true);
+        return true;
+      }
+
+      // Debe caber completamente dentro de algún bloque
+      const fits = daySchedules.some(s => {
+        const sStart = toMinutes((s.start_time || '').slice(0,5));
+        const sEnd = toMinutes((s.end_time || '').slice(0,5));
+        if (sStart == null || sEnd == null || startMin == null || endMin == null) return false;
+        return sStart <= startMin && endMin <= sEnd;
+      });
+
+      setIsOutsidePreferred(!fits);
+      return !fits;
+    } catch (e) {
+      // Si falla la verificación, no bloqueamos; solo no marcamos advertencia
+      setIsOutsidePreferred(false);
+      return false;
+    }
+  };
+
   // Enviar formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -142,7 +204,22 @@ const AppointmentForm = ({ onClose }) => {
         };
         
         console.log('Data being sent:', dataToSend); // 👈 DEBUG
-        
+        // Verificar contra horarios preferidos del médico
+        const outside = await checkOutsidePreferred();
+        if (outside) {
+          const ok = await confirm({
+            title: 'Fuera del horario preferido',
+            message: 'Estás agendando una cita fuera del horario preferido del médico. ¿Deseas continuar de todas formas?',
+            confirmText: 'Sí, continuar',
+            cancelText: 'No, volver',
+            tone: 'warning',
+          });
+          if (!ok) {
+            setIsLoading(false);
+            return;
+          }
+        }
+
     const response = await appointmentsAPI.create(dataToSend, token);
     toast.success('Cita agendada exitosamente');
         onClose(); // Cerrar modal
@@ -157,6 +234,20 @@ const AppointmentForm = ({ onClose }) => {
         setIsLoading(false);
     }
     };
+
+  // Indicador visual rápido (opcional) cuando ya hay selección
+  useEffect(() => {
+    // No bloquear: solo ajustar la banderita; evitamos llamadas si falta info
+    const run = async () => {
+      if (!formData.doctor_id || !formData.appointment_date || !formData.appointment_time) {
+        setIsOutsidePreferred(false);
+        return;
+      }
+      await checkOutsidePreferred();
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.doctor_id, formData.appointment_date, formData.appointment_time, formData.duration]);
 
   return (
     <div className="p-6">
@@ -295,6 +386,12 @@ const AppointmentForm = ({ onClose }) => {
                 <p className="text-red-500 text-sm flex items-center">
                   <AlertCircle className="w-4 h-4 mr-1" />
                   {errors.appointment_time}
+                </p>
+              )}
+              {!errors.appointment_time && isOutsidePreferred && (
+                <p className="text-amber-600 text-sm flex items-center mt-1">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  Esta hora está fuera del horario preferido del médico
                 </p>
               )}
             </div>

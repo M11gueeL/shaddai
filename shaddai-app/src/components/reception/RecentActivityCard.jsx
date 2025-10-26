@@ -144,9 +144,11 @@ export default function RecentActivityCard() {
   }, [items, loading, error]);
 
   return (
-    <div className={cardBase}>
+    <div className={`${cardBase} h-full flex flex-col`}>
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
-      {content}
+      <div className="flex-1 overflow-y-auto pr-1">
+        {content}
+      </div>
     </div>
   );
 }

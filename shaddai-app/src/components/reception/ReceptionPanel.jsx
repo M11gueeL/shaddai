@@ -11,6 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 import StatsCard from './appointments/StatsCard';
 import RecentActivityCard from './RecentActivityCard';
 import QuickActionsCard from './QuickActionsCard';
+import MedicalSchedulesPanel from './medicalSchedules/MedicalSchedulesPanel';
+import ReportsActions from './reports/ReportsActions';
 
 // Estilos base para tarjetas para mantener simetría y consistencia
 const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
@@ -108,16 +110,13 @@ export default function ReceptionPanel() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         <Header />
-        
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 ">
-          {/* Quick Actions - Left Sidebar */}
-          <div className="lg:col-span-3 space-y-6">
-            <QuickActionsCard onAction={openModal} />
-          </div>
 
-          {/* Main Content Area */}
-          <div className="lg:col-span-6 space-y-6">
+        {/* Quick Actions as horizontal bar */}
+        <QuickActionsCard onAction={openModal} horizontal />
+
+        {/* Two-column content: today schedule and recent activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="lg:col-span-7 h-full">
             <TodayScheduleCard 
               items={todayAppointments}
               loading={loadingToday}
@@ -125,12 +124,19 @@ export default function ReceptionPanel() {
               onItemClick={openAppointmentDetail}
               onViewAll={() => setActiveModal('consult')}
             />
+          </div>
+          <div className="lg:col-span-5 h-full">
             <RecentActivityCard />
           </div>
+        </div>
 
-          {/* Right Sidebar */}
-          <div className="lg:col-span-3 space-y-6">
+        {/* Footer-like section: stats (left) + reports actions (right) */}
+        <div className="pt-2 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="lg:col-span-6 h-full">
             <StatsCard />
+          </div>
+          <div className="lg:col-span-6 h-full">
+            <ReportsActions />
           </div>
         </div>
       </div>
@@ -164,6 +170,14 @@ export default function ReceptionPanel() {
         <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
             <AppointmentsList onClose={closeModal} />
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'medicalSchedules' && (
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
+            <MedicalSchedulesPanel onClose={closeModal} />
           </div>
         </div>
       )}
@@ -207,5 +221,3 @@ function Header() {
     </div>
   );
 }
-
-// (Eliminado componente de Notificaciones)

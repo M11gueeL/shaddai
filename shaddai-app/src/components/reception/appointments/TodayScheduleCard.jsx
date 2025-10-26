@@ -12,7 +12,7 @@ export default function TodayScheduleCard({ items = [], loading, error, onItemCl
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Agenda de Hoy</h3>
         <span className="text-sm text-gray-500">
@@ -20,7 +20,7 @@ export default function TodayScheduleCard({ items = [], loading, error, onItemCl
         </span>
       </div>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto">
+  <div className="space-y-3 flex-1 overflow-y-auto pr-1">
         {loading && (
           <div className="text-sm text-gray-500 p-4">Cargando agenda…</div>
         )}

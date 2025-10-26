@@ -1,9 +1,9 @@
-import { UserPlus, CalendarPlus, Search, FileText } from 'lucide-react';
+import { UserPlus, CalendarPlus, Search, FileText, Clock } from 'lucide-react';
 
 // Estilos base para tarjetas para mantener simetría y consistencia
 const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
 
-export default function QuickActionsCard({ onAction }) {
+export default function QuickActionsCard({ onAction, horizontal = false }) {
   const actions = [
     {
       id: 'register',
@@ -33,7 +33,41 @@ export default function QuickActionsCard({ onAction }) {
       color: 'bg-orange-500 hover:bg-orange-600',
       description: 'Ver agenda',
     },
+    {
+      id: 'medicalSchedules',
+      title: 'Horarios Médicos',
+      icon: Clock,
+      color: 'bg-teal-600 hover:bg-teal-700',
+      description: 'Gestionar horarios',
+    },
   ];
+
+  if (horizontal) {
+    return (
+      <div className={cardBase}>
+        <div className="flex items-center justify-center mb-3">
+          <h3 className="text-lg font-semibold text-gray-900 pb-2">Acciones Rápidas</h3>
+        </div>
+        <div className="-mx-2 px-2">
+          <div className="flex gap-3 flex-wrap justify-center">
+            {actions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.id}
+                  onClick={() => onAction(action.id)}
+                  className={`flex items-center gap-2 ${action.color} text-white px-4 py-3 rounded-xl whitespace-nowrap hover:shadow-lg transition-all`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="font-medium">{action.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cardBase}>
