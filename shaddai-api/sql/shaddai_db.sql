@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-10-2025 a las 19:48:33
+-- Tiempo de generación: 26-10-2025 a las 20:54:45
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -133,6 +133,42 @@ INSERT INTO `appointment_status_history` (`id`, `appointment_id`, `previous_stat
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `clinical_encounters`
+--
+
+CREATE TABLE `clinical_encounters` (
+  `id` int(11) NOT NULL,
+  `medical_record_id` int(11) NOT NULL,
+  `appointment_id` int(11) DEFAULT NULL COMMENT 'FK a la cita si este encuentro proviene de una',
+  `doctor_id` int(11) NOT NULL COMMENT 'FK a users (médico que atiende)',
+  `specialty_id` int(11) NOT NULL COMMENT 'Especialidad bajo la cual se realiza la consulta',
+  `encounter_date` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha y hora de la consulta/encuentro',
+  `encounter_type` varchar(50) DEFAULT 'Consulta' COMMENT 'Tipo: Consulta, Emergencia, Seguimiento, Interconsulta, etc.',
+  `chief_complaint` text DEFAULT NULL COMMENT 'Motivo principal de la consulta (reportado por el paciente)',
+  `present_illness` text DEFAULT NULL COMMENT 'Enfermedad actual o descripción del problema',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Registro de cada consulta o encuentro clínico';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `diagnoses`
+--
+
+CREATE TABLE `diagnoses` (
+  `id` int(11) NOT NULL,
+  `encounter_id` int(11) NOT NULL,
+  `diagnosis_code` varchar(20) DEFAULT NULL COMMENT 'Código (ej. ICD-10, CIE-10)',
+  `diagnosis_description` varchar(255) NOT NULL COMMENT 'Descripción del diagnóstico',
+  `diagnosis_type` enum('principal','secundario','presuntivo','definitivo') DEFAULT 'principal',
+  `notes` text DEFAULT NULL,
+  `recorded_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Diagnósticos realizados en una consulta';
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `medical_colleges`
 --
 
@@ -176,6 +212,22 @@ INSERT INTO `medical_colleges` (`id`, `state_name`, `full_name`, `abbreviation`)
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `medical_history`
+--
+
+CREATE TABLE `medical_history` (
+  `id` int(11) NOT NULL,
+  `medical_record_id` int(11) NOT NULL,
+  `history_type` enum('personal_pathological','personal_non_pathological','family','gynecological','surgical','allergies','medications','habits','vaccinations','other') NOT NULL COMMENT 'Tipo de antecedente',
+  `description` text NOT NULL COMMENT 'Descripción detallada del antecedente',
+  `recorded_at` date DEFAULT NULL COMMENT 'Fecha opcional del registro o evento',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Antecedentes médicos del paciente';
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `medical_preferred_schedules`
 --
 
@@ -197,6 +249,40 @@ CREATE TABLE `medical_preferred_schedules` (
 INSERT INTO `medical_preferred_schedules` (`id`, `medical_id`, `day_of_week`, `start_time`, `end_time`, `notes`, `created_at`, `updated_at`) VALUES
 (1, 11, 1, '14:00:00', '18:00:00', 'Consultas generales', '2025-10-26 00:55:33', '2025-10-26 00:55:33'),
 (2, 11, 2, '10:30:00', '18:50:00', 'Consultas generales', '2025-10-26 00:55:53', '2025-10-26 01:31:02');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `medical_records`
+--
+
+CREATE TABLE `medical_records` (
+  `id` int(11) NOT NULL,
+  `patient_id` int(11) NOT NULL,
+  `record_number` varchar(50) DEFAULT NULL COMMENT 'Número único de historia, si aplica',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Contenedor principal de la historia clínica';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `medical_reports`
+--
+
+CREATE TABLE `medical_reports` (
+  `id` int(11) NOT NULL,
+  `medical_record_id` int(11) NOT NULL COMMENT 'FK a la historia clínica del paciente',
+  `encounter_id` int(11) DEFAULT NULL COMMENT 'FK al encuentro clínico específico (opcional)',
+  `doctor_id` int(11) NOT NULL COMMENT 'FK a users (médico que elabora el informe)',
+  `report_date` date NOT NULL COMMENT 'Fecha de creación del informe',
+  `report_type` varchar(100) DEFAULT NULL COMMENT 'Tipo/Propósito: Referencia, Seguro, Legal, Justificativo, Resumen',
+  `recipient` varchar(255) DEFAULT NULL COMMENT 'A quién va dirigido (opcional)',
+  `content` longtext NOT NULL COMMENT 'El texto completo del informe médico',
+  `status` enum('draft','finalized','signed') NOT NULL DEFAULT 'draft' COMMENT 'Estado del informe',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Almacena los informes médicos generados';
 
 -- --------------------------------------------------------
 
@@ -349,6 +435,62 @@ INSERT INTO `patients` (`id`, `full_name`, `cedula`, `birth_date`, `gender`, `ma
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `physical_exams`
+--
+
+CREATE TABLE `physical_exams` (
+  `id` int(11) NOT NULL,
+  `encounter_id` int(11) NOT NULL,
+  `exam_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `vitals_summary` varchar(255) DEFAULT NULL COMMENT 'Resumen rápido: TA, FC, FR, Temp, SatO2, Peso, Talla',
+  `general_appearance` text DEFAULT NULL COMMENT 'Aspecto general',
+  `head_neck` text DEFAULT NULL COMMENT 'Cabeza y cuello',
+  `chest_lungs` text DEFAULT NULL COMMENT 'Tórax y pulmones',
+  `cardiovascular` text DEFAULT NULL COMMENT 'Sistema cardiovascular',
+  `abdomen` text DEFAULT NULL,
+  `extremities` text DEFAULT NULL COMMENT 'Extremidades',
+  `neurological` text DEFAULT NULL COMMENT 'Examen neurológico',
+  `skin` text DEFAULT NULL COMMENT 'Piel y anexos',
+  `specialty_specific_exam` text DEFAULT NULL COMMENT 'Campos específicos de la especialidad (ej. agudeza visual, fondo de ojo para oftalmo)',
+  `notes` text DEFAULT NULL COMMENT 'Notas adicionales del examen físico'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Resultados del examen físico por consulta';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `progress_notes`
+--
+
+CREATE TABLE `progress_notes` (
+  `id` int(11) NOT NULL,
+  `encounter_id` int(11) NOT NULL,
+  `note_type` varchar(50) DEFAULT 'Evolución' COMMENT 'Tipo: Evolución, Nota de Ingreso, Nota de Egreso, etc.',
+  `note_content` text NOT NULL,
+  `created_by` int(11) NOT NULL COMMENT 'FK a users (quien escribe la nota)',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Notas de evolución y seguimiento';
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `record_attachments`
+--
+
+CREATE TABLE `record_attachments` (
+  `id` int(11) NOT NULL,
+  `medical_record_id` int(11) NOT NULL,
+  `encounter_id` int(11) DEFAULT NULL COMMENT 'Si está asociado a una consulta específica',
+  `file_name` varchar(255) NOT NULL COMMENT 'Nombre original del archivo',
+  `file_path` varchar(512) NOT NULL COMMENT 'Ruta en el servidor o URL de almacenamiento',
+  `file_type` varchar(100) DEFAULT NULL COMMENT 'MIME type',
+  `description` varchar(255) DEFAULT NULL COMMENT 'Descripción breve del archivo',
+  `uploaded_by` int(11) NOT NULL COMMENT 'FK a users (quien subió el archivo)',
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Archivos adjuntos a la historia clínica';
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `roles`
 --
 
@@ -365,6 +507,21 @@ INSERT INTO `roles` (`id`, `name`) VALUES
 (1, 'admin'),
 (2, 'medico'),
 (3, 'recepcionista');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `treatment_plans`
+--
+
+CREATE TABLE `treatment_plans` (
+  `id` int(11) NOT NULL,
+  `encounter_id` int(11) NOT NULL,
+  `plan_type` enum('medication','procedure','referral','lab_order','imaging_order','indication','education','other') NOT NULL,
+  `description` text NOT NULL COMMENT 'Detalle: Nombre medicamento y dosis, procedimiento, especialista referido, examen solicitado, indicación general, etc.',
+  `status` enum('active','completed','cancelled') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Planes terapéuticos, órdenes y referidos';
 
 -- --------------------------------------------------------
 
@@ -465,6 +622,7 @@ CREATE TABLE `user_sessions` (
 --
 
 INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
+('019e22ebec77894072ed447b0087ba4c54fe98d581bfcb771175939957902199', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-26 18:51:15', 'active', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNTA0Njc1LCJleHAiOjE3NjE1OTEwNzV9.Snj3D2NNdz-GHz1DGAlV1bgzXjV6-bZbnMXt60_dj_M', NULL),
 ('02231a51c290a7949da05f35bf3cf58891e4ed4812884a6c52daab04e7b9ec22', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 06:55:59', 'active', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MjY4OTU5LCJleHAiOjE3NTQyNzI1NTl9.Du_AKFcWRUby8DQw0Gl1s13Er8U28pVeFS76V2gBORk', NULL),
 ('02469167a7ae13bc86a2e17a535f2909f6ca3ecda76d75f68c9219676505b3c9', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 03:04:40', 'active', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzQxNDgwLCJleHAiOjE3NTQzNDUwODB9.YxtHUdyIZfNeS8l_NunIfnyzFWx2DU5mvJlAMiLfXMA', NULL),
 ('025ebf5e29abaedaad6168408afe334c0f892cce9f2683206062d828fcf6feed', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-07 02:43:43', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTEzMDIzLCJleHAiOjE3NTQ1MTY2MjN9.TsSbefwX9XQ1Wei1e-AjiWW5VAd5H44GUQPHfazPSwA', '2025-08-06 20:59:55'),
@@ -576,9 +734,9 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('abe368c4d0143dcf19b00caae4ccbbe9db74acf047ca896288e0b8c135a3ba86', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-06 20:24:33', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NDkwMjczLCJleHAiOjE3NTQ0OTM4NzN9.v81D1tQc0Kaswf8C6o3ZV_jBf8t7RrN2C4gdIewuBJI', '2025-08-06 14:28:38'),
 ('ad0571a7a02d7a5492c28c61e4dcca0caa69ca09afc9a8901b18af389a218efb', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 16:05:26', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDA4MzI2LCJleHAiOjE3NjE0OTQ3MjZ9.S7egBxU5JyY8FHb8qCEebdfP8J28e7_pb_r-s1KghPY', '2025-10-25 16:05:57'),
 ('b1ffb9f53fd48146f5d03e33dbabecc66e28d4ad8b8c2f017151e8d93094bcf0', 8, '::1', 'PostmanRuntime/7.49.0', '2025-10-22 06:21:15', 'active', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMDkyNDc1LCJleHAiOjE3NjEwOTYwNzV9.Ftaj0n1Th9KdLw4e1C1mKO2fBQxabGA3BSg1tf7gt9M', NULL),
-('b263692b74ad0972633c16eaae7ed2bdcf1399d52583e99bde44a5c1ed39e9f1', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-11 07:57:42', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0ODc3NDYyLCJleHAiOjE3NTQ4ODEwNjJ9.zRHgDZBuKRk6pBG1Sz0iFmdpv2qYMcKhw5OxdtVO9lU', '2025-08-11 02:01:15'),
-('b53210bd91516eeb6ba030ca218150bcd5fada7572b35d6d0d3f332aa606fb32', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 05:00:34', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzQ4NDM0LCJleHAiOjE3NTQzNTIwMzR9.4bdfTU3MAdEw2uCQ1FxaIPfeVs_aHxaGLHqZVluPtXs', '2025-08-04 23:19:15');
+('b263692b74ad0972633c16eaae7ed2bdcf1399d52583e99bde44a5c1ed39e9f1', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-11 07:57:42', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0ODc3NDYyLCJleHAiOjE3NTQ4ODEwNjJ9.zRHgDZBuKRk6pBG1Sz0iFmdpv2qYMcKhw5OxdtVO9lU', '2025-08-11 02:01:15');
 INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
+('b53210bd91516eeb6ba030ca218150bcd5fada7572b35d6d0d3f332aa606fb32', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 05:00:34', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzQ4NDM0LCJleHAiOjE3NTQzNTIwMzR9.4bdfTU3MAdEw2uCQ1FxaIPfeVs_aHxaGLHqZVluPtXs', '2025-08-04 23:19:15'),
 ('b546859074afbd2f9c4b01c4d983e34b8577ef974f3079e85f0285eb9ab2cb49', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-08 06:09:19', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NjExNzU5LCJleHAiOjE3NTQ2MTUzNTl9.cAMZgiW_EDOnX-TQxKGYaAg5UxIBIcJ6Cg3Ms4LMVmQ', '2025-08-08 00:10:12'),
 ('b80526a5a50a048dbb537ef4b770798047927709bdb81cfe5ca0698f94bfa7c1', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-06 03:55:24', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NDMwOTI0LCJleHAiOjE3NTQ0MzQ1MjR9.NP8kHtxFAGAce8FExeadJF03J3nL6GXWjhIHMgaCMcA', '2025-08-05 22:38:03'),
 ('ba664c5dee9f6047e977b9cca2bafd9c3d854ec9d62ea9778a09bceccba57851', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 21:03:30', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NDA2MjEwLCJleHAiOjE3NTQ0MDk4MTB9.gupgCSDnh4I_hsRjgOiVCpMCKt-DeotrUwKRxvTHjzo', '2025-08-05 15:22:56'),
@@ -646,6 +804,29 @@ INSERT INTO `user_specialties` (`user_id`, `specialty_id`) VALUES
 (23, 9),
 (23, 18);
 
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `vital_signs`
+--
+
+CREATE TABLE `vital_signs` (
+  `id` int(11) NOT NULL,
+  `medical_record_id` int(11) NOT NULL,
+  `encounter_id` int(11) DEFAULT NULL COMMENT 'Consulta donde se tomaron, si aplica',
+  `recorded_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `systolic_bp` smallint(6) DEFAULT NULL COMMENT 'Presión arterial sistólica (mmHg)',
+  `diastolic_bp` smallint(6) DEFAULT NULL COMMENT 'Presión arterial diastólica (mmHg)',
+  `heart_rate` smallint(6) DEFAULT NULL COMMENT 'Frecuencia cardíaca (lpm)',
+  `respiratory_rate` smallint(6) DEFAULT NULL COMMENT 'Frecuencia respiratoria (rpm)',
+  `temperature` decimal(4,1) DEFAULT NULL COMMENT 'Temperatura (°C)',
+  `oxygen_saturation` smallint(6) DEFAULT NULL COMMENT 'Saturación de oxígeno (%)',
+  `weight` decimal(5,2) DEFAULT NULL COMMENT 'Peso (kg)',
+  `height` decimal(4,2) DEFAULT NULL COMMENT 'Talla (m)',
+  `bmi` decimal(4,2) DEFAULT NULL COMMENT 'Índice de Masa Corporal (calculado)',
+  `notes` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Registro cronológico de signos vitales';
+
 --
 -- Índices para tablas volcadas
 --
@@ -686,6 +867,24 @@ ALTER TABLE `appointment_status_history`
   ADD KEY `idx_appointment_status_history_changed_at` (`changed_at`);
 
 --
+-- Indices de la tabla `clinical_encounters`
+--
+ALTER TABLE `clinical_encounters`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_encounter_record` (`medical_record_id`),
+  ADD KEY `fk_encounter_appointment` (`appointment_id`),
+  ADD KEY `fk_encounter_doctor` (`doctor_id`),
+  ADD KEY `fk_encounter_specialty` (`specialty_id`);
+
+--
+-- Indices de la tabla `diagnoses`
+--
+ALTER TABLE `diagnoses`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_diagnosis_encounter` (`encounter_id`),
+  ADD KEY `idx_diagnosis_code` (`diagnosis_code`);
+
+--
 -- Indices de la tabla `medical_colleges`
 --
 ALTER TABLE `medical_colleges`
@@ -693,11 +892,38 @@ ALTER TABLE `medical_colleges`
   ADD UNIQUE KEY `abbreviation` (`abbreviation`);
 
 --
+-- Indices de la tabla `medical_history`
+--
+ALTER TABLE `medical_history`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_history_record` (`medical_record_id`),
+  ADD KEY `idx_history_type` (`history_type`);
+
+--
 -- Indices de la tabla `medical_preferred_schedules`
 --
 ALTER TABLE `medical_preferred_schedules`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_medical_day_start` (`medical_id`,`day_of_week`,`start_time`);
+
+--
+-- Indices de la tabla `medical_records`
+--
+ALTER TABLE `medical_records`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_patient_record` (`patient_id`),
+  ADD UNIQUE KEY `record_number` (`record_number`);
+
+--
+-- Indices de la tabla `medical_reports`
+--
+ALTER TABLE `medical_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_report_record` (`medical_record_id`),
+  ADD KEY `fk_report_encounter` (`encounter_id`),
+  ADD KEY `fk_report_doctor` (`doctor_id`),
+  ADD KEY `idx_report_type` (`report_type`),
+  ADD KEY `idx_report_date` (`report_date`);
 
 --
 -- Indices de la tabla `medical_specialties`
@@ -724,11 +950,42 @@ ALTER TABLE `patients`
   ADD KEY `created_by` (`created_by`);
 
 --
+-- Indices de la tabla `physical_exams`
+--
+ALTER TABLE `physical_exams`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_exam_encounter` (`encounter_id`);
+
+--
+-- Indices de la tabla `progress_notes`
+--
+ALTER TABLE `progress_notes`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_note_encounter` (`encounter_id`),
+  ADD KEY `fk_note_author` (`created_by`);
+
+--
+-- Indices de la tabla `record_attachments`
+--
+ALTER TABLE `record_attachments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_attachment_record` (`medical_record_id`),
+  ADD KEY `fk_attachment_encounter` (`encounter_id`),
+  ADD KEY `fk_attachment_uploader` (`uploaded_by`);
+
+--
 -- Indices de la tabla `roles`
 --
 ALTER TABLE `roles`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `name` (`name`);
+
+--
+-- Indices de la tabla `treatment_plans`
+--
+ALTER TABLE `treatment_plans`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_plan_encounter` (`encounter_id`);
 
 --
 -- Indices de la tabla `users`
@@ -769,6 +1026,15 @@ ALTER TABLE `user_specialties`
   ADD KEY `specialty_id` (`specialty_id`);
 
 --
+-- Indices de la tabla `vital_signs`
+--
+ALTER TABLE `vital_signs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_vitals_record` (`medical_record_id`),
+  ADD KEY `fk_vitals_encounter` (`encounter_id`),
+  ADD KEY `idx_vitals_recorded_at` (`recorded_at`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -797,16 +1063,46 @@ ALTER TABLE `appointment_status_history`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
+-- AUTO_INCREMENT de la tabla `clinical_encounters`
+--
+ALTER TABLE `clinical_encounters`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `diagnoses`
+--
+ALTER TABLE `diagnoses`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `medical_colleges`
 --
 ALTER TABLE `medical_colleges`
   MODIFY `id` int(1) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
+-- AUTO_INCREMENT de la tabla `medical_history`
+--
+ALTER TABLE `medical_history`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `medical_preferred_schedules`
 --
 ALTER TABLE `medical_preferred_schedules`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT de la tabla `medical_records`
+--
+ALTER TABLE `medical_records`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `medical_reports`
+--
+ALTER TABLE `medical_reports`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `medical_specialties`
@@ -827,16 +1123,46 @@ ALTER TABLE `patients`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
+-- AUTO_INCREMENT de la tabla `physical_exams`
+--
+ALTER TABLE `physical_exams`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `progress_notes`
+--
+ALTER TABLE `progress_notes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `record_attachments`
+--
+ALTER TABLE `record_attachments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `roles`
 --
 ALTER TABLE `roles`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT de la tabla `treatment_plans`
+--
+ALTER TABLE `treatment_plans`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `users`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+
+--
+-- AUTO_INCREMENT de la tabla `vital_signs`
+--
+ALTER TABLE `vital_signs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
@@ -871,10 +1197,45 @@ ALTER TABLE `appointment_status_history`
   ADD CONSTRAINT `appointment_status_history_ibfk_2` FOREIGN KEY (`changed_by`) REFERENCES `users` (`id`);
 
 --
+-- Filtros para la tabla `clinical_encounters`
+--
+ALTER TABLE `clinical_encounters`
+  ADD CONSTRAINT `fk_encounter_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_encounter_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `fk_encounter_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_encounter_specialty` FOREIGN KEY (`specialty_id`) REFERENCES `medical_specialties` (`id`);
+
+--
+-- Filtros para la tabla `diagnoses`
+--
+ALTER TABLE `diagnoses`
+  ADD CONSTRAINT `fk_diagnosis_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `medical_history`
+--
+ALTER TABLE `medical_history`
+  ADD CONSTRAINT `fk_history_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `medical_preferred_schedules`
 --
 ALTER TABLE `medical_preferred_schedules`
   ADD CONSTRAINT `fk_preferred_schedule_medical` FOREIGN KEY (`medical_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `medical_records`
+--
+ALTER TABLE `medical_records`
+  ADD CONSTRAINT `fk_record_patient` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `medical_reports`
+--
+ALTER TABLE `medical_reports`
+  ADD CONSTRAINT `fk_report_doctor` FOREIGN KEY (`doctor_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `fk_report_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_report_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `password_resets`
@@ -887,6 +1248,33 @@ ALTER TABLE `password_resets`
 --
 ALTER TABLE `patients`
   ADD CONSTRAINT `patients_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Filtros para la tabla `physical_exams`
+--
+ALTER TABLE `physical_exams`
+  ADD CONSTRAINT `fk_exam_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `progress_notes`
+--
+ALTER TABLE `progress_notes`
+  ADD CONSTRAINT `fk_note_author` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `fk_note_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `record_attachments`
+--
+ALTER TABLE `record_attachments`
+  ADD CONSTRAINT `fk_attachment_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_attachment_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_attachment_uploader` FOREIGN KEY (`uploaded_by`) REFERENCES `users` (`id`);
+
+--
+-- Filtros para la tabla `treatment_plans`
+--
+ALTER TABLE `treatment_plans`
+  ADD CONSTRAINT `fk_plan_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `users`
@@ -920,6 +1308,13 @@ ALTER TABLE `user_sessions`
 ALTER TABLE `user_specialties`
   ADD CONSTRAINT `user_specialties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `user_specialties_ibfk_2` FOREIGN KEY (`specialty_id`) REFERENCES `medical_specialties` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `vital_signs`
+--
+ALTER TABLE `vital_signs`
+  ADD CONSTRAINT `fk_vitals_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_vitals_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
