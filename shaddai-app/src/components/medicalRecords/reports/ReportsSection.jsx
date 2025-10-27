@@ -386,13 +386,17 @@ export default function ReportsSection({ recordId, record, token, user, condense
                 <label className="text-sm text-slate-600">Contenido</label>
                 <RichTextEditor value={newContent} onChange={setNewContent} />
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="text-xs text-slate-500">Elige cómo guardar o exporta directamente.</div>
-                <div className="flex gap-4 flex-wrap justify-center">
-                  <button onClick={() => createWithStatus('draft')} className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50 transition">Guardar borrador</button>
-                  <button onClick={() => createWithStatus('final')} className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700 transition">Guardar final</button>
-                  <button onClick={() => createAndExport('pdf')} className="rounded-lg bg-gray-800 px-5 py-2 text-white shadow hover:bg-gray-900 transition">Guardar y exportar PDF</button>
-                  <button onClick={() => createAndExport('word')} className="rounded-lg bg-indigo-600 px-5 py-2 text-white shadow hover:bg-indigo-700 transition">Guardar y exportar Word</button>
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-xs text-slate-500 text-center">Elige cómo guardar o exporta directamente.</div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex gap-2 justify-center">
+                    <button onClick={() => createWithStatus('draft')} className="rounded-lg border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50 transition">Guardar borrador</button>
+                    <button onClick={() => createWithStatus('final')} className="rounded-lg bg-blue-600 px-3 py-2 text-white shadow hover:bg-blue-700 transition">Guardar final</button>
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    <button onClick={() => createAndExport('pdf')} className="rounded-lg bg-gray-800 px-4 py-2 text-white shadow hover:bg-gray-900 transition">Guardar y exportar PDF</button>
+                    <button onClick={() => createAndExport('word')} className="rounded-lg bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700 transition">Guardar y exportar Word</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -420,11 +424,15 @@ export default function ReportsSection({ recordId, record, token, user, condense
                 <label className="text-sm text-slate-600">Contenido</label>
                 <RichTextEditor value={selected.content || ''} onChange={(v)=>setSelected({...selected, content:v})} />
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <button onClick={() => update('draft')} className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50 transition">Guardar borrador</button>
-                <button onClick={() => update('final')} className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700 transition">Guardar final</button>
-                <button onClick={exportSelectedToPDF} className="rounded-lg bg-gray-800 px-4 py-2 text-white shadow hover:bg-gray-900 transition">Exportar PDF</button>
-                <button onClick={exportSelectedToWord} className="rounded-lg bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700 transition">Exportar Word</button>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex gap-2 justify-center">
+                  <button onClick={() => update('draft')} className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50 transition">Guardar borrador</button>
+                  <button onClick={() => update('final')} className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700 transition">Guardar final</button>
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <button onClick={exportSelectedToPDF} className="rounded-lg bg-gray-800 px-4 py-2 text-white shadow hover:bg-gray-900 transition">Exportar PDF</button>
+                  <button onClick={exportSelectedToWord} className="rounded-lg bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700 transition">Exportar Word</button>
+                </div>
               </div>
             </div>
           </div>
