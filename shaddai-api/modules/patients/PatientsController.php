@@ -48,6 +48,36 @@ class PatientsController {
         }
     }
 
+    public function searchPatients() {
+        try {
+            // Parametros de búsqueda
+            $q = isset($_GET['q']) ? trim($_GET['q']) : '';
+            $by = isset($_GET['by']) ? $_GET['by'] : '';
+            $dob = isset($_GET['dob']) ? trim($_GET['dob']) : null; // YYYY-MM-DD
+            $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+
+            if ($limit <= 0) { $limit = 10; }
+            if ($limit > 50) { $limit = 50; }
+
+            // Parsear campos (por defecto: cedula y full_name)
+            $fields = [];
+            if (is_array($by)) {
+                $fields = $by;
+            } elseif (!empty($by)) {
+                $fields = explode(',', $by);
+            }
+            if (empty($fields)) {
+                $fields = ['cedula', 'full_name'];
+            }
+
+            $results = $this->model->searchPatients($q, $fields, $dob, $limit);
+            echo json_encode($results);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function createPatient() {
         try {
             $data = $_POST;

@@ -59,7 +59,7 @@ export default function EncounterEditor({ record, token, user, doctors = [], spe
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 p-6">
         <div className="flex items-center gap-3">
-          <div className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold">Nuevo encuentro</div>
+          <div className="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-semibold">Nueva consulta</div>
           <button onClick={onClose} className="ml-auto p-1 rounded hover:bg-black/5"><X className="w-4 h-4 text-gray-500" /></button>
         </div>
 

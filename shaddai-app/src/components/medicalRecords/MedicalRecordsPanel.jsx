@@ -149,7 +149,7 @@ export default function MedicalRecordsPanel() {
 
     const tabs = useMemo(() => ([
         { key: 'summary', label: 'Resumen' },
-        { key: 'encounters', label: 'Encuentros' },
+        { key: 'encounters', label: 'Consultas' },
         { key: 'history', label: 'Antecedentes' },
         { key: 'vitals', label: 'Signos' },
         { key: 'reports', label: 'Informes' },
@@ -231,7 +231,7 @@ export default function MedicalRecordsPanel() {
                             </div>
                         </div>
                     ) : (
-                        <div className="text-gray-500 text-sm">Busca un paciente por cédula o ID para cargar su historia.</div>
+                        <div className="text-gray-500 text-sm">Busca un paciente por su número de cédula, nombre, teléfono o email para cargar su historia.</div>
                     )
             }
 

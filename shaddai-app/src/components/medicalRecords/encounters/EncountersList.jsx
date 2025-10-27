@@ -28,7 +28,7 @@ export default function EncountersList({ recordId, encounters, onOpenEncounter, 
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-gray-800 font-medium">
           <ClipboardList className="w-4 h-4" />
-          Encuentros clínicos
+          Historial de consultas médicas
         </div>
         {allowCreate && (
           <button onClick={onCreate} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">

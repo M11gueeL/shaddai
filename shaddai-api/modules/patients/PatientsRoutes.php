@@ -9,7 +9,9 @@ class PatientsRoutes {
         
         $controller = new PatientsController();
 
-        $router->add('GET', 'patients', [$controller, 'getAllPatients'], ['auth']);
+    $router->add('GET', 'patients', [$controller, 'getAllPatients'], ['auth']);
+    // Importante: registrar rutas más específicas ANTES de las dinámicas {id}
+    $router->add('GET', 'patients/search', [$controller, 'searchPatients'], ['auth']);
         $router->add('GET', 'patients/{id}', [$controller, 'getPatient'], ['auth']);
         $router->add('GET', 'patients/cedula/{cedula}', [$controller, 'getPatientByCedula'], ['auth']);
         $router->add('POST', 'patients', [$controller, 'createPatient'], ['auth']);

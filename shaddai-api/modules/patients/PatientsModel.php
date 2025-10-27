@@ -98,6 +98,70 @@ class PatientsModel {
         $params = [':id' => $id];
         return $this->db->execute($query, $params);
     }
-    
+
+    /**
+     * Búsqueda flexible de pacientes con filtros y límite
+     * @param string $q Texto a buscar
+     * @param array $fields Campos permitidos: id, cedula, full_name, phone, email
+     * @param string|null $dob Fecha de nacimiento exacta YYYY-MM-DD
+     * @param int $limit Límite de resultados (máx 50)
+     */
+    public function searchPatients($q, $fields = [], $dob = null, $limit = 10) {
+        $allowed = ['id', 'cedula', 'full_name', 'phone', 'email'];
+        $activeFields = array_values(array_intersect($fields, $allowed));
+        if (empty($activeFields)) {
+            $activeFields = ['cedula', 'full_name'];
+        }
+
+        $where = [];
+        $params = [];
+
+        $q = trim((string)$q);
+        if ($q !== '') {
+            $like = $q . '%';
+            $likeAny = '%' . $q . '%';
+
+            foreach ($activeFields as $f) {
+                switch ($f) {
+                    case 'id':
+                        if (ctype_digit($q)) {
+                            $where[] = 'id = :id_exact';
+                            $params[':id_exact'] = (int)$q;
+                        }
+                        break;
+                    case 'cedula':
+                        $where[] = 'cedula LIKE :cedula_like';
+                        $params[':cedula_like'] = $like;
+                        break;
+                    case 'full_name':
+                        $where[] = 'full_name LIKE :name_like';
+                        $params[':name_like'] = $likeAny;
+                        break;
+                    case 'phone':
+                        $where[] = 'phone LIKE :phone_like';
+                        $params[':phone_like'] = $like;
+                        break;
+                    case 'email':
+                        $where[] = 'email LIKE :email_like';
+                        $params[':email_like'] = $likeAny;
+                        break;
+                }
+            }
+        }
+
+        if (!empty($dob)) {
+            $where[] = 'birth_date = :dob';
+            $params[':dob'] = $dob;
+        }
+
+        $sql = 'SELECT id, full_name, cedula, birth_date, phone, email FROM patients';
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' OR ', $where);
+        }
+        // Nota: en ausencia de created_at, ordena por id desc para recientes
+        $sql .= ' ORDER BY id DESC LIMIT ' . intval($limit);
+
+        return $this->db->query($sql, $params);
+    }
 
 }

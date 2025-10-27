@@ -34,7 +34,7 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
 
   const [exam, setExam] = useState({});
   const [vitals, setVitals] = useState({});
-  const [diag, setDiag] = useState({ diagnosis_description: '', diagnosis_code: '', diagnosis_type: 'principal', notes: '' });
+  const [diag, setDiag] = useState({ diagnosis_description: '', diagnosis_type: 'principal', notes: '' });
   const [plan, setPlan] = useState({ plan_type: 'Receta', description: '', status: 'active' });
   const [note, setNote] = useState({ note_type: 'Evolución', note_content: '' });
 
@@ -68,7 +68,7 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
       await medicalRecordsApi.addDiagnosis(encounterId, diag, token);
       toast.success('Diagnóstico añadido');
       await load();
-      setDiag({ diagnosis_description: '', diagnosis_code: '', diagnosis_type: 'principal', notes: '' });
+      setDiag({ diagnosis_description: '', diagnosis_type: 'principal', notes: '' });
       onChanged?.();
     } catch (e) { toast.error('No se pudo añadir'); }
   };
@@ -117,7 +117,7 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
       <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-h-[90vh] overflow-auto">
         <div className="flex items-center gap-3">
-          <div className="px-2 py-1 rounded-lg bg-gray-100 text-gray-800 text-xs font-semibold">Encuentro #{encounterId}</div>
+          <div className="px-2 py-1 rounded-lg bg-gray-100 text-gray-800 text-xs font-semibold">Consulta N° {encounterId}</div>
           <button onClick={onClose} className="ml-auto p-1 rounded hover:bg-black/5"><X className="w-4 h-4 text-gray-500" /></button>
         </div>
 
@@ -141,14 +141,14 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
                     {encounter.present_illness && (<div className="text-sm text-gray-700 mt-1 whitespace-pre-wrap"><span className="font-medium">Enf. actual:</span> {encounter.present_illness}</div>)}
                   </div>
 
-                  <div className="border rounded-xl p-4">
+                    <div className="border rounded-xl p-4">
                     <div className="font-medium text-gray-900">Diagnósticos</div>
                     <ul className="mt-2 space-y-2">
                       {encounter.diagnoses?.length ? encounter.diagnoses.map(d => (
                         <li key={d.id} className="text-sm text-gray-700 flex items-center justify-between bg-gray-50 rounded-lg p-2">
                           <div>
                             <div className="font-medium">{d.diagnosis_description}</div>
-                            <div className="text-xs text-gray-500">{d.diagnosis_type}{d.diagnosis_code ? ` · ${d.diagnosis_code}` : ''}</div>
+                              <div className="text-xs text-gray-500">{d.diagnosis_type}</div>
                           </div>
                           <button className="text-xs text-red-600 hover:underline" onClick={() => deleteDiagnosis(d.id)}>Eliminar</button>
                         </li>
@@ -209,10 +209,6 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-sm text-gray-600">Código</label>
-                        <input className="w-full mt-1 px-3 py-2 border rounded-lg" value={diag.diagnosis_code} onChange={(e)=>setDiag({...diag, diagnosis_code:e.target.value})} />
-                      </div>
-                      <div>
                         <label className="text-sm text-gray-600">Tipo</label>
                         <select className="w-full mt-1 px-3 py-2 border rounded-lg" value={diag.diagnosis_type} onChange={(e)=>setDiag({...diag, diagnosis_type:e.target.value})}>
                           <option value="principal">Principal</option>
@@ -236,7 +232,7 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
                         <li key={d.id} className="text-sm text-gray-700 flex items-center justify-between bg-gray-50 rounded-lg p-2">
                           <div>
                             <div className="font-medium">{d.diagnosis_description}</div>
-                            <div className="text-xs text-gray-500">{d.diagnosis_type}{d.diagnosis_code ? ` · ${d.diagnosis_code}` : ''}</div>
+                            <div className="text-xs text-gray-500">{d.diagnosis_type}</div>
                           </div>
                           <button className="text-xs text-red-600 hover:underline" onClick={() => deleteDiagnosis(d.id)}>Eliminar</button>
                         </li>

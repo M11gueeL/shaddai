@@ -15,7 +15,7 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport }) {
         <div className="flex items-center gap-2">
           <button onClick={onNewEncounter} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             <Stethoscope className="w-4 h-4" />
-            Nuevo encuentro
+            Nueva consulta
           </button>
           <button onClick={onNewReport} className="flex items-center gap-2 px-3 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900">
             <FilePlus2 className="w-4 h-4" />
