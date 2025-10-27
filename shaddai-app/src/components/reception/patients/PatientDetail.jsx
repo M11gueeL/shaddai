@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
 import { useToast } from '../../../context/ToastContext';
 
-export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
+export default function PatientDetail({ patient, onClose, onPatientUpdated, initialEditing = false }) {
   const toast = useToast();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(initialEditing);
   const [formData, setFormData] = useState(patient);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setIsEditing(initialEditing);
+  }, [initialEditing]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +49,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated }) {
   return (
     <div className="bg-white h-full flex flex-col">
       {/* Header del Modal */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
         <h2 className="text-2xl font-bold text-gray-800">
           {isEditing ? 'Modificar Datos' : 'Detalles del Paciente'}
         </h2>

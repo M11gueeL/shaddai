@@ -14,6 +14,7 @@ import HistorySection from './history/HistorySection';
 import VitalsSection from './vitals/VitalsSection';
 import ReportsSection from './reports/ReportsSection';
 import AttachmentsSection from './attachments/AttachmentsSection';
+import PatientDetail from '../reception/patients/PatientDetail';
 
 export default function MedicalRecordsPanel() {
     const { token, user } = useAuth();
@@ -27,6 +28,9 @@ export default function MedicalRecordsPanel() {
 
     const [showNewEncounter, setShowNewEncounter] = useState(false);
     const [selectedEncounterId, setSelectedEncounterId] = useState(null);
+    const [showEditPatient, setShowEditPatient] = useState(false);
+    const [patientForEdit, setPatientForEdit] = useState(null);
+    const [patientRefreshKey, setPatientRefreshKey] = useState(0);
 
     // Load doctors and specialties once
     useEffect(() => {
@@ -158,9 +162,9 @@ export default function MedicalRecordsPanel() {
     const [activeTab, setActiveTab] = useState('summary');
 
     return (
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-semibold">Historias Clínicas</h1>
+                <h1 className="text-2xl font-semibold text-slate-900">Historias Clínicas</h1>
             </div>
 
             <SearchPatientBar onSearchByCedula={handleSearchByCedula} onSearchByPatientId={handleSearchByPatientId} loading={loading} />
@@ -171,14 +175,28 @@ export default function MedicalRecordsPanel() {
                         record={record}
                         onNewEncounter={() => setShowNewEncounter(true)}
                         onNewReport={() => setActiveTab('reports')}
+                        onEditPatient={async (patientId) => {
+                            if (!patientId) return;
+                            try {
+                                const res = await PatientsApi.getById(patientId, token);
+                                setPatientForEdit(res.data);
+                                setShowEditPatient(true);
+                            } catch {}
+                        }}
+                        refreshKey={patientRefreshKey}
                     />
 
                     <div className="border-b border-gray-200" />
 
                     {/* Tabs */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 overflow-x-auto md:overflow-visible pb-1">
                         {tabs.map(t => (
-                            <button key={t.key} className={`px-4 py-2 rounded-lg text-sm font-medium ${activeTab === t.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab(t.key)}>
+                            <button
+                                key={t.key}
+                                className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeTab === t.key ? 'bg-blue-600 text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                                onClick={() => setActiveTab(t.key)}
+                                title={`Ir a ${t.label}`}
+                            >
                                 {t.label}
                             </button>
                         ))}
@@ -191,7 +209,13 @@ export default function MedicalRecordsPanel() {
                                 encounters={record.recent_encounters || []}
                                 onOpenEncounter={(id) => setSelectedEncounterId(id)}
                             />
-                            <HistorySection recordId={record.id} token={token} />
+                            <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <div className="text-sm text-slate-500">Informes y constancias recientes</div>
+                                    <button className="text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('reports')}>Ir a informes</button>
+                                </div>
+                                <ReportsSection recordId={record.id} record={record} token={token} user={user} condensed />
+                            </div>
                         </div>
                     )}
 
@@ -210,15 +234,24 @@ export default function MedicalRecordsPanel() {
                     )}
 
                     {activeTab === 'vitals' && (
-                        <VitalsSection recordId={record.id} token={token} />
+                        <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
+                            <div className="text-sm text-slate-500 mb-2">Registrar y revisar signos vitales</div>
+                            <VitalsSection recordId={record.id} token={token} />
+                        </div>
                     )}
 
                                 {activeTab === 'reports' && (
-                                    <ReportsSection recordId={record.id} record={record} token={token} user={user} />
+                                    <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
+                                        <div className="text-sm text-slate-500 mb-2">Informes y constancias</div>
+                                        <ReportsSection recordId={record.id} record={record} token={token} user={user} />
+                                    </div>
                                 )}
 
                     {activeTab === 'attachments' && (
-                        <AttachmentsSection recordId={record.id} token={token} />
+                        <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
+                            <div className="text-sm text-slate-500 mb-2">Documentos y archivos adjuntos</div>
+                            <AttachmentsSection recordId={record.id} token={token} />
+                        </div>
                     )}
                 </div>
                     ) : pendingPatient ? (
@@ -254,6 +287,33 @@ export default function MedicalRecordsPanel() {
                     onClose={() => setSelectedEncounterId(null)}
                     onChanged={reloadEncounters}
                 />
+            )}
+
+            {showEditPatient && patientForEdit && (
+                <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-2 sm:p-4">
+                    <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl overflow-hidden max-h-[90vh] h-[90vh]">
+                        <PatientDetail
+                            patient={patientForEdit}
+                            onClose={() => { setShowEditPatient(false); setPatientForEdit(null); }}
+                            onPatientUpdated={async () => {
+                                // Refresca datos del record y fuerza refetch del header
+                                try {
+                                    if (record?.id) {
+                                        const r = await medicalRecordsApi.getById(record.id, token);
+                                        // Preserva encuentros recientes para no vaciar la UI
+                                        setRecord((prev) => ({ ...r.data, recent_encounters: prev?.recent_encounters || [] }));
+                                        // Recarga lista de encuentros para sincronizar
+                                        try { await reloadEncounters(); } catch {}
+                                    }
+                                } catch {}
+                                setPatientRefreshKey(Date.now());
+                                setShowEditPatient(false);
+                                setPatientForEdit(null);
+                            }}
+                            initialEditing={true}
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -703,7 +703,24 @@ class MedicalRecordsController {
              if (empty($data['content'])) {
                  throw new Exception('El contenido del informe es requerido.');
              }
-            // Validar permisos (¿es el autor? ¿es admin?)
+            // Validar permisos: solo el autor puede actualizar
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$jwtPayload) {
+                http_response_code(401);
+                echo json_encode(['error' => 'No autorizado.']);
+                return;
+            }
+            $report = $this->model->getMedicalReportById($reportId);
+            if (!$report) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Informe no encontrado']);
+                return;
+            }
+            if ((string)$jwtPayload->sub !== (string)$report['doctor_id']) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Solo el creador puede modificar este informe.']);
+                return;
+            }
 
             $result = $this->model->updateMedicalReport($reportId, $data);
              if ($result) {
@@ -725,7 +742,26 @@ class MedicalRecordsController {
      public function deleteReport($reportId) {
          // Validar permisos...
          try {
-             $result = $this->model->deleteMedicalReport($reportId);
+            // Validar permisos: solo el autor puede eliminar
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$jwtPayload) {
+                http_response_code(401);
+                echo json_encode(['error' => 'No autorizado.']);
+                return;
+            }
+            $report = $this->model->getMedicalReportById($reportId);
+            if (!$report) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Informe no encontrado']);
+                return;
+            }
+            if ((string)$jwtPayload->sub !== (string)$report['doctor_id']) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Solo el creador puede eliminar este informe.']);
+                return;
+            }
+
+            $result = $this->model->deleteMedicalReport($reportId);
              if ($result) {
                  echo json_encode(['message' => 'Informe eliminado']);
              } else {
