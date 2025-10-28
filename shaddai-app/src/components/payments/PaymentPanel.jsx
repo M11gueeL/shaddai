@@ -6,43 +6,43 @@ export default function PaymentPanel() {
   const { hasRole } = useAuth();
 
   return (
-    <div className="flex flex-col items-center py-8 px-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Sistema de Pagos</h1>
-      
-      <div className="flex space-x-4 mb-8">
-        <NavLink 
-          to="/payment" 
-          end
-          className={({ isActive }) => 
-            `px-6 py-3 rounded-lg font-medium transition-colors ${
-              isActive 
-                ? 'bg-indigo-600 text-white shadow-md' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`
-          }
-        >
-          Operaciones
-        </NavLink>
-        
-        {hasRole(['admin']) && (
-          <NavLink 
-            to="/payment/audit" 
-            className={({ isActive }) => 
-              `px-6 py-3 rounded-lg font-medium transition-colors ${
-                isActive 
-                  ? 'bg-purple-600 text-white shadow-md' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`
-            }
-          >
-            Auditoría
-          </NavLink>
-        )}
+    <div className="flex flex-col w-full">
+      <div className="px-6 pt-6">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Caja y Pagos</h1>
+        <p className="text-gray-600 mt-1">Gestiona sesiones de caja, cuentas, servicios, tasas y pagos.</p>
       </div>
-      
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6">
-        <Outlet />
+
+      <div className="px-4 sm:px-6 mt-6">
+        <div className="bg-white/70 backdrop-blur rounded-2xl border border-gray-200">
+          <nav className="flex gap-2 p-2">
+            <Tab to="/payment" end label="Operaciones" icon={<span>💳</span>} />
+            {hasRole(['admin']) && (
+              <Tab to="/payment/audit" label="Auditoría" icon={<span>🛡️</span>} />
+            )}
+          </nav>
+          <div className="border-t border-gray-100">
+            <Outlet />
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function Tab({ to, label, icon, end }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) => [
+        'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
+        isActive
+          ? 'bg-gray-900 text-white shadow'
+          : 'text-gray-700 hover:bg-gray-100',
+      ].join(' ')}
+    >
+      <span className="text-base leading-none">{icon}</span>
+      {label}
+    </NavLink>
   );
 }

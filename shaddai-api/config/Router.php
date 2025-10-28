@@ -60,11 +60,12 @@ class Router {
                     }
                 }
 
-                // Extraer parámetros y llamar callback (igual que antes)
+                // Extraer parámetros POSICIONALES en el orden en que aparecen en la ruta
+                // Evitar pasar argumentos nombrados (PHP 8) que causan errores si los nombres no coinciden
                 $params = [];
                 foreach ($matches as $key => $value) {
-                    if (is_string($key)) {
-                        $params[$key] = $value;
+                    if (is_int($key) && $key > 0) { // $matches[0] es el match completo
+                        $params[] = $value;
                     }
                 }
 
