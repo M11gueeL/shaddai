@@ -15,10 +15,11 @@ export default function PaymentPanel() {
       <div className="px-4 sm:px-6 mt-6">
         <div className="bg-white/70 backdrop-blur rounded-2xl border border-gray-200">
           <nav className="flex gap-2 p-2">
-            <Tab to="/payment" end label="Operaciones" icon={<span>💳</span>} />
-            {hasRole(['admin']) && (
-              <Tab to="/payment/audit" label="Auditoría" icon={<span>🛡️</span>} />
-            )}
+            <Tab to="/payment" end label="Inicio" icon={<span>🏠</span>} />
+            <Tab to="/payment/rate" label="Tasa" icon={<span>💱</span>} />
+            <Tab to="/payment/cash" label="Caja" icon={<span>🧾</span>} />
+            <Tab to="/payment/accounts" label="Cuentas" icon={<span>💳</span>} />
+            {hasRole(['admin']) && <Tab to="/payment/audit" label="Auditoría" icon={<span>🛡️</span>} />}
           </nav>
           <div className="border-t border-gray-100">
             <Outlet />

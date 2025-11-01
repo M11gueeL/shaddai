@@ -8,7 +8,10 @@ import Dashboard from "./components/dashboard/Dashboard";
 import ControlPanel from "./components/controlPanel/ControlPanel";
 import ReceptionPanel from "./components/reception/ReceptionPanel";
 import PaymentPanel from "./components/payments/PaymentPanel";
-import PaymentOperations from "./components/payments/PaymentOperations";
+import PaymentHome from "./components/payments/PaymentHome";
+import RateManager from "./components/payments/RateManager";
+import CashManager from "./components/payments/CashManager";
+import AccountsWorkspace from "./components/payments/AccountsWorkspace";
 import PaymentAudit from "./components/payments/PaymentAudit";
 import MedicalRecordsPanel from "./components/medicalRecords/MedicalRecordsPanel";
 import InventoryPanel from "./components/inventory/InventoryPanel";
@@ -75,7 +78,22 @@ export default function App() {
               }>
                 <Route index element={
                   <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
-                    <PaymentOperations />
+                    <PaymentHome />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="rate" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                    <RateManager />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="cash" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                    <CashManager />
+                  </RoleProtectedRoute>
+                } />
+                <Route path="accounts" element={
+                  <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
+                    <AccountsWorkspace />
                   </RoleProtectedRoute>
                 } />
                 <Route path="audit" element={

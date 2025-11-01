@@ -45,9 +45,14 @@ export const useConfirm = () => {
 };
 
 function ConfirmDialog({ title, message, confirmText, cancelText, tone = 'warning', onCancel, onConfirm }) {
-  const toneClasses = tone === 'danger' || tone === 'warning'
-    ? { badge: 'bg-red-100 text-red-700', icon: 'text-red-600', button: 'bg-red-600 hover:bg-red-700' }
-    : { badge: 'bg-yellow-100 text-yellow-700', icon: 'text-yellow-600', button: 'bg-yellow-600 hover:bg-yellow-700' };
+  // tone mapping: danger -> red, warning -> amber, info -> blue, default -> gray
+  const toneMap = {
+    danger: { badge: 'bg-red-100 text-red-700', icon: 'text-red-600', button: 'bg-red-600 hover:bg-red-700' },
+    warning: { badge: 'bg-amber-100 text-amber-700', icon: 'text-amber-600', button: 'bg-amber-600 hover:bg-amber-700' },
+    info: { badge: 'bg-blue-100 text-blue-700', icon: 'text-blue-600', button: 'bg-blue-600 hover:bg-blue-700' },
+    default: { badge: 'bg-gray-100 text-gray-700', icon: 'text-gray-600', button: 'bg-gray-800 hover:bg-gray-900' },
+  };
+  const toneClasses = toneMap[tone] || toneMap.default;
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
