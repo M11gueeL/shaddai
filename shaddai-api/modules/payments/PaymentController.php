@@ -40,6 +40,7 @@ class PaymentController {
             $account = $this->accountModel->getAccountWithRate((int)$accountId);
             if (!$account) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
             if ($account['status'] === 'cancelled') { http_response_code(400); echo json_encode(['error'=>'Cannot register payments to a cancelled account']); return; }
+            if ($account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'La cuenta ya está pagada en su totalidad; no se permiten más pagos']); return; }
 
             $data = $_POST; // for JSON body
             $payment_method = $data['payment_method'] ?? null;
