@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import * as accountsApi from '../../api/accounts';
 import * as servicesApi from '../../api/services';
 import * as paymentsApi from '../../api/payments';
+import * as ratesApi from '../../api/rates';
 import PatientsApi from '../../api/PatientsApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -42,6 +43,10 @@ export default function AccountsWorkspace(){
   const [amount, setAmount] = useState('');
   const [ref, setRef] = useState('');
   const [file, setFile] = useState(null);
+  const [stage, setStage] = useState('services'); // 'services' | 'payments'
+  const [rate, setRate] = useState(null);
+  const [serviceToAdd, setServiceToAdd] = useState('');
+  const [serviceQty, setServiceQty] = useState(1);
 
   const load = async()=>{
     try{
@@ -62,11 +67,20 @@ export default function AccountsWorkspace(){
       const res = await accountsApi.getAccount(accountId, token);
       setSelected(res.data || null);
       setDetails((res.data && res.data.details) ? res.data.details : []);
+      // set account rate if provided
+      if(res?.data?.rate_bcv){ setRate(Number(res.data.rate_bcv)); }
     }catch(e){ setDetails([]); setSelected(null); }
   };
 
   useEffect(()=>{ load(); /* eslint-disable-next-line */ },[]);
   useEffect(()=>{ load(); /* eslint-disable-next-line */ },[statusFilter]);
+  useEffect(()=>{
+    // fallback: fetch today's rate if not available from account
+    (async ()=>{
+      try{ const r = await ratesApi.getTodayRate(token); setRate(Number(r?.data?.rate_bcv || r?.data?.rate || 0)); }catch{/* ignore */}
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
 
   const filteredAccounts = useMemo(()=>{
     const q = query.trim().toLowerCase();
@@ -84,12 +98,20 @@ export default function AccountsWorkspace(){
   }, [selected]);
   const accountTotalUsd = useMemo(()=> Number(selected?.total_usd || 0), [selected]);
   const saldoUsd = useMemo(()=> Math.max(0, accountTotalUsd - paidUsd), [accountTotalUsd, paidUsd]);
+  const saldoBs = useMemo(()=>{
+    const r = Number(selected?.rate_bcv || rate || 0);
+    if(!r) return 0;
+    // Prefer using totals in Bs if available to reduce rounding drift
+    const totalBs = Number(selected?.total_bs || details.reduce((s,d)=> s + Number((d.quantity||1) * (d.price_bs||0)),0));
+    const paidBsApprox = paidUsd * r;
+    return Math.max(0, totalBs - paidBsApprox);
+  }, [selected, details, paidUsd, rate]);
 
-  const addService = async(serviceId)=>{
+  const addService = async(serviceId, qty = 1)=>{
     if(!selected) return;
     if(!canModify) { toast.warning('La cuenta está pagada o anulada'); return; }
     try{
-      await accountsApi.addDetail(selected.id, { service_id: serviceId }, token);
+      await accountsApi.addDetail(selected.id, { service_id: serviceId, quantity: qty }, token);
       toast.success('Servicio agregado');
       loadDetails(selected.id);
     }catch(e){ toast.error(e?.response?.data?.error || 'No se pudo agregar'); }
@@ -115,6 +137,9 @@ export default function AccountsWorkspace(){
 
     // Currency rule: only cash_usd goes in USD; others Bs
     const currency = method === 'cash_usd' ? 'USD' : 'BS';
+    if((method==='transfer_bs' || method==='mobile_payment_bs') && !file){
+      return toast.warning('Debe adjuntar comprobante para transferencias o pago móvil');
+    }
     const form = new FormData();
     form.append('payment_method', method);
     form.append('amount', a);
@@ -195,46 +220,81 @@ export default function AccountsWorkspace(){
                   <StatusBadge status={selected.status} />
                 </div>
                 <div className="mt-2 text-xs text-gray-600">Total: USD {Number(totalUsd).toFixed(2)} · Bs {Number(totalBs).toFixed(2)}</div>
-                <div className="mt-1 text-xs text-gray-600">Pagado (USD): {paidUsd.toFixed(2)} · Saldo (USD): {saldoUsd.toFixed(2)}</div>
-                <h4 className="mt-3 font-medium">Servicios</h4>
-                <div className="relative mt-2 rounded-lg border divide-y">
-                  {details.length === 0 ? (
-                    <div className="p-4 text-sm text-gray-500">Sin servicios</div>
-                  ) : details.map(d => (
-                    <div key={d.id} className="flex items-center justify-between p-3">
-                      <div>
-                        <div className="font-medium text-sm">{d.service_name}</div>
-                        <div className="text-xs text-gray-500">x{d.quantity || 1} · USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
-                      </div>
-                      {canModify && (
-                        <button
-                          onClick={()=>removeDetail(d.id)}
-                          className="text-xs text-red-600 hover:underline"
-                        >Quitar</button>
-                      )}
-                    </div>
-                  ))}
-                  {!canModify && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-lg flex items-center justify-center text-xs text-gray-600">Cuenta pagada/anulada: no se puede editar</div>
-                  )}
+                <div className="mt-1 text-xs text-gray-600">Pagado (USD): {paidUsd.toFixed(2)} · Saldo (USD): {saldoUsd.toFixed(2)} · Saldo (Bs): {saldoBs.toFixed(2)}</div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <button onClick={()=>setStage('services')} className={`px-3 py-1.5 rounded text-sm border ${stage==='services'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700'}`}>Servicios</button>
+                  <button onClick={()=>setStage('payments')} className={`px-3 py-1.5 rounded text-sm border ${stage==='payments'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700'}`}>Registrar pagos</button>
                 </div>
 
-                <div className="mt-3">
-                  <h4 className="text-sm text-gray-700 mb-1">Agregar servicio</h4>
-                  <div className="relative">
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-44 overflow-y-auto">
-                      {services.map(s => (
-                        <button disabled={!canModify} key={s.id} onClick={()=>addService(s.id)} className={`px-3 py-2 text-sm rounded border ${canModify ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}>
-                          <div className="font-medium truncate" title={s.name}>{s.name}</div>
-                          <div className="text-xs text-gray-500">USD {Number(s.price_usd||0).toFixed(2)}</div>
-                        </button>
+                {stage==='services' ? (
+                  <>
+                    <h4 className="mt-3 font-medium">Servicios</h4>
+                    <div className="relative mt-2 rounded-lg border divide-y">
+                      {details.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500">Sin servicios</div>
+                      ) : details.map(d => (
+                        <div key={d.id} className="flex items-center justify-between p-3">
+                          <div>
+                            <div className="font-medium text-sm">{d.service_name}</div>
+                            <div className="text-xs text-gray-500">x{d.quantity || 1} · USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
+                          </div>
+                          {canModify && (
+                            <button
+                              onClick={()=>removeDetail(d.id)}
+                              className="text-xs text-red-600 hover:underline"
+                            >Quitar</button>
+                          )}
+                        </div>
+                      ))}
+                      {!canModify && (
+                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-lg flex items-center justify-center text-xs text-gray-600">Cuenta pagada/anulada: no se puede editar</div>
+                      )}
+                    </div>
+
+                    <div className="mt-3">
+                      <h4 className="text-sm text-gray-700 mb-1">Agregar servicio</h4>
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                        <div className="flex-1">
+                          <select disabled={!canModify} value={serviceToAdd} onChange={(e)=>setServiceToAdd(e.target.value)} className="w-full border rounded px-3 py-2 text-sm disabled:opacity-50">
+                            <option value="">Selecciona un servicio…</option>
+                            {services.map(s=> (
+                              <option key={s.id} value={s.id}>{s.name} · USD {Number(s.price_usd||0).toFixed(2)}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <input disabled={!canModify} type="number" min="1" value={serviceQty} onChange={(e)=>setServiceQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-24 border rounded px-3 py-2 text-sm disabled:opacity-50" placeholder="Cantidad" />
+                        </div>
+                        <div>
+                          <button disabled={!canModify || !serviceToAdd} onClick={()=>{ addService(Number(serviceToAdd), Number(serviceQty)); }} className="px-4 py-2 rounded bg-gray-900 text-white text-sm disabled:opacity-50">Agregar</button>
+                        </div>
+                        <div className="sm:ml-auto">
+                          <button onClick={()=>setStage('payments')} className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Registrar pagos</button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="mt-3 font-medium">Pagos registrados</h4>
+                    <div className="mt-2 rounded-lg border divide-y max-h-52 overflow-y-auto">
+                      {(!selected?.payments || selected.payments.length===0) ? (
+                        <div className="p-3 text-sm text-gray-500">Aún no hay pagos</div>
+                      ) : selected.payments.map(p => (
+                        <div key={p.id} className="p-3 text-sm flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">{p.payment_method} · {p.currency} {Number(p.amount||0).toFixed(2)}</div>
+                            <div className="text-xs text-gray-500">Eq. USD {Number(p.amount_usd_equivalent||0).toFixed(2)} · {p.status}</div>
+                          </div>
+                          {p.reference_number && (
+                            <div className="text-[11px] text-gray-500">Ref: {p.reference_number}</div>
+                          )}
+                        </div>
                       ))}
                     </div>
-                    {!canModify && (
-                      <div className="absolute inset-0" />
-                    )}
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -253,8 +313,9 @@ export default function AccountsWorkspace(){
                   {(method==='transfer_bs' || method==='mobile_payment_bs') && (
                     <input disabled={!canModify} type="file" accept="image/*,.pdf" onChange={(e)=>setFile(e.target.files?.[0]||null)} className="w-full text-sm disabled:opacity-50" />
                   )}
-                  <div className="text-xs text-gray-500">Total: USD {totalUsd.toFixed(2)} · Bs {totalBs.toFixed(2)}</div>
-                  <div className="flex justify-end">
+                  <div className="text-xs text-gray-500">Total: USD {totalUsd.toFixed(2)} · Bs {totalBs.toFixed(2)} · Saldo (USD): {saldoUsd.toFixed(2)} · Saldo (Bs): {saldoBs.toFixed(2)}</div>
+                  <div className="flex justify-between items-center">
+                    <button type="button" onClick={()=>setStage('services')} className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Volver a servicios</button>
                     <button disabled={!canModify} className="px-4 py-2 rounded bg-gray-900 text-white text-sm disabled:opacity-50">Guardar pago</button>
                   </div>
                   {!canModify && (
@@ -345,6 +406,7 @@ export default function AccountsWorkspace(){
                     setCreateOpen(false);
                     await load();
                     await loadDetails(id);
+                    setStage('services');
                   } else {
                     toast.error('La API no confirmó la creación');
                   }

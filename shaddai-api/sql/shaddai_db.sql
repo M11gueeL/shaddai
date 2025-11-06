@@ -1699,6 +1699,38 @@ ALTER TABLE `user_specialties`
 ALTER TABLE `vital_signs`
   ADD CONSTRAINT `fk_vitals_encounter` FOREIGN KEY (`encounter_id`) REFERENCES `clinical_encounters` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_vitals_record` FOREIGN KEY (`medical_record_id`) REFERENCES `medical_records` (`id`) ON DELETE CASCADE;
+  
+-- --------------------------------------------------------
+-- Tabla de pagos (creación/actualización de esquema)
+-- --------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS `payments` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `account_id` int(11) NOT NULL,
+  `payment_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `payment_method` varchar(50) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `currency` enum('USD','BS') NOT NULL,
+  `exchange_rate_id` int(11) NOT NULL,
+  `amount_usd_equivalent` decimal(12,2) NOT NULL,
+  `reference_number` varchar(100) DEFAULT NULL,
+  `attachment_path` varchar(255) DEFAULT NULL,
+  `attachment_name` varchar(255) DEFAULT NULL,
+  `attachment_mime` varchar(100) DEFAULT NULL,
+  `attachment_data` longblob,
+  `status` enum('pending_verification','verified','rejected') NOT NULL DEFAULT 'pending_verification',
+  `notes` text DEFAULT NULL,
+  `registered_by` int(11) NOT NULL,
+  `verified_by` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_payments_account` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+-- Asegurar columnas de adjunto en instalaciones existentes
+ALTER TABLE `payments` ADD COLUMN IF NOT EXISTS `attachment_name` varchar(255) DEFAULT NULL;
+ALTER TABLE `payments` ADD COLUMN IF NOT EXISTS `attachment_mime` varchar(100) DEFAULT NULL;
+ALTER TABLE `payments` ADD COLUMN IF NOT EXISTS `attachment_data` longblob;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

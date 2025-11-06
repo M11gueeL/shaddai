@@ -1,4 +1,3 @@
-// UserPanel.jsx
 import React, { useState, useEffect } from 'react';
 import userApi from '../../../api/userApi';
 import UserTable from './UserTable';

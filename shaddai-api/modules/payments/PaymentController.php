@@ -20,17 +20,19 @@ class PaymentController {
     $this->cashSessionModel = new CashRegisterSessionModel();
     }
 
-    private function saveAttachment($file) {
-        if (!$file || !isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) return null;
-        $baseDir = __DIR__ . '/../../public/uploads/payments/' . date('Ym');
-        if (!is_dir($baseDir)) { @mkdir($baseDir, 0775, true); }
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $name = uniqid('pay_', true) . ($ext ? ('.' . $ext) : '');
-        $dest = $baseDir . '/' . $name;
-        if (!move_uploaded_file($file['tmp_name'], $dest)) return null;
-        // public path relative for frontend
-        $publicPath = '/uploads/payments/' . date('Ym') . '/' . $name;
-        return $publicPath;
+    // Deprecated file saving to disk; attachments will be stored in DB when schema supports it
+    private function readAttachment($file) {
+        if (!$file || !isset($file['tmp_name']) || $file['error'] !== UPLOAD_ERR_OK) return [null, null, null, null];
+        $tmp = $file['tmp_name'];
+        $name = $file['name'] ?? null;
+        $mime = null;
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime = $finfo ? finfo_file($finfo, $tmp) : null;
+            if ($finfo) finfo_close($finfo);
+        }
+        $data = file_get_contents($tmp);
+        return [$data, $mime, $name, null]; // legacy path remains null
     }
 
     public function createPayment($accountId) {
@@ -66,9 +68,17 @@ class PaymentController {
             }
 
             // file upload (multipart)
-            $attachment = null;
+            $attachment_path = null; // deprecated on new installs
+            $attachment_data = null;
+            $attachment_mime = null;
+            $attachment_name = null;
             if (!empty($_FILES['attachment'])) {
-                $attachment = $this->saveAttachment($_FILES['attachment']);
+                [$attachment_data, $attachment_mime, $attachment_name, $attachment_path] = $this->readAttachment($_FILES['attachment']);
+            }
+
+            // Require attachment for transfer/mobile
+            if (in_array($payment_method, ['transfer_bs','mobile_payment_bs']) && !$attachment_data && !$attachment_path) {
+                http_response_code(400); echo json_encode(['error'=>'El comprobante es obligatorio para transferencias o pago móvil']); return;
             }
 
             $paymentId = $this->model->create([
@@ -79,7 +89,10 @@ class PaymentController {
                 'exchange_rate_id' => $todayRate['id'],
                 'amount_usd_equivalent' => $usdEq,
                 'reference_number' => $reference,
-                'attachment_path' => $attachment,
+                'attachment_path' => $attachment_path,
+                'attachment_data' => $attachment_data,
+                'attachment_mime' => $attachment_mime,
+                'attachment_name' => $attachment_name,
                 'status' => $status,
                 'notes' => $notes,
                 'registered_by' => $payload->sub,

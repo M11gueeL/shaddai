@@ -28,7 +28,8 @@ class BillingAccountModel {
         if (!$acc) return null;
         $acc = $acc[0];
         $details = $this->db->query('SELECT d.*, s.name as service_name FROM billing_account_details d INNER JOIN services s ON s.id = d.service_id WHERE d.account_id = :id ORDER BY d.id ASC', [':id'=>$id]);
-        $payments = $this->db->query('SELECT * FROM payments WHERE account_id = :id ORDER BY id ASC', [':id'=>$id]);
+        // Avoid large blobs; expose only metadata
+        $payments = $this->db->query('SELECT id, account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by, verified_by FROM payments WHERE account_id = :id ORDER BY id ASC', [':id'=>$id]);
         $acc['details'] = $details;
         $acc['payments'] = $payments;
         return $acc;
