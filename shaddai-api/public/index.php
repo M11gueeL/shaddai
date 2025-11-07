@@ -7,12 +7,10 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../config');
 $dotenv->safeLoad();
 
-// Establecer zona horaria desde .env (por defecto a una zona local común)
 if (!empty($_ENV['TIMEZONE'])) {
 	date_default_timezone_set($_ENV['TIMEZONE']);
 } else if (!ini_get('date.timezone')) {
-	// Fallback para evitar desfases si no hay timezone configurada en php.ini
-	date_default_timezone_set('America/Mexico_City');
+	date_default_timezone_set('America/Caracas');
 }
 
 require_once __DIR__ . '/../utils/Utilities.php';
