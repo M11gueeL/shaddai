@@ -5,4 +5,5 @@ shaddai-api/vendor/
 
 shaddai-app/node_modules
 
-.txt
+shaddai-app/dist/
+
