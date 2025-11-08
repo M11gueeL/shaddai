@@ -5,6 +5,7 @@ import * as servicesApi from '../../api/services';
 import * as accountsApi from '../../api/accounts';
 import * as paymentsApi from '../../api/payments';
 import * as receiptsApi from '../../api/receipts';
+import * as inventoryApi from '../../api/inventoryApi';
 import PatientsApi from '../../api/PatientsApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -439,6 +440,13 @@ function AccountDetail({ account, onAccountLoaded, services, rate, cashOpen }) {
   const [adding, setAdding] = useState(false);
   const [serviceId, setServiceId] = useState('');
   const [qty, setQty] = useState(1);
+  // Supplies
+  const [items, setItems] = useState([]);
+  const [itemId, setItemId] = useState('');
+  const [itemQty, setItemQty] = useState(1);
+  const [addingSupply, setAddingSupply] = useState(false);
+  // UI: selector dinámico entre servicio/insumo
+  const [addMode, setAddMode] = useState('service'); // 'service' | 'supply'
   const [payLoading, setPayLoading] = useState(false);
   const [payment, setPayment] = useState({ payment_method: 'cash_bs', currency: 'BS', amount: '', reference_number: '', notes: '', attachment: null });
   const canEdit = account && (account.status === 'pending' || account.status === 'partially_paid');
@@ -460,6 +468,42 @@ function AccountDetail({ account, onAccountLoaded, services, rate, cashOpen }) {
     } catch (e) {
       toast.error(e?.response?.data?.error || 'No se pudo agregar');
     } finally { setAdding(false); }
+  };
+
+  // Load inventory once
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await inventoryApi.listInventory({ }, token);
+        if (!mounted) return;
+        setItems((res.data || []).filter(i => i.is_active === 1 || i.is_active === true));
+      } catch (e) { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, [token]);
+
+  const addSupply = async () => {
+    if (!itemId) return;
+    try {
+      setAddingSupply(true);
+      await accountsApi.addSupply(account.id, { item_id: itemId, quantity: itemQty }, token);
+      await reload();
+      toast.success('Insumo agregado');
+      setItemId(''); setItemQty(1);
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'No se pudo agregar el insumo');
+    } finally { setAddingSupply(false); }
+  };
+
+  const removeSupply = async (supplyId) => {
+    const ok = await confirm({ title: 'Eliminar insumo', tone: 'danger', message: 'Esta acción no se puede deshacer.' });
+    if (!ok) return;
+    try {
+      await accountsApi.removeSupply(supplyId, token);
+      await reload();
+      toast.success('Insumo eliminado');
+    } catch (e) { toast.error(e?.response?.data?.error || 'No se pudo eliminar'); }
   };
 
   const removeDetail = async (detailId) => {
@@ -528,16 +572,39 @@ function AccountDetail({ account, onAccountLoaded, services, rate, cashOpen }) {
         </div>
       </Card>
 
-      <Card title="Detalles" action={canEdit && (
+      <Card title="Cargar a la cuenta" action={canEdit && (
         <div className="flex items-center gap-2">
-          <select className="border rounded-lg px-3 py-2 text-sm" value={serviceId} onChange={(e)=>setServiceId(e.target.value)}>
-            <option value="">Servicio…</option>
-            {services.filter(s=>s.is_active===1 || s.is_active===true).map(s=> (
-              <option key={s.id} value={s.id}>{s.name} · ${'{'}Number(s.price_usd).toFixed(2){'}'} USD</option>
-            ))}
-          </select>
-          <input type="number" min="1" className="w-24 border rounded-lg px-2 py-2 text-sm" value={qty} onChange={(e)=>setQty(Number(e.target.value)||1)} />
-          <button disabled={!serviceId || adding} onClick={addDetail} className="px-3 py-2 rounded-lg bg-gray-900 text-white disabled:opacity-60">{adding?'Agregando…':'Agregar'}</button>
+          <div className="inline-flex rounded-lg border overflow-hidden">
+            <button type="button" className={`px-3 py-2 text-sm ${addMode==='service'?'bg-gray-900 text-white':'bg-white'}`} onClick={()=>setAddMode('service')}>Servicio</button>
+            <button type="button" className={`px-3 py-2 text-sm ${addMode==='supply'?'bg-gray-900 text-white':'bg-white'}`} onClick={()=>setAddMode('supply')}>Insumo</button>
+          </div>
+          {addMode==='service' ? (
+            <>
+              <select className="border rounded-lg px-3 py-2 text-sm" value={serviceId} onChange={(e)=>setServiceId(e.target.value)}>
+                <option value="">Servicio…</option>
+                {services.filter(s=>s.is_active===1 || s.is_active===true).map(s=> (
+                  <option key={s.id} value={s.id}>{s.name} · ${'{'}Number(s.price_usd).toFixed(2){'}'} USD</option>
+                ))}
+              </select>
+              <input type="number" min="1" className="w-24 border rounded-lg px-2 py-2 text-sm" value={qty} onChange={(e)=>setQty(Number(e.target.value)||1)} />
+              <button disabled={!serviceId || adding} onClick={addDetail} className="px-3 py-2 rounded-lg bg-gray-900 text-white disabled:opacity-60">{adding?'Agregando…':'Agregar servicio'}</button>
+            </>
+          ) : (
+            <>
+              <select className="border rounded-lg px-3 py-2 text-sm" value={itemId} onChange={(e)=>setItemId(e.target.value)}>
+                <option value="">Insumo…</option>
+                {items.map(it => {
+                  const usd = Number(it.price_usd||0);
+                  const bs = Number((usd * Number(account?.rate_bcv||0)).toFixed(2));
+                  return (
+                    <option key={it.id} value={it.id}>{it.name} · ${'{'}usd.toFixed(2){'}'} USD · {bs.toFixed?bs.toFixed(2):bs} Bs · Stock {it.stock_quantity} {it.unit_of_measure || ''}</option>
+                  );
+                })}
+              </select>
+              <input type="number" min="1" className="w-24 border rounded-lg px-2 py-2 text-sm" value={itemQty} onChange={(e)=>setItemQty(Number(e.target.value)||1)} />
+              <button disabled={!itemId || addingSupply} onClick={addSupply} className="px-3 py-2 rounded-lg bg-gray-900 text-white disabled:opacity-60">{addingSupply?'Agregando…':'Agregar insumo'}</button>
+            </>
+          )}
         </div>
       )}>
         <div className="border rounded-xl overflow-hidden">
@@ -563,6 +630,39 @@ function AccountDetail({ account, onAccountLoaded, services, rate, cashOpen }) {
                   <td className="p-2 text-right">
                     {canEdit && (
                       <button onClick={()=>removeDetail(d.id)} className="px-2 py-1 text-xs rounded bg-red-50 text-red-700 border border-red-200">Eliminar</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <Card title="Insumos cargados" action={null}>
+        <div className="border rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-600">
+              <tr>
+                <th className="text-left p-2">Insumo</th>
+                <th className="text-right p-2">Cant.</th>
+                <th className="text-right p-2">USD</th>
+                <th className="text-right p-2">Bs</th>
+                <th className="p-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {(account.supplies||[]).length===0 ? (
+                <tr><td colSpan={5} className="p-4 text-center text-gray-500">Sin insumos</td></tr>
+              ) : account.supplies.map(s => (
+                <tr key={s.id} className="hover:bg-gray-50">
+                  <td className="p-2">{s.description}</td>
+                  <td className="p-2 text-right">{s.quantity}</td>
+                  <td className="p-2 text-right">{Number(s.total_price_usd ?? (s.price_usd*s.quantity)).toFixed(2)} USD</td>
+                  <td className="p-2 text-right">{Number(s.total_price_bs ?? (s.price_bs*s.quantity)).toFixed(2)} Bs</td>
+                  <td className="p-2 text-right">
+                    {canEdit && (
+                      <button onClick={()=>removeSupply(s.id)} className="px-2 py-1 text-xs rounded bg-red-50 text-red-700 border border-red-200">Eliminar</button>
                     )}
                   </td>
                 </tr>

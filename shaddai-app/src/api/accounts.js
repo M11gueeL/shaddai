@@ -12,3 +12,6 @@ export const getAccount = (id, token) => axios.get(`${API_URL}/accounts/${id}`, 
 export const addDetail = (id, data, token) => axios.post(`${API_URL}/accounts/${id}/details`, data, auth(token));
 export const removeDetail = (detailId, token) => axios.delete(`${API_URL}/accounts/details/${detailId}`, auth(token));
 export const cancelAccount = (id, token) => axios.post(`${API_URL}/accounts/${id}/cancel`, {}, auth(token));
+// Supplies
+export const addSupply = (id, data, token) => axios.post(`${API_URL}/accounts/${id}/supplies`, data, auth(token));
+export const removeSupply = (supplyId, token) => axios.delete(`${API_URL}/accounts/supplies/${supplyId}`, auth(token));

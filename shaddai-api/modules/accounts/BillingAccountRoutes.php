@@ -12,6 +12,9 @@ class BillingAccountRoutes {
         // details
         $router->add('POST', 'accounts/{id}/details', [$c, 'addDetailToAccount'], ['auth','role:admin,recepcionista']);
         $router->add('DELETE', 'accounts/details/{detailId}', [$c, 'removeDetail'], ['auth','role:admin,recepcionista']);
+    // supplies
+    $router->add('POST', 'accounts/{id}/supplies', [$c, 'addSupplyToAccount'], ['auth','role:admin,recepcionista']);
+    $router->add('DELETE', 'accounts/supplies/{supplyId}', [$c, 'removeSupply'], ['auth','role:admin,recepcionista']);
         // cancel
         $router->add('POST', 'accounts/{id}/cancel', [$c, 'cancelAccount'], ['auth','role:admin']);
     }

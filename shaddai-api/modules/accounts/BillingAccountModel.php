@@ -30,7 +30,10 @@ class BillingAccountModel {
         $details = $this->db->query('SELECT d.*, s.name as service_name FROM billing_account_details d INNER JOIN services s ON s.id = d.service_id WHERE d.account_id = :id ORDER BY d.id ASC', [':id'=>$id]);
         // Avoid large blobs; expose only metadata
         $payments = $this->db->query('SELECT id, account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by, verified_by FROM payments WHERE account_id = :id ORDER BY id ASC', [':id'=>$id]);
+        // Supplies loaded to the account
+        $supplies = $this->db->query('SELECT s.*, ii.name as item_name, ii.unit_of_measure FROM billing_account_supplies s INNER JOIN inventory_items ii ON ii.id = s.item_id WHERE s.account_id = :id ORDER BY s.id ASC', [':id'=>$id]);
         $acc['details'] = $details;
+        $acc['supplies'] = $supplies;
         $acc['payments'] = $payments;
         return $acc;
     }
@@ -77,6 +80,31 @@ class BillingAccountModel {
 
     public function updateStatus($accountId, $status) {
         return $this->db->execute('UPDATE billing_accounts SET status = :st WHERE id = :id', [':st'=>$status, ':id'=>$accountId]);
+    }
+
+    // Supplies management
+    public function addSupply($accountId, $itemId, $description, $quantity, $priceUsd, $priceBs) {
+        // Total cached values
+        $totalUsd = round($quantity * $priceUsd, 2);
+        $totalBs = round($quantity * $priceBs, 2);
+        $sql = 'INSERT INTO billing_account_supplies (account_id, item_id, description, quantity, price_usd, total_price_usd, price_bs, total_price_bs) 
+                VALUES (:aid, :iid, :desc, :qty, :pu, :tpu, :pb, :tpb)';
+        $params = [
+            ':aid' => $accountId,
+            ':iid' => $itemId,
+            ':desc' => $description,
+            ':qty' => $quantity,
+            ':pu' => $priceUsd,
+            ':tpu' => $totalUsd,
+            ':pb' => $priceBs,
+            ':tpb' => $totalBs
+        ];
+        $this->db->execute($sql, $params);
+        return $this->db->lastInsertId();
+    }
+
+    public function removeSupply($supplyId) {
+        return $this->db->execute('DELETE FROM billing_account_supplies WHERE id = :id', [':id' => $supplyId]);
     }
 }
 ?>

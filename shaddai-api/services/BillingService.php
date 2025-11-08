@@ -7,9 +7,16 @@ class BillingService {
     public function __construct() { $this->db = Database::getInstance(); }
 
     public function computeTotalsForAccount($accountId) {
-        // Sum details and update account
-        $sum = $this->db->query('SELECT COALESCE(SUM(quantity * price_usd),0) as total_usd, COALESCE(SUM(quantity * price_bs),0) as total_bs FROM billing_account_details WHERE account_id = :id', [':id'=>$accountId]);
-        $totals = $sum[0] ?? ['total_usd'=>0,'total_bs'=>0];
+        // Sum services
+        $sumServices = $this->db->query('SELECT COALESCE(SUM(quantity * price_usd),0) as usd, COALESCE(SUM(quantity * price_bs),0) as bs FROM billing_account_details WHERE account_id = :id', [':id'=>$accountId]);
+        $sv = $sumServices[0] ?? ['usd'=>0,'bs'=>0];
+        // Sum supplies (use cached totals if available)
+        $sumSupplies = $this->db->query('SELECT COALESCE(SUM(total_price_usd),0) as usd, COALESCE(SUM(total_price_bs),0) as bs FROM billing_account_supplies WHERE account_id = :id', [':id'=>$accountId]);
+        $sp = $sumSupplies[0] ?? ['usd'=>0,'bs'=>0];
+        $totals = [
+            'total_usd' => (float)$sv['usd'] + (float)$sp['usd'],
+            'total_bs' => (float)$sv['bs'] + (float)$sp['bs']
+        ];
         $this->db->execute('UPDATE billing_accounts SET total_usd = :tu, total_bs = :tb, updated_at = NOW() WHERE id = :id', [':tu'=>$totals['total_usd'], ':tb'=>$totals['total_bs'], ':id'=>$accountId]);
         return $totals;
     }

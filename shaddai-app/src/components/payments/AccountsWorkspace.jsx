@@ -3,6 +3,7 @@ import * as accountsApi from '../../api/accounts';
 import * as servicesApi from '../../api/services';
 import * as paymentsApi from '../../api/payments';
 import * as ratesApi from '../../api/rates';
+import * as inventoryApi from '../../api/inventoryApi';
 import PatientsApi from '../../api/PatientsApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -44,20 +45,26 @@ export default function AccountsWorkspace(){
   const [amount, setAmount] = useState('');
   const [ref, setRef] = useState('');
   const [file, setFile] = useState(null);
-  const [stage, setStage] = useState('services'); // 'services' | 'payments'
   const [rate, setRate] = useState(null);
   const [serviceToAdd, setServiceToAdd] = useState('');
   const [serviceQty, setServiceQty] = useState(1);
+  const [stage, setStage] = useState('services'); // 'services' | 'payments' | 'supplies'
+  const [supplies, setSupplies] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [supplyToAdd, setSupplyToAdd] = useState('');
+  const [supplyQty, setSupplyQty] = useState(1);
 
   const load = async()=>{
     try{
       setLoading(true);
-      const [accRes, srvRes] = await Promise.all([
+      const [accRes, srvRes, invRes] = await Promise.all([
         accountsApi.listAccounts(statusFilter ? { status: statusFilter } : undefined, token),
-        servicesApi.listServices(token)
+        servicesApi.listServices(token),
+        inventoryApi.listInventory({ onlyActive: 1 }, token)
       ]);
       setAccounts(accRes.data || []);
       setServices(srvRes.data || []);
+      setInventory((invRes.data || []).filter(i=>i.is_active===1 || i.is_active===true));
     }catch(e){
       toast.error('No se pudo cargar');
     }finally{ setLoading(false); }
@@ -68,6 +75,7 @@ export default function AccountsWorkspace(){
       const res = await accountsApi.getAccount(accountId, token);
       setSelected(res.data || null);
       setDetails((res.data && res.data.details) ? res.data.details : []);
+      setSupplies(Array.isArray(res?.data?.supplies) ? res.data.supplies : []);
       // set account rate if provided
       if(res?.data?.rate_bcv){ setRate(Number(res.data.rate_bcv)); }
       // scroll if requested (used only when seleccionando cuenta)
@@ -108,8 +116,9 @@ export default function AccountsWorkspace(){
   }, [selected]);
   const accountTotalUsd = useMemo(()=> Number(selected?.total_usd || 0), [selected]);
   const saldoUsd = useMemo(()=> Math.max(0, accountTotalUsd - paidUsd), [accountTotalUsd, paidUsd]);
-  const totalBs = useMemo(()=>details.reduce((s,d)=> s + Number((d.quantity||1) * (d.price_bs||0)),0),[details]);
-  const totalUsd = useMemo(()=>details.reduce((s,d)=> s + Number((d.quantity||1) * (d.price_usd||0)),0),[details]);
+  // Usar totales consolidados que vienen de la cuenta (servicios + insumos)
+  const totalUsd = useMemo(()=> Number(selected?.total_usd || 0), [selected]);
+  const totalBs = useMemo(()=> Number(selected?.total_bs || 0), [selected]);
   const saldoBs = useMemo(()=>{
     const r = Number(selected?.rate_bcv || rate || 0);
     if(!r) return 0;
@@ -131,6 +140,19 @@ export default function AccountsWorkspace(){
     }
   };
 
+  const addSupply = async (itemId, qty = 1) => {
+    if(!selected) return toast.warning('Selecciona una cuenta');
+    if(!canModify) return toast.warning('La cuenta está pagada o anulada');
+    try{
+      await accountsApi.addSupply(selected.id, { item_id: itemId, quantity: qty }, token);
+      toast.success('Insumo agregado');
+      setSupplyToAdd(''); setSupplyQty(1);
+      loadDetails(selected.id);
+    }catch(e){
+      toast.error(e?.response?.data?.error || 'No se pudo agregar el insumo');
+    }
+  };
+
   const removeDetail = async (detailId) => {
     if(!selected) return;
     const ok = await confirm({ title: 'Eliminar detalle', description: '¿Deseas quitar este servicio de la cuenta?' });
@@ -138,6 +160,19 @@ export default function AccountsWorkspace(){
     try{
       await accountsApi.removeDetail(detailId, token);
       toast.success('Detalle eliminado');
+      loadDetails(selected.id);
+    }catch(e){
+      toast.error(e?.response?.data?.error || 'No se pudo eliminar');
+    }
+  };
+
+  const removeSupply = async (supplyId) => {
+    if(!selected) return;
+    const ok = await confirm({ title: 'Eliminar insumo', description: '¿Deseas quitar este insumo de la cuenta?' });
+    if(!ok) return;
+    try{
+      await accountsApi.removeSupply(supplyId, token);
+      toast.success('Insumo eliminado');
       loadDetails(selected.id);
     }catch(e){
       toast.error(e?.response?.data?.error || 'No se pudo eliminar');
@@ -254,6 +289,7 @@ export default function AccountsWorkspace(){
               <div className="flex items-center gap-2">
                 <button onClick={()=>setStage('services')} className={`px-3 py-1.5 rounded-lg text-sm border transition ${stage==='services'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 hover:bg-gray-50'}`}>Servicios</button>
                 <button onClick={()=>setStage('payments')} className={`px-3 py-1.5 rounded-lg text-sm border transition ${stage==='payments'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 hover:bg-gray-50'}`}>Registrar pagos</button>
+                <button onClick={()=>setStage('supplies')} className={`px-3 py-1.5 rounded-lg text-sm border transition ${stage==='supplies'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 hover:bg-gray-50'}`}>Insumos</button>
               </div>
 
               {stage==='services' ? (
@@ -300,7 +336,7 @@ export default function AccountsWorkspace(){
                     </div>
                   </div>
                 </div>
-              ) : (
+              ) : stage==='payments' ? (
                 <div className="mt-4 grid gap-4 md:grid-cols-5">
                   <div className="md:col-span-3">
                     <div className="text-sm font-medium text-gray-800 mb-2">Pagos registrados</div>
@@ -345,6 +381,50 @@ export default function AccountsWorkspace(){
                         <div className="text-[11px] text-gray-500 mt-1">Cuenta pagada/anulada: no se permiten nuevos pagos.</div>
                       )}
                     </form>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <div className="text-sm font-medium text-gray-800 mb-2">Agregar insumo</div>
+                  <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                    <div className="flex-1">
+                      <select disabled={!canModify} value={supplyToAdd} onChange={(e)=>setSupplyToAdd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
+                        <option value="">Selecciona un insumo…</option>
+                        {inventory.map(it => {
+                          const usd = Number(it.price_usd||0);
+                          const r = Number(selected?.rate_bcv || rate || 0);
+                          const bs = r ? (usd * r) : 0;
+                          return (
+                            <option key={it.id} value={it.id}>{it.name} · USD {usd.toFixed(2)} · Bs {bs.toFixed(2)} · Stock {it.stock_quantity} {it.unit_of_measure||''}</option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div>
+                      <input disabled={!canModify} type="number" min="1" value={supplyQty} onChange={(e)=>setSupplyQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-24 border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cantidad" />
+                    </div>
+                    <div>
+                      <button disabled={!canModify || !supplyToAdd} onClick={()=>{ addSupply(Number(supplyToAdd), Number(supplyQty)); }} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">Agregar insumo</button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
+                    {(!supplies || supplies.length===0) ? (
+                      <div className="p-4 text-sm text-gray-500">Sin insumos</div>
+                    ) : supplies.map(s => (
+                      <div key={s.id} className="flex items-center justify-between p-3 border-b last:border-b-0">
+                        <div>
+                          <div className="font-medium text-sm">{s.description}</div>
+                          <div className="text-xs text-gray-500">x{s.quantity || 1} · USD {Number(s.total_price_usd ?? (s.price_usd * s.quantity)).toFixed(2)} · Bs {Number(s.total_price_bs ?? (s.price_bs * s.quantity)).toFixed(2)}</div>
+                        </div>
+                        {canModify && (
+                          <button onClick={()=>removeSupply(s.id)} className="text-xs text-red-600 hover:underline">Quitar</button>
+                        )}
+                      </div>
+                    ))}
+                    {!canModify && (
+                      <div className="p-3 text-xs text-gray-600 bg-gray-50">Cuenta pagada/anulada: no se puede editar</div>
+                    )}
                   </div>
                 </div>
               )}
