@@ -79,6 +79,8 @@ class BillingAccountController {
 
     public function addSupplyToAccount($id) {
         try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
             $account = $this->model->getAccountWithRate((int)$id);
             if (!$account) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
             if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'Cannot add supplies to a cancelled or paid account']); return; }
@@ -95,8 +97,8 @@ class BillingAccountController {
             $db = Database::getInstance();
             try {
                 $db->beginTransaction();
-                // Deduct stock
-                $db->execute('UPDATE inventory_items SET stock_quantity = stock_quantity - :q WHERE id = :id', [':q'=>$qty, ':id'=>$item_id]);
+                // Deduct stock + register inventory movement (Salida facturada)
+                $this->inventoryModel->registerOutflow($item_id, $qty, $payload->sub, 'out_billed', 'Consumo facturado en cuenta #' . (int)$id);
                 $supplyId = $this->model->addSupply((int)$id, $item_id, $item['name'], $qty, $priceUsd, $priceBs);
                 $db->commit();
             } catch (Exception $inner) {
@@ -127,6 +129,8 @@ class BillingAccountController {
 
     public function removeSupply($supplyId) {
         try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
             $db = Database::getInstance();
             $row = $db->query('SELECT account_id, item_id, quantity FROM billing_account_supplies WHERE id = :id', [':id'=>(int)$supplyId]);
             if (!$row) { http_response_code(404); echo json_encode(['error'=>'Supply not found']); return; }
@@ -139,8 +143,8 @@ class BillingAccountController {
             try {
                 $db->beginTransaction();
                 $this->model->removeSupply((int)$supplyId);
-                // return stock
-                $db->execute('UPDATE inventory_items SET stock_quantity = stock_quantity + :q WHERE id = :id', [':q'=>$qty, ':id'=>$itemId]);
+                // Return stock + register inventory movement (Entrada por devolución usando in_restock)
+                $this->inventoryModel->registerInflow($itemId, $qty, $payload->sub, 'in_restock', 'Devolución consumo cuenta #' . (int)$accountId . ' (eliminación de línea)');
                 $db->commit();
             } catch (Exception $inner) {
                 $db->rollBack();

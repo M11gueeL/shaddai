@@ -111,6 +111,72 @@ class InventoryModel {
         }
     }
 
+    /**
+     * Registra una salida (consumo) de inventario. No maneja transacción propia:
+     * asume que el llamador iniciará/confirmará la transacción si lo requiere.
+     * Útil para operaciones compuestas (p. ej. consumo al cargar insumos a una cuenta).
+     *
+     * @param int $id Item ID
+     * @param int $quantity Cantidad a descontar (>0)
+     * @param int $userId Usuario que realiza el movimiento
+     * @param string $movementType Tipo de movimiento (por defecto 'out_consume')
+     * @param string|null $notes Notas opcionales
+     */
+    public function registerOutflow($id, $quantity, $userId, $movementType = 'out_billed', $notes = null) {
+        if ($quantity <= 0) throw new Exception('Quantity must be > 0');
+        $item = $this->getById($id);
+        if (!$item) throw new Exception('Item not found');
+        if ((int)$item['is_active'] !== 1) throw new Exception('Item inactive');
+        if ((int)$item['stock_quantity'] < $quantity) throw new Exception('Insufficient stock');
+
+        // Descontar stock
+        $this->db->execute('UPDATE inventory_items SET stock_quantity = stock_quantity - :q WHERE id = :id', [
+            ':q' => $quantity,
+            ':id' => $id
+        ]);
+        // Registrar movimiento
+        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
+        $this->db->execute($sql, [
+            ':item_id' => $id,
+            ':movement_type' => $movementType,
+            ':quantity' => $quantity,
+            ':notes' => $notes,
+            ':created_by' => $userId
+        ]);
+        return true;
+    }
+
+    /**
+     * Registra una entrada (devolución/ajuste) de inventario. Tampoco maneja transacción propia.
+     * @param int $id Item ID
+     * @param int $quantity Cantidad a sumar (>0)
+     * @param int $userId Usuario que realiza el movimiento
+     * @param string $movementType Tipo de movimiento (por defecto 'in_return')
+     * @param string|null $notes Notas opcionales
+     */
+    public function registerInflow($id, $quantity, $userId, $movementType = 'in_restock', $notes = null) {
+        if ($quantity <= 0) throw new Exception('Quantity must be > 0');
+        $item = $this->getById($id);
+        if (!$item) throw new Exception('Item not found');
+        if ((int)$item['is_active'] !== 1) throw new Exception('Item inactive');
+
+        // Aumentar stock
+        $this->db->execute('UPDATE inventory_items SET stock_quantity = stock_quantity + :q WHERE id = :id', [
+            ':q' => $quantity,
+            ':id' => $id
+        ]);
+        // Registrar movimiento
+        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
+        $this->db->execute($sql, [
+            ':item_id' => $id,
+            ':movement_type' => $movementType,
+            ':quantity' => $quantity,
+            ':notes' => $notes,
+            ':created_by' => $userId
+        ]);
+        return true;
+    }
+
     /** Lista movimientos de un item */
     public function getMovementsByItem($id, $limit = 100) {
         $sql = 'SELECT id, movement_type, quantity, notes, created_by, created_at FROM inventory_movements WHERE item_id = :id ORDER BY id DESC LIMIT ' . (int)$limit;
