@@ -4,6 +4,7 @@ import * as accountsApi from '../../api/accounts';
 import * as servicesApi from '../../api/services';
 import * as paymentsApi from '../../api/payments';
 import * as ratesApi from '../../api/rates';
+import * as receiptsApi from '../../api/receipts';
 import * as inventoryApi from '../../api/inventoryApi';
 import PatientsApi from '../../api/PatientsApi';
 import { useAuth } from '../../context/AuthContext';
@@ -55,6 +56,7 @@ export default function AccountsWorkspace(){
   const [inventory, setInventory] = useState([]);
   const [supplyToAdd, setSupplyToAdd] = useState('');
   const [supplyQty, setSupplyQty] = useState(1);
+  const [receiptInfo, setReceiptInfo] = useState(null);
 
   const load = async()=>{
     try{
@@ -80,6 +82,10 @@ export default function AccountsWorkspace(){
       setSupplies(Array.isArray(res?.data?.supplies) ? res.data.supplies : []);
       // set account rate if provided
       if(res?.data?.rate_bcv){ setRate(Number(res.data.rate_bcv)); }
+      // fetch receipt metadata if account is paid
+      if(res?.data?.status === 'paid'){
+        try { const r = await receiptsApi.getReceiptByAccount(accountId, token); setReceiptInfo(r?.data || null); } catch { setReceiptInfo(null); }
+      } else { setReceiptInfo(null); }
       // scroll if requested (used only when seleccionando cuenta)
       if(opts?.scroll){ setTimeout(()=>{ detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); }
     }catch(e){ setDetails([]); setSelected(null); }
@@ -183,7 +189,7 @@ export default function AccountsWorkspace(){
     try{
       await accountsApi.addDetail(selected.id, { service_id: serviceId, quantity: qty }, token);
       toast.success('Servicio agregado');
-      loadDetails(selected.id);
+  await loadDetails(selected.id);
     }catch(e){
       toast.error(e?.response?.data?.error || 'No se pudo agregar');
     }
@@ -196,7 +202,7 @@ export default function AccountsWorkspace(){
       await accountsApi.addSupply(selected.id, { item_id: itemId, quantity: qty }, token);
       toast.success('Insumo agregado');
       setSupplyToAdd(''); setSupplyQty(1);
-      loadDetails(selected.id);
+  await loadDetails(selected.id);
     }catch(e){
       toast.error(e?.response?.data?.error || 'No se pudo agregar el insumo');
     }
@@ -209,7 +215,7 @@ export default function AccountsWorkspace(){
     try{
       await accountsApi.removeDetail(detailId, token);
       toast.success('Detalle eliminado');
-      loadDetails(selected.id);
+  await loadDetails(selected.id);
     }catch(e){
       toast.error(e?.response?.data?.error || 'No se pudo eliminar');
     }
@@ -222,7 +228,7 @@ export default function AccountsWorkspace(){
     try{
       await accountsApi.removeSupply(supplyId, token);
       toast.success('Insumo eliminado');
-      loadDetails(selected.id);
+  await loadDetails(selected.id);
     }catch(e){
       toast.error(e?.response?.data?.error || 'No se pudo eliminar');
     }
@@ -249,7 +255,7 @@ export default function AccountsWorkspace(){
       if(res?.data?.id){
         toast.success('Pago registrado');
         setAmount(''); setRef(''); setFile(null);
-        loadDetails(selected.id);
+  await loadDetails(selected.id);
       } else {
         toast.error('No se pudo confirmar el pago');
       }
@@ -345,6 +351,32 @@ export default function AccountsWorkspace(){
                   <div className="px-2 py-1 text-xs">
                     <StatusBadge status={selected.status} />
                   </div>
+                  {selected.status === 'paid' && (
+                    receiptInfo ? (
+                      <button
+                        onClick={async()=>{
+                          try {
+                            const r = await receiptsApi.downloadReceipt(receiptInfo.id, token);
+                            const blob = r.data instanceof Blob ? r.data : new Blob([r.data], { type: 'application/pdf' });
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `recibo_${receiptInfo.receipt_number || receiptInfo.id}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            window.URL.revokeObjectURL(url);
+                          } catch(e){
+                            toast.error('No se pudo descargar el recibo');
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700"
+                        title="Descargar recibo de pago"
+                      >Descargar recibo</button>
+                    ) : (
+                      <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-200 text-gray-600" title="Generando recibo automáticamente…">Generando recibo…</span>
+                    )
+                  )}
                   <button
                     onClick={()=>{ setSelected(null); setDetails([]); }}
                     className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/20 backdrop-blur-sm transition border border-white/20"

@@ -56,7 +56,7 @@ export default function ForgotPassword() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="mx-auto w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
-            {/* Icono de Email */}
+        
             <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
@@ -89,8 +89,7 @@ export default function ForgotPassword() {
                   />
                 </div>
               </div>
-              
-              {/* Mensaje de Error (Rojo) */}
+
               {error && (
                   <div
                     className={`
@@ -103,7 +102,6 @@ export default function ForgotPassword() {
                   </div>
               )}
 
-              {/* Mensaje de Éxito (Verde) */}
               {message && (
                   <div
                     className={`

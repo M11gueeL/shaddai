@@ -77,7 +77,6 @@ export default function ResetPassword() {
           <div className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               
-              {/* Campo Nueva Contraseña */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Nueva Contraseña</label>
                 <div className="relative">
@@ -103,7 +102,6 @@ export default function ResetPassword() {
                     onClick={() => setShowPassword(!showPassword)}
                     disabled={loading || message}
                   >
-                    {/* Lógica de Show/Hide copiada de tu Login */}
                     {showPassword ? (
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -118,7 +116,6 @@ export default function ResetPassword() {
                 </div>
               </div>
               
-              {/* Campo Confirmar Contraseña */}
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirmar Contraseña</label>
                 <div className="relative">
@@ -141,7 +138,6 @@ export default function ResetPassword() {
                 </div>
               </div>
 
-              {/* Mensaje de Error (Rojo) */}
               {error && (
                   <div
                     className={`
@@ -154,7 +150,6 @@ export default function ResetPassword() {
                   </div>
               )}
 
-              {/* Mensaje de Éxito (Verde) */}
               {message && (
                   <div
                     className={`
@@ -178,7 +173,6 @@ export default function ResetPassword() {
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
-                      {/* ... SVG de carga ... */}
                       Actualizando...
                     </span>
                   ) : (

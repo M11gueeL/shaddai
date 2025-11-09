@@ -37,6 +37,7 @@ class BillingService {
         $acc = $this->db->query('SELECT id, total_usd, status FROM billing_accounts WHERE id = :id', [':id'=>$accountId]);
         if (!$acc) return null;
         $acc = $acc[0];
+        $previous = $acc['status'];
         $paid = $this->getAccountPaymentUsdSum($accountId);
         $newStatus = 'pending';
         if ($paid <= 0.0001) {
@@ -49,7 +50,7 @@ class BillingService {
         if ($newStatus !== $acc['status']) {
             $this->db->execute('UPDATE billing_accounts SET status = :st, updated_at = NOW() WHERE id = :id', [':st'=>$newStatus, ':id'=>$accountId]);
         }
-        return ['paid_usd'=>$paid, 'status'=>$newStatus];
+        return ['paid_usd'=>$paid, 'status'=>$newStatus, 'previous_status'=>$previous];
     }
 }
 ?>

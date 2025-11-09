@@ -136,13 +136,11 @@ export default function Login() {
                   </label>
                 </div>
 
-                {/* --- ESTA ES LA LÍNEA MODIFICADA --- */}
                 <div className="text-sm">
                   <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500 transition">
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
-                {/* --- FIN DE LÍNEA MODIFICADA --- */}
 
               </div>
               

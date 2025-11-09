@@ -5,9 +5,21 @@ class Utilities {
     // Configuración de header comunes
     public static function setHeaders() {
         header("Access-Control-Allow-Origin: *");
-        header("Content-Type: application/json; charset=UTF-8");
         header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS, PATCH");
         header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+
+        // No fuerces JSON para endpoints binarios (p.ej., descargas de PDF)
+        // Detectamos la ruta solicitada y si coincide con descargas, evitamos fijar Content-Type aquí.
+        $requestUri = $_SERVER['REQUEST_URI'] ?? '';
+        $basePath = ($_ENV['API_BASE_PATH'] ?? '/shaddai/shaddai-api/public');
+        $path = parse_url($requestUri, PHP_URL_PATH) ?? '';
+        if (strpos($path, $basePath) === 0) {
+            $path = substr($path, strlen($basePath));
+        }
+        $isBinary = preg_match('@^/receipts/\d+/download$@', $path);
+        if (!$isBinary) {
+            header("Content-Type: application/json; charset=UTF-8");
+        }
     }
 
     // Manejo de preflight OPTIONS
