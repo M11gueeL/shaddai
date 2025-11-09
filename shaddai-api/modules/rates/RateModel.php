@@ -23,6 +23,11 @@ class RateModel {
         return $this->db->lastInsertId();
     }
 
+    public function updateByDate($date, $rate_bcv) {
+        $sql = 'UPDATE daily_exchange_rates SET rate_bcv = :r WHERE rate_date = :d';
+        return $this->db->execute($sql, [':r'=>$rate_bcv, ':d'=>$date]);
+    }
+
     public function list($limit = 30) {
         $limit = max(1, min(200, (int)$limit));
         return $this->db->query('SELECT * FROM daily_exchange_rates ORDER BY rate_date DESC, id DESC LIMIT ' . $limit);

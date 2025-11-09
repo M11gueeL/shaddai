@@ -14,7 +14,13 @@ class RateController {
             if (!$rate || $rate <= 0) { http_response_code(400); echo json_encode(['error'=>'rate_bcv must be > 0']); return; }
             $targetDate = $date ?: date('Y-m-d');
             $existing = $this->model->findByDate($targetDate);
-            if ($existing) { http_response_code(409); echo json_encode(['error'=>'Rate for this date already exists','date'=>$targetDate]); return; }
+            if ($existing) {
+                // Instead of rejecting, update existing rate (audit could be added later)
+                $this->model->updateByDate($targetDate, $rate);
+                http_response_code(200);
+                echo json_encode(['updated'=>true,'rate_date'=>$targetDate,'rate_bcv'=>$rate,'previous_rate'=>$existing['rate_bcv']]);
+                return;
+            }
             $id = $this->model->create($rate, $payload->sub, $targetDate);
             http_response_code(201);
             echo json_encode(['id'=>(int)$id,'rate_date'=>$targetDate,'rate_bcv'=>$rate]);

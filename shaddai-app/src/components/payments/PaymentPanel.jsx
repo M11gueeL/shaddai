@@ -7,12 +7,18 @@ export default function PaymentPanel() {
 
   return (
     <div className="flex flex-col w-full">
-      <div className="px-6 pt-6">
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Caja y Pagos</h1>
-        <p className="text-gray-600 mt-1">Gestiona sesiones de caja, cuentas, servicios, tasas y pagos.</p>
+      {/* Mini header compacto */}
+      <div className="px-4 sm:px-6 pt-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-3 shadow-sm">
+          <span className="inline-block w-1.5 h-6 rounded-full bg-gradient-to-b from-indigo-500 via-sky-500 to-cyan-400" />
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold leading-none text-gray-900">Caja y Pagos</span>
+            <span className="text-xs text-gray-600 mt-0.5">Gestiona sesiones de caja, cuentas, servicios, tasas y pagos.</span>
+          </div>
+        </div>
       </div>
 
-      <div className="p-4 sm:px-6 mt-6">
+      <div className="p-4 sm:px-6 mt-4">
         <div className="bg-white/70 backdrop-blur rounded-2xl border border-gray-200">
           <nav className="flex gap-2 p-2">
             <Tab to="/payment" end label="Inicio" icon={<span>🏠</span>} />
