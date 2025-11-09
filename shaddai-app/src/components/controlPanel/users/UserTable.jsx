@@ -12,7 +12,7 @@ const UserTable = ({
   medicalColleges
 }) => {
   const [selectedUser, setSelectedUser] = useState(null);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState(Array.isArray(users) ? users : []);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchField, setSearchField] = useState('all');
   const [filters, setFilters] = useState({
@@ -82,7 +82,7 @@ const UserTable = ({
 
   // Filtrar usuarios con búsqueda avanzada
   useEffect(() => {
-    let result = users;
+  let result = Array.isArray(users) ? [...users] : [];
     
     // Aplicar filtro de búsqueda avanzada
     if (searchTerm) {
@@ -139,7 +139,7 @@ const UserTable = ({
       result = result.filter(user => isMedico(user));
     }
     
-    setFilteredUsers(result);
+    setFilteredUsers(Array.isArray(result) ? result : []);
   }, [users, searchTerm, searchField, filters]);
 
   // Manejar selección de usuario
@@ -185,6 +185,8 @@ const UserTable = ({
       setSelectedUser({ ...selectedUser, active: prevActive });
     }
   };
+
+  const safeFilteredUsers = Array.isArray(filteredUsers) ? filteredUsers : [];
 
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -330,8 +332,8 @@ const UserTable = ({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
+            {safeFilteredUsers.length > 0 ? (
+              safeFilteredUsers.map((user) => (
                 <tr
                   key={user.id}
                   className={`${

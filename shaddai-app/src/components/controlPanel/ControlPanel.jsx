@@ -1,12 +1,13 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Activity } from 'lucide-react';
+import { Shield, Users, Activity, DownloadCloud } from 'lucide-react';
 
 export default function ControlPanel() {
   const location = useLocation();
   
   const isUsersSection = location.pathname.includes('/controlpanel/users');
   const isSessionsSection = location.pathname.includes('/controlpanel/sessions');
+  const isBackupSection = location.pathname.includes('/controlpanel/backup');
   
   return (
     <div className="container mx-auto p-6">
@@ -54,6 +55,19 @@ export default function ControlPanel() {
           >
             <Activity className={`w-4 h-4 ${isSessionsSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
             <span className="text-sm font-medium">Sesiones</span>
+          </Link>
+
+          <Link
+            to="/controlpanel/backup"
+            aria-selected={isBackupSection}
+            className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
+              isBackupSection
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50 border-transparent'
+            }`}
+          >
+            <DownloadCloud className={`w-4 h-4 ${isBackupSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
+            <span className="text-sm font-medium">Respaldos</span>
           </Link>
 
           <button

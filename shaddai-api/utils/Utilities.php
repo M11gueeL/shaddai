@@ -16,7 +16,18 @@ class Utilities {
         if (strpos($path, $basePath) === 0) {
             $path = substr($path, strlen($basePath));
         }
-        $isBinary = preg_match('@^/receipts/\d+/download$@', $path);
+        $binaryRoutes = [
+            '@^/receipts/\d+/download$@',
+            '@^/system/database/export$@'
+        ];
+
+        $isBinary = false;
+        foreach ($binaryRoutes as $pattern) {
+            if (preg_match($pattern, $path)) {
+                $isBinary = true;
+                break;
+            }
+        }
         if (!$isBinary) {
             header("Content-Type: application/json; charset=UTF-8");
         }

@@ -20,6 +20,14 @@ export default function UserPanel() {
   
   // Cargar datos iniciales
   useEffect(() => {
+    const normalizeUsersResponse = (response) => {
+      const payload = response?.data;
+      if (Array.isArray(payload)) return payload;
+      if (payload && Array.isArray(payload.data)) return payload.data;
+      if (payload && Array.isArray(payload.users)) return payload.users;
+      return [];
+    };
+
     const loadData = async () => {
       try {
         setLoading(true);
@@ -27,15 +35,23 @@ export default function UserPanel() {
         
         // Cargar usuarios
         const usersRes = await userApi.getAll(token);
-        setUsers(usersRes.data);
+        setUsers(normalizeUsersResponse(usersRes));
         
         // Cargar especialidades
         const specsRes = await userApi.getSpecialties(token);
-        setSpecialties(specsRes.data);
+        setSpecialties(Array.isArray(specsRes?.data)
+          ? specsRes.data
+          : Array.isArray(specsRes?.data?.data)
+            ? specsRes.data.data
+            : []);
         
         // Cargar colegios médicos
         const collegesRes = await userApi.getMedicalColleges(token);
-        setMedicalColleges(collegesRes.data);
+        setMedicalColleges(Array.isArray(collegesRes?.data)
+          ? collegesRes.data
+          : Array.isArray(collegesRes?.data?.data)
+            ? collegesRes.data.data
+            : []);
         
         setLoading(false);
       } catch (err) {
@@ -61,12 +77,16 @@ export default function UserPanel() {
   const handleToggleStatus = async (userId) => {
     try {
       await userApi.toggleStatus(userId, token);
-      setUsers(users.map(user => 
-        user.id === userId ? { 
-          ...user, 
-          active: user.active === 1 ? 0 : 1  // Cambio clave aquí
-        } : user
-      ));
+      setUsers(Array.isArray(users)
+        ? users.map(user => 
+            user.id === userId
+              ? {
+                  ...user,
+                  active: user.active === 1 ? 0 : 1 // Cambio clave aquí
+                }
+              : user
+          )
+        : []);
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       toast.error('Error al cambiar estado: ' + (err.response?.data?.message || err.message));
@@ -77,7 +97,15 @@ export default function UserPanel() {
     try {
       await userApi.create(formData, token);
       const usersRes = await userApi.getAll(token);
-      setUsers(usersRes.data);
+      const payload = usersRes?.data;
+      const refreshed = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.users)
+            ? payload.users
+            : [];
+      setUsers(refreshed);
       setShowCreateForm(false);
       toast.success('Usuario creado exitosamente');
     } catch (err) {
@@ -90,7 +118,9 @@ export default function UserPanel() {
     try {
       if (formData.birth_date === '') formData.birth_date = null;
       const updatedUser = await userApi.update(editingUser.id, formData, token);
-      setUsers(users.map(user => user.id === editingUser.id ? updatedUser : user));
+      setUsers(Array.isArray(users)
+        ? users.map(user => user.id === editingUser.id ? updatedUser : user)
+        : []);
       setShowEditForm(false);
       setEditingUser(null);
       toast.success('Usuario actualizado exitosamente');

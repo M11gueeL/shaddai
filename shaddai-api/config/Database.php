@@ -77,6 +77,10 @@ class Database {
         return $this->pdo->lastInsertId();
     }
 
+    public function getConnection() {
+        return $this->pdo;
+    }
+
     // Método para verificar si la conexión es válida
     public function isConnected() {
         try {

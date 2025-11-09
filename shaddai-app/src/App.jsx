@@ -18,6 +18,7 @@ import InventoryPanel from "./components/inventory/InventoryPanel";
 import UserPanel from "./components/controlPanel/users/UserPanel";
 import AllSessionsPanel from "./components/controlPanel/sessions/AllSessionsPanel";
 import ProfilePanel from "./components/controlPanel/users/ProfilePanel";
+import DatabaseBackupPanel from "./components/controlPanel/system/DatabaseBackupPanel";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
@@ -52,6 +53,7 @@ export default function App() {
               } >
                 <Route path="users" element={<UserPanel />} />
                 <Route path="sessions" element={<AllSessionsPanel />} />
+                <Route path="backup" element={<DatabaseBackupPanel />} />
               </Route>
               
               {/* Recepción - Admin + Recepcionista */}
