@@ -21,6 +21,14 @@ class AuthController {
     public function login() {
         
         $data = $_POST;     
+        $recaptchaToken = $data['recaptchaToken'] ?? ($data['recaptcha_token'] ?? null);
+        $recaptchaResult = $this->verifyRecaptchaToken($recaptchaToken);
+        if (!$recaptchaResult['valid']) {
+            http_response_code($recaptchaResult['status']);
+            echo json_encode(['error' => $recaptchaResult['message']]);
+            return;
+        }
+
         if (empty($data['email']) || empty($data['password'])) {
             http_response_code(400);
             echo json_encode(['error' => 'Correo y contraseña son requeridos']);
@@ -75,6 +83,17 @@ class AuthController {
         ]);
     }
 
+    public function getRecaptchaSiteKey() {
+        $siteKey = $_ENV['VITE_RECAPTCHA_SITE_KEY'] ?? ($_ENV['RECAPTCHA_SITE_KEY'] ?? null);
+        if (!$siteKey) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Clave pública de reCAPTCHA no configurada.']);
+            return;
+        }
+
+        echo json_encode(['site_key' => $siteKey]);
+    }
+
     // LOGOUT
     public function logout() {
         $headers = getallheaders();
@@ -89,6 +108,70 @@ class AuthController {
         }
         $result = $this->model->closeSession($token);
         echo json_encode(['message' => $result ? 'Sesión cerrada' : 'No se pudo cerrar sesión, ya estaba cerrada o token inválido']);
+    }
+
+    private function verifyRecaptchaToken(?string $token): array {
+        $secret = $_ENV['RECAPTCHA_SECRET_KEY'] ?? null;
+        if (!$secret) {
+            error_log('RECAPTCHA_SECRET_KEY is not configured.');
+            return [
+                'valid' => false,
+                'status' => 500,
+                'message' => 'Error al verificar el reCAPTCHA.'
+            ];
+        }
+
+        if (!$token) {
+            return [
+                'valid' => false,
+                'status' => 400,
+                'message' => 'Captcha requerido.'
+            ];
+        }
+
+        $endpoint = 'https://www.google.com/recaptcha/api/siteverify';
+        $payload = http_build_query([
+            'secret' => $secret,
+            'response' => $token,
+            'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null
+        ]);
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'POST',
+                'header' => "Content-Type: application/x-www-form-urlencoded\r\n",
+                'content' => $payload,
+                'timeout' => 5
+            ]
+        ]);
+
+        $response = @file_get_contents($endpoint, false, $context);
+        if ($response === false) {
+            error_log('No response from reCAPTCHA verification endpoint.');
+            return [
+                'valid' => false,
+                'status' => 500,
+                'message' => 'Error al verificar el reCAPTCHA.'
+            ];
+        }
+
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded) || empty($decoded['success'])) {
+            if (!empty($decoded['error-codes'])) {
+                error_log('reCAPTCHA error codes: ' . json_encode($decoded['error-codes']));
+            }
+            return [
+                'valid' => false,
+                'status' => 400,
+                'message' => 'Captcha inválido, intenta nuevamente.'
+            ];
+        }
+
+        return [
+            'valid' => true,
+            'status' => 200,
+            'message' => ''
+        ];
     }
 
     // GETPROFILE

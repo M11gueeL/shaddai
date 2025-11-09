@@ -11,6 +11,7 @@ class AuthRoutes {
         $authController = new AuthController();
 
         $router->add('POST', 'auth/login', [$authController, 'login']);
+        $router->add('GET', 'auth/recaptcha-site-key', [$authController, 'getRecaptchaSiteKey']);
         $router->add('POST', 'auth/logout', [$authController, 'logout'], 'auth');
         $router->add('GET', 'auth/profile', [$authController, 'getProfile'], 'auth');
         $router->add('GET', 'auth/sessions', [$authController, 'listSessions'], ['auth', 'role:admin']);

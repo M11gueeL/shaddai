@@ -1,10 +1,10 @@
-// shaddai-app/src/api/authApi.js
-// TU CÓDIGO EXISTENTE (SIN CAMBIOS)
 import axios from "axios";
 
 const API = "http://localhost/shaddai/shaddai-api/public/auth";
 
 export const login = (data) => axios.post(`${API}/login`, data);
+
+export const getRecaptchaSiteKey = () => axios.get(`${API}/recaptcha-site-key`);
 
 export const logout = (token) =>
   axios.post(
@@ -31,9 +31,6 @@ export const getSessions = (token) =>
     },
   });
 
-// --- INICIO DE NUEVO CÓDIGO ---
-// Añadimos las dos nuevas funciones de la API
-
 /**
  * Llama a la API para solicitar un correo de restablecimiento.
  * Envía JSON, no FormData.
@@ -51,5 +48,3 @@ export const requestPasswordReset = (email) =>
  */
 export const resetPassword = (token, new_password) =>
   axios.post(`${API}/reset-password`, { token, new_password });
-
-// --- FIN DE NUEVO CÓDIGO ---

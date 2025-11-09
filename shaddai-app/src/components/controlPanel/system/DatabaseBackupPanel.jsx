@@ -214,7 +214,6 @@ export default function DatabaseBackupPanel() {
                 </>
               )}
             </button>
-            <p className="text-xs text-gray-400">Disponible solo para administradores autenticados.</p>
           </div>
         </div>
 

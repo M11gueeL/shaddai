@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import ReCAPTCHA from "react-google-recaptcha";
+import { getRecaptchaSiteKey } from "../../api/authApi";
 
 export default function Login() {
   const { login, loading } = useAuth();
@@ -8,8 +10,13 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [fadeOut, setFadeOut] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
+  const [siteKey, setSiteKey] = useState("");
+  const [captchaLoading, setCaptchaLoading] = useState(true);
+  const captchaRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const requiresCaptcha = Boolean(siteKey);
 
   const displayDuration = 3000;
   const fadeDuration = 500;
@@ -37,15 +44,54 @@ export default function Login() {
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await getRecaptchaSiteKey();
+        if (!active) return;
+        setSiteKey(response.data?.site_key || "");
+      } catch (fetchError) {
+        if (!active) return;
+        setSiteKey("");
+      } finally {
+        if (active) {
+          setCaptchaLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setRecaptchaToken(null);
+    if (captchaRef.current) {
+      captchaRef.current.reset();
+    }
+  }, [siteKey]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    const result = await login(form);
+    if (requiresCaptcha && !recaptchaToken) {
+      setError("Por favor completa el reCAPTCHA.");
+      return;
+    }
+    const result = await login({ ...form, recaptchaToken });
     if (result.success) {
       const from = location.state?.from?.pathname || "/dashboard";
       navigate(from, { replace: true });
     } else {
       setError(result.message);
+      if (requiresCaptcha) {
+        if (captchaRef.current) {
+          captchaRef.current.reset();
+        }
+        setRecaptchaToken(null);
+      }
     }
   };
 
@@ -157,11 +203,36 @@ export default function Login() {
               )}
 
               <div>
+                <span className="block text-sm font-medium text-gray-700 mb-2">
+                  Verificación de seguridad
+                </span>
+                {captchaLoading ? (
+                  <p className="text-xs text-gray-500 text-center">Cargando reCAPTCHA...</p>
+                ) : requiresCaptcha ? (
+                  <div className="flex justify-center">
+                    <ReCAPTCHA
+                      ref={captchaRef}
+                      sitekey={siteKey}
+                      onChange={(value) => {
+                        setRecaptchaToken(value);
+                        if (error) setError(null);
+                      }}
+                      onExpired={() => setRecaptchaToken(null)}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 text-center">
+                    No se detectó la clave pública de reCAPTCHA. Contacta al administrador para configurarla.
+                  </p>
+                )}
+              </div>
+
+              <div>
                 <button
-                  disabled={loading}
+                  disabled={loading || captchaLoading || (requiresCaptcha && !recaptchaToken)}
                   className={`w-full py-3.5 px-4 rounded-xl text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 ${
-                    loading 
-                      ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed" 
+                    loading || captchaLoading || (requiresCaptcha && !recaptchaToken)
+                      ? "bg-gradient-to-r from-gray-400 to-gray-500 cursor-not-allowed"
                       : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
                   }`}
                   type="submit"
