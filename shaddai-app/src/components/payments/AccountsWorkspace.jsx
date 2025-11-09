@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ClipboardList, CreditCard, Package, Trash2, Plus, Wallet, HandCoins, Search, CheckCircle2, XCircle } from 'lucide-react';
 import * as accountsApi from '../../api/accounts';
 import * as servicesApi from '../../api/services';
 import * as paymentsApi from '../../api/payments';
@@ -22,7 +23,7 @@ function StatusBadge({ status }){
 
 export default function AccountsWorkspace(){
   const detailsRef = useRef(null);
-  const { token } = useAuth();
+  const { token, user, hasRole } = useAuth();
   const toast = useToast();
   const { confirm } = useConfirm();
 
@@ -127,6 +128,53 @@ export default function AccountsWorkspace(){
     return Math.max(0, totalBsLocal - paidBsApprox);
   }, [selected, totalBs, paidUsd, rate]);
 
+  // Selecciones para vista previa
+  const selectedService = useMemo(()=> services.find(s => s.id === Number(serviceToAdd)), [services, serviceToAdd]);
+  const selectedItem = useMemo(()=> inventory.find(i => i.id === Number(supplyToAdd)), [inventory, supplyToAdd]);
+
+  // Reglas de validación de pagos (evitar sobrepago en métodos electrónicos)
+  const todayRate = useMemo(()=> Number(rate || 0), [rate]);
+  const amountNumber = useMemo(()=> Number(amount || 0), [amount]);
+  const amountUsdEntered = useMemo(()=>{
+    if(!amountNumber) return 0;
+    if(method === 'cash_usd') return amountNumber;
+    // Para Bs (efectivo, transferencia o pago móvil) usamos la tasa del día del pago
+    return todayRate ? (amountNumber / todayRate) : 0;
+  }, [amountNumber, method, todayRate]);
+  const isElectronic = method === 'transfer_bs' || method === 'mobile_payment_bs';
+  const exceedsElectronic = useMemo(()=> isElectronic && amountUsdEntered > (saldoUsd + 0.01), [isElectronic, amountUsdEntered, saldoUsd]);
+  const isCash = method === 'cash_usd' || method === 'cash_bs';
+  const hasChange = useMemo(()=> isCash && amountUsdEntered > (saldoUsd + 0.01), [isCash, amountUsdEntered, saldoUsd]);
+  const changeLabel = useMemo(()=>{
+    if(!hasChange) return '';
+    if(method === 'cash_usd') {
+      const change = Math.max(0, amountNumber - saldoUsd);
+      return `Vuelto: USD ${change.toFixed(2)}`;
+    }
+    // cash_bs
+    const changeBs = Math.max(0, amountNumber - (saldoUsd * (todayRate||0)));
+    return `Vuelto: Bs ${changeBs.toFixed(2)}`;
+  }, [hasChange, method, amountNumber, saldoUsd, todayRate]);
+  const saldoBsExact = useMemo(()=>{
+    const r = Number(selected?.rate_bcv || rate || 0);
+    return r ? Number((saldoUsd * r).toFixed(2)) : 0;
+  }, [saldoUsd, selected, rate]);
+
+  const handleAmountInput = (e) => {
+    let val = e.target.value.replace(/,/g,'.');
+    if(val === '') { setAmount(''); return; }
+    let num = Number(val);
+    if(isNaN(num) || num < 0) num = 0;
+    // Limitar sobrepago en métodos electrónicos (transferencia/pago móvil en Bs)
+    if(isElectronic) {
+      const maxBs = saldoBsExact; // saldo exacto convertido a Bs
+      if(num > maxBs) {
+        num = maxBs; // clamp
+      }
+    }
+    setAmount(num.toString());
+  };
+
   // Actions
   const addService = async (serviceId, qty = 1) => {
     if(!selected) return toast.warning('Selecciona una cuenta');
@@ -202,7 +250,7 @@ export default function AccountsWorkspace(){
         setAmount(''); setRef(''); setFile(null);
         loadDetails(selected.id);
       } else {
-        toast.error('La API no confirmó el pago');
+        toast.error('No se pudo confirmar el pago');
       }
     }catch(e){
       toast.error(e?.response?.data?.error || 'No se pudo registrar el pago');
@@ -268,8 +316,9 @@ export default function AccountsWorkspace(){
             <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm opacity-80">Cuenta #{selected.id}</div>
-                  <div className="text-base font-semibold">Paciente: {selected.patient_name} · Pagador: {selected.payer_name}</div>
+                  <div className="text-sm opacity-80">Cuenta Número: {selected.id}</div>
+                  <div className="text-base font-semibold">Paciente: {selected.patient_name}</div>
+                  <div className="text-base font-semibold">Pagador: {selected.payer_name}</div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="bg-white/10 rounded-lg px-2 py-1 text-xs">
@@ -282,41 +331,95 @@ export default function AccountsWorkspace(){
                   >Ocultar</button>
                 </div>
               </div>
-              <div className="mt-2 text-xs text-white/80">Total: USD {Number(totalUsd).toFixed(2)} · Bs {Number(totalBs).toFixed(2)} · Pagado (USD): {paidUsd.toFixed(2)} · Saldo (USD): {saldoUsd.toFixed(2)} · Saldo (Bs): {saldoBs.toFixed(2)}</div>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-white">
+                {/* Total a Pagar */}
+                <div className="bg-white/10 rounded-xl p-4">
+                  <div className="text-sm opacity-80">Total a Pagar</div>
+                  <div className="mt-1">
+                    <div className="text-2xl font-bold">USD {Number(totalUsd).toFixed(2)}</div>
+                    <div className="text-sm opacity-80">Bs {Number(totalBs).toFixed(2)}</div>
+                  </div>
+                </div>
+                {/* Total Pagado */}
+                <div className="bg-white/10 rounded-xl p-4">
+                  <div className="text-sm opacity-80">Pagado</div>
+                  <div className="mt-1">
+                    <div className="text-2xl font-bold">USD {paidUsd.toFixed(2)}</div>
+                    <div className="text-sm opacity-80 text-transparent">.</div>
+                  </div>
+                </div>
+                {/* Saldo Pendiente */}
+                <div className="bg-white/10 rounded-xl p-4">
+                  <div className="text-sm opacity-80">Saldo Pendiente</div>
+                  <div className="mt-1">
+                    <div className="text-2xl font-bold">USD {saldoUsd.toFixed(2)}</div>
+                    <div className="text-sm opacity-80">Bs {saldoBs.toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="p-4 sm:p-6">
-              <div className="flex items-center gap-2">
-                <button onClick={()=>setStage('services')} className={`px-3 py-1.5 rounded-lg text-sm border transition ${stage==='services'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 hover:bg-gray-50'}`}>Servicios</button>
-                <button onClick={()=>setStage('payments')} className={`px-3 py-1.5 rounded-lg text-sm border transition ${stage==='payments'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 hover:bg-gray-50'}`}>Registrar pagos</button>
-                <button onClick={()=>setStage('supplies')} className={`px-3 py-1.5 rounded-lg text-sm border transition ${stage==='supplies'?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-700 hover:bg-gray-50'}`}>Insumos</button>
+              {/* Navegación de pestañas moderna */}
+              <div className="inline-flex rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <button onClick={()=>setStage('services')} className={`flex items-center gap-2 px-4 py-2 text-sm transition ${stage==='services' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <ClipboardList className="w-4 h-4" />
+                  <span>Servicios</span>
+                </button>
+                <button onClick={()=>setStage('payments')} className={`flex items-center gap-2 px-4 py-2 text-sm transition border-l ${stage==='payments' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <CreditCard className="w-4 h-4" />
+                  <span>Registrar pagos</span>
+                </button>
+                <button onClick={()=>setStage('supplies')} className={`flex items-center gap-2 px-4 py-2 text-sm transition border-l ${stage==='supplies' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
+                  <Package className="w-4 h-4" />
+                  <span>Insumos</span>
+                </button>
               </div>
 
               {stage==='services' ? (
                 <div className="mt-4">
-                  <div className="rounded-xl border border-gray-200 overflow-hidden">
+                  {/* Listado de servicios */}
+                  <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
                     {details.length === 0 ? (
-                      <div className="p-4 text-sm text-gray-500">Sin servicios</div>
-                    ) : details.map(d => (
-                      <div key={d.id} className="flex items-center justify-between p-3 border-b last:border-b-0">
-                        <div>
-                          <div className="font-medium text-sm">{d.service_name}</div>
-                          <div className="text-xs text-gray-500">x{d.quantity || 1} · USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
+                      <div className="p-6 text-sm text-gray-500 flex items-center gap-2"><Search className="w-4 h-4"/> Sin servicios</div>
+                    ) : (
+                      <div className="divide-y">
+                        <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 text-[11px] uppercase tracking-wide text-gray-500 bg-gray-50">
+                          <div className="col-span-6">Servicio</div>
+                          <div className="col-span-2 text-right">Cantidad</div>
+                          <div className="col-span-2 text-right">Precio (USD · Bs)</div>
+                          <div className="col-span-2 text-right">Acciones</div>
                         </div>
-                        {canModify && (
-                          <button onClick={()=>removeDetail(d.id)} className="text-xs text-red-600 hover:underline">Quitar</button>
-                        )}
+                        {details.map(d => (
+                          <div key={d.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
+                            <div className="col-span-12 md:col-span-6">
+                              <div className="text-sm font-medium text-gray-800">{d.service_name}</div>
+                              <div className="text-xs text-gray-500 md:hidden">x{d.quantity || 1} · USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
+                            </div>
+                            <div className="hidden md:block md:col-span-2 text-right text-sm">x{d.quantity || 1}</div>
+                            <div className="hidden md:block md:col-span-2 text-right text-sm">USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
+                            <div className="col-span-12 md:col-span-2 flex md:justify-end">
+                              {canModify ? (
+                                <button onClick={()=>removeDetail(d.id)} className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700">
+                                  <Trash2 className="w-4 h-4"/> Quitar
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-gray-500">Bloqueado</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                    {!canModify && (
-                      <div className="p-3 text-xs text-gray-600 bg-gray-50">Cuenta pagada/anulada: no se puede editar</div>
                     )}
                   </div>
 
-                  <div className="mt-4">
-                    <div className="text-sm font-medium text-gray-800 mb-2">Agregar servicio</div>
-                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-                      <div className="flex-1">
+                  {/* Agregar servicio */}
+                  <div className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-center gap-2 mb-3 text-gray-800 font-medium text-sm">
+                      <Plus className="w-4 h-4"/> Agregar servicio
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end">
+                      <div className="sm:col-span-4">
                         <select disabled={!canModify} value={serviceToAdd} onChange={(e)=>setServiceToAdd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
                           <option value="">Selecciona un servicio…</option>
                           {services.map(s=> (
@@ -324,104 +427,216 @@ export default function AccountsWorkspace(){
                           ))}
                         </select>
                       </div>
-                      <div>
-                        <input disabled={!canModify} type="number" min="1" value={serviceQty} onChange={(e)=>setServiceQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-24 border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cantidad" />
+                      <div className="sm:col-span-1">
+                        <input disabled={!canModify} type="number" min="1" value={serviceQty} onChange={(e)=>setServiceQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cant." />
                       </div>
-                      <div>
-                        <button disabled={!canModify || !serviceToAdd} onClick={()=>{ addService(Number(serviceToAdd), Number(serviceQty)); }} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">Agregar</button>
+                      <div className="sm:col-span-1">
+                        <button disabled={!canModify || !serviceToAdd} onClick={()=>{ addService(Number(serviceToAdd), Number(serviceQty)); }} className="w-full inline-flex justify-center items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">
+                          <Plus className="w-4 h-4"/> Agregar
+                        </button>
                       </div>
-                      <div className="sm:ml-auto">
-                        <button onClick={()=>setStage('payments')} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Registrar pagos</button>
+                    </div>
+                    {selectedService && (
+                      <div className="mt-2 text-xs text-gray-600">
+                        Previsualización: x{serviceQty} · USD {Number(selectedService.price_usd||0).toFixed(2)} =
+                        <span className="font-semibold"> USD {(Number(selectedService.price_usd||0) * Number(serviceQty||1)).toFixed(2)}</span>
                       </div>
+                    )}
+                    <div className="mt-3 flex justify-end">
+                      <button onClick={()=>setStage('payments')} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Ir a pagos</button>
                     </div>
                   </div>
                 </div>
               ) : stage==='payments' ? (
                 <div className="mt-4 grid gap-4 md:grid-cols-5">
+                  {/* Historial de pagos */}
                   <div className="md:col-span-3">
-                    <div className="text-sm font-medium text-gray-800 mb-2">Pagos registrados</div>
-                    <div className="rounded-xl border border-gray-200 divide-y max-h-64 overflow-y-auto">
-                      {(!selected?.payments || selected.payments.length===0) ? (
-                        <div className="p-3 text-sm text-gray-500">Aún no hay pagos</div>
-                      ) : selected.payments.map(p => (
-                        <div key={p.id} className="p-3 text-sm flex items-center justify-between">
-                          <div>
-                            <div className="font-medium">{p.payment_method} · {p.currency} {Number(p.amount||0).toFixed(2)}</div>
-                            <div className="text-xs text-gray-500">Eq. USD {Number(p.amount_usd_equivalent||0).toFixed(2)} · {p.status}</div>
+                    <div className="rounded-xl border border-gray-200 bg-white">
+                      <div className="px-4 py-3 border-b text-sm font-medium text-gray-800 flex items-center gap-2">
+                        <Wallet className="w-4 h-4"/> Pagos registrados
+                      </div>
+                      <div className="max-h-72 overflow-y-auto divide-y">
+                        {(!selected?.payments || selected.payments.length===0) ? (
+                          <div className="p-4 text-sm text-gray-500 flex items-center gap-2"><Search className="w-4 h-4"/> Aún no hay pagos</div>
+                        ) : selected.payments.map(p => (
+                          <div key={p.id} className="p-3 text-sm flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-800 flex items-center gap-2">
+                                <span>{({
+                                  cash_bs: 'Efectivo Bs',
+                                  cash_usd: 'Divisas (efectivo)',
+                                  transfer_bs: 'Transferencia Bs',
+                                  mobile_payment_bs: 'Pago móvil'
+                                })[p.payment_method] || p.payment_method}</span> · {p.currency} {Number(p.amount||0).toFixed(2)}
+                                {hasRole(['admin']) && (
+                                  <button
+                                    onClick={async ()=>{
+                                      const ok = await confirm({ title: 'Eliminar pago', description: '¿Deseas eliminar este pago? Esta acción no se puede deshacer.' });
+                                      if(!ok) return;
+                                      try {
+                                        await paymentsApi.deletePayment(p.id, token);
+                                        toast.success('Pago eliminado');
+                                        loadDetails(selected.id);
+                                      } catch(e){
+                                        toast.error(e?.response?.data?.error || 'No se pudo eliminar');
+                                      }
+                                    }}
+                                    className="ml-1 inline-flex items-center gap-1 text-[11px] text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-3 h-3"/> Eliminar
+                                  </button>
+                                )}
+                              </div>
+                              <div className="text-xs text-gray-500 flex items-center gap-2">
+                                <span>Eq. USD {Number(p.amount_usd_equivalent||0).toFixed(2)}</span>
+                                {p.status === 'verified' ? (
+                                  <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"><CheckCircle2 className="w-3 h-3"/> Verificado</span>
+                                ) : p.status === 'rejected' ? (
+                                  <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200"><XCircle className="w-3 h-3"/> Rechazado</span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Pendiente</span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-1">
+                              {p.reference_number && (
+                                <div className="text-[11px] text-gray-500">Ref: {p.reference_number}</div>
+                              )}
+                              {p.attachment_path && (
+                                <a
+                                  href={`${paymentsApi.API_URL}${p.attachment_path}`}
+                                  download
+                                  className="text-[11px] text-blue-600 hover:underline"
+                                >Descargar comprobante</a>
+                              )}
+                            </div>
                           </div>
-                          {p.reference_number && (
-                            <div className="text-[11px] text-gray-500">Ref: {p.reference_number}</div>
-                          )}
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  {/* Formulario de pago */}
                   <div className="md:col-span-2">
-                    <div className="text-sm font-medium text-gray-800 mb-2">Registrar pago</div>
-                    <form onSubmit={submitPayment} className="space-y-2">
-                      <select disabled={!canModify} value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
-                        <option value="cash_bs">Efectivo Bs</option>
-                        <option value="cash_usd">Divisas (efectivo)</option>
-                        <option value="transfer_bs">Transferencia</option>
-                        <option value="mobile_payment_bs">Pago móvil</option>
-                      </select>
-                      <input disabled={!canModify} type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Monto" value={amount} onChange={(e)=>setAmount(e.target.value)} />
-                      {(method==='transfer_bs' || method==='mobile_payment_bs') && (
-                        <input disabled={!canModify} type="text" className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Referencia" value={ref} onChange={(e)=>setRef(e.target.value)} />
-                      )}
-                      {(method==='transfer_bs' || method==='mobile_payment_bs') && (
-                        <input disabled={!canModify} type="file" accept="image/*,.pdf" onChange={(e)=>setFile(e.target.files?.[0]||null)} className="w-full text-sm disabled:opacity-50" />
-                      )}
-                      <div className="text-xs text-gray-500">Total: USD {totalUsd.toFixed(2)} · Bs {totalBs.toFixed(2)} · Saldo (USD): {saldoUsd.toFixed(2)} · Saldo (Bs): {saldoBs.toFixed(2)}</div>
-                      <div className="flex justify-between items-center">
-                        <button type="button" onClick={()=>setStage('services')} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Volver a servicios</button>
-                        <button disabled={!canModify} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">Guardar pago</button>
+                    <div className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-800"><HandCoins className="w-4 h-4"/> Registrar pago</div>
+                        <div className="text-[11px] text-gray-500">Saldo USD: <span className="font-semibold text-gray-800">{saldoUsd.toFixed(2)}</span></div>
                       </div>
-                      {!canModify && (
-                        <div className="text-[11px] text-gray-500 mt-1">Cuenta pagada/anulada: no se permiten nuevos pagos.</div>
-                      )}
-                    </form>
+                      <form onSubmit={submitPayment} className="mt-3 space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <select disabled={!canModify} value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
+                            <option value="cash_bs">Efectivo Bs</option>
+                            <option value="cash_usd">Divisas (efectivo)</option>
+                            <option value="transfer_bs">Transferencia Bs</option>
+                            <option value="mobile_payment_bs">Pago móvil</option>
+                          </select>
+                          <div className="flex gap-2">
+                            <input disabled={!canModify} type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Monto" value={amount} onChange={handleAmountInput} max={isElectronic ? saldoBsExact : undefined} />
+                            <button type="button" onClick={()=>{
+                              if(method==='cash_usd') setAmount(saldoUsd.toFixed(2));
+                              else setAmount(((saldoUsd||0) * (todayRate||0)).toFixed(2));
+                            }} className="shrink-0 px-3 py-2 rounded-lg border text-sm hover:bg-gray-50" title="Usar saldo exacto">Exacto</button>
+                          </div>
+                        </div>
+                        {(method==='transfer_bs' || method==='mobile_payment_bs') && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input disabled={!canModify} type="text" className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Referencia" value={ref} onChange={(e)=>setRef(e.target.value)} />
+                            <input disabled={!canModify} type="file" accept="image/*,.pdf" onChange={(e)=>setFile(e.target.files?.[0]||null)} className="w-full text-sm disabled:opacity-50" />
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-600 space-y-0.5">
+                          <div>Total cuenta: USD {totalUsd.toFixed(2)} · Bs {totalBs.toFixed(2)}</div>
+                          <div>Saldo actual (USD): {saldoUsd.toFixed(2)} · Saldo (Bs aprox): {saldoBs.toFixed(2)}</div>
+                          {hasChange && (
+                            <div className="text-emerald-700 font-medium">{changeLabel}</div>
+                          )}
+                          {exceedsElectronic && (
+                            <div className="text-rose-700 font-medium">El monto excede el saldo permitido para este método.</div>
+                          )}
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <button type="button" onClick={()=>setStage('services')} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Volver a servicios</button>
+                          <button disabled={!canModify || exceedsElectronic || amountUsdEntered<=0} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">Guardar pago</button>
+                        </div>
+                        {!canModify && (
+                          <div className="text-[11px] text-gray-500 mt-1">Cuenta pagada/anulada: no se permiten nuevos pagos.</div>
+                        )}
+                        {canModify && !exceedsElectronic && amountUsdEntered>0 && (
+                          <div className="mt-2 text-[11px] text-gray-400">Equivalente USD estimado: {amountUsdEntered.toFixed(2)}</div>
+                        )}
+                      </form>
+                    </div>
                   </div>
                 </div>
               ) : (
                 <div className="mt-4">
-                  <div className="text-sm font-medium text-gray-800 mb-2">Agregar insumo</div>
-                  <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
-                    <div className="flex-1">
-                      <select disabled={!canModify} value={supplyToAdd} onChange={(e)=>setSupplyToAdd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
-                        <option value="">Selecciona un insumo…</option>
-                        {inventory.map(it => {
-                          const usd = Number(it.price_usd||0);
-                          const r = Number(selected?.rate_bcv || rate || 0);
-                          const bs = r ? (usd * r) : 0;
-                          return (
-                            <option key={it.id} value={it.id}>{it.name} · USD {usd.toFixed(2)} · Bs {bs.toFixed(2)} · Stock {it.stock_quantity} {it.unit_of_measure||''}</option>
-                          );
-                        })}
-                      </select>
+                  {/* Agregar insumo */}
+                  <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <div className="flex items-center gap-2 mb-3 text-gray-800 font-medium text-sm"><Plus className="w-4 h-4"/> Agregar insumo</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end">
+                      <div className="sm:col-span-4">
+                        <select disabled={!canModify} value={supplyToAdd} onChange={(e)=>setSupplyToAdd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
+                          <option value="">Selecciona un insumo…</option>
+                          {inventory.map(it => {
+                            const usd = Number(it.price_usd||0);
+                            const r = Number(selected?.rate_bcv || rate || 0);
+                            const bs = r ? (usd * r) : 0;
+                            return (
+                              <option key={it.id} value={it.id}>{it.name} · USD {usd.toFixed(2)} · Bs {bs.toFixed(2)} · Stock {it.stock_quantity} {it.unit_of_measure||''}</option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                      <div className="sm:col-span-1">
+                        <input disabled={!canModify} type="number" min="1" value={supplyQty} onChange={(e)=>setSupplyQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cant." />
+                      </div>
+                      <div className="sm:col-span-1">
+                        <button disabled={!canModify || !supplyToAdd} onClick={()=>{ addSupply(Number(supplyToAdd), Number(supplyQty)); }} className="w-full inline-flex justify-center items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">
+                          <Plus className="w-4 h-4"/> Agregar
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <input disabled={!canModify} type="number" min="1" value={supplyQty} onChange={(e)=>setSupplyQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-24 border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cantidad" />
-                    </div>
-                    <div>
-                      <button disabled={!canModify || !supplyToAdd} onClick={()=>{ addSupply(Number(supplyToAdd), Number(supplyQty)); }} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">Agregar insumo</button>
-                    </div>
+                    {selectedItem && (
+                      <div className="mt-2 text-xs text-gray-600">
+                        Previsualización: x{supplyQty} · USD {Number(selectedItem.price_usd||0).toFixed(2)} =
+                        <span className="font-semibold"> USD {(Number(selectedItem.price_usd||0) * Number(supplyQty||1)).toFixed(2)}</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
+                  {/* Listado de insumos */}
+                  <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden bg-white">
                     {(!supplies || supplies.length===0) ? (
-                      <div className="p-4 text-sm text-gray-500">Sin insumos</div>
-                    ) : supplies.map(s => (
-                      <div key={s.id} className="flex items-center justify-between p-3 border-b last:border-b-0">
-                        <div>
-                          <div className="font-medium text-sm">{s.description}</div>
-                          <div className="text-xs text-gray-500">x{s.quantity || 1} · USD {Number(s.total_price_usd ?? (s.price_usd * s.quantity)).toFixed(2)} · Bs {Number(s.total_price_bs ?? (s.price_bs * s.quantity)).toFixed(2)}</div>
+                      <div className="p-6 text-sm text-gray-500 flex items-center gap-2"><Search className="w-4 h-4"/> Sin insumos</div>
+                    ) : (
+                      <div className="divide-y">
+                        <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 text-[11px] uppercase tracking-wide text-gray-500 bg-gray-50">
+                          <div className="col-span-6">Insumo</div>
+                          <div className="col-span-2 text-right">Cantidad</div>
+                          <div className="col-span-2 text-right">Total (USD · Bs)</div>
+                          <div className="col-span-2 text-right">Acciones</div>
                         </div>
-                        {canModify && (
-                          <button onClick={()=>removeSupply(s.id)} className="text-xs text-red-600 hover:underline">Quitar</button>
-                        )}
+                        {supplies.map(s => (
+                          <div key={s.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
+                            <div className="col-span-12 md:col-span-6">
+                              <div className="text-sm font-medium text-gray-800">{s.description}</div>
+                              <div className="text-xs text-gray-500 md:hidden">x{s.quantity || 1} · USD {Number(s.total_price_usd ?? (s.price_usd * s.quantity)).toFixed(2)} · Bs {Number(s.total_price_bs ?? (s.price_bs * s.quantity)).toFixed(2)}</div>
+                            </div>
+                            <div className="hidden md:block md:col-span-2 text-right text-sm">x{s.quantity || 1}</div>
+                            <div className="hidden md:block md:col-span-2 text-right text-sm">USD {Number(s.total_price_usd ?? (s.price_usd * s.quantity)).toFixed(2)} · Bs {Number(s.total_price_bs ?? (s.price_bs * s.quantity)).toFixed(2)}</div>
+                            <div className="col-span-12 md:col-span-2 flex md:justify-end">
+                              {canModify ? (
+                                <button onClick={()=>removeSupply(s.id)} className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700">
+                                  <Trash2 className="w-4 h-4"/> Quitar
+                                </button>
+                              ) : (
+                                <span className="text-[11px] text-gray-500">Bloqueado</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                     {!canModify && (
                       <div className="p-3 text-xs text-gray-600 bg-gray-50">Cuenta pagada/anulada: no se puede editar</div>
                     )}

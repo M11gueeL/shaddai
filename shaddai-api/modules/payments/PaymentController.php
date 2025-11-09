@@ -2,6 +2,7 @@
 require_once __DIR__ . '/PaymentModel.php';
 require_once __DIR__ . '/../../services/RateService.php';
 require_once __DIR__ . '/../../services/PaymentService.php';
+require_once __DIR__ . '/../../services/BillingService.php';
 require_once __DIR__ . '/../cashregister/CashRegisterSessionModel.php';
 require_once __DIR__ . '/../../modules/accounts/BillingAccountModel.php';
 
@@ -9,6 +10,7 @@ class PaymentController {
     private $model;
     private $rateService;
     private $paymentService;
+    private $billingService;
     private $accountModel;
     private $cashSessionModel;
 
@@ -18,6 +20,7 @@ class PaymentController {
         $this->paymentService = new PaymentService();
     $this->accountModel = new BillingAccountModel();
     $this->cashSessionModel = new CashRegisterSessionModel();
+    $this->billingService = new BillingService();
     }
 
     // Save attachment to disk and return the public relative path
@@ -94,13 +97,37 @@ class PaymentController {
                 http_response_code(400); echo json_encode(['error'=>'El comprobante es obligatorio para transferencias o pago móvil']); return;
             }
 
+            // Validaciones de sobrepago:
+            $paidSoFar = $this->billingService->getAccountPaymentUsdSum((int)$accountId);
+            $saldoUsd = max(0, (float)$account['total_usd'] - $paidSoFar);
+            $epsilon = 0.01;
+            $isElectronic = in_array($payment_method, ['transfer_bs','mobile_payment_bs']);
+            if ($isElectronic && $usdEq > $saldoUsd + $epsilon) {
+                // Rechazar inmediatamente sobrepago electrónico
+                http_response_code(400); echo json_encode(['error'=>'El monto excede el saldo disponible para este método (transferencia/pago móvil)']); return;
+            }
+            $isCash = in_array($payment_method, ['cash_usd','cash_bs']);
+            $finalAmount = $amount; // podría ajustarse si decidimos limitar efectivo
+            $finalUsdEq = $usdEq;
+            if ($isCash && $usdEq > $saldoUsd + $epsilon) {
+                // Permitir sobrepago en efectivo, pero registrar únicamente el saldo como pago real
+                // (el vuelto se maneja fuera de esta lógica si se requiere movimiento adicional)
+                $finalUsdEq = $saldoUsd; // limitar equivalencia
+                if ($currency === 'USD') {
+                    $finalAmount = $saldoUsd; // guardamos solo lo necesario
+                } else { // BS
+                    $finalAmount = round($saldoUsd * (float)$todayRate['rate_bcv'], 2);
+                }
+                $notes = trim(($notes ?? '') . ' Sobrepago en efectivo, monto ingresado: ' . $amount . ' ' . $currency . ', registrado: ' . $finalAmount . ' ' . $currency);
+            }
+
             $paymentId = $this->model->create([
                 'account_id' => (int)$accountId,
                 'payment_method' => $payment_method,
-                'amount' => $amount,
+                'amount' => $finalAmount,
                 'currency' => $currency,
                 'exchange_rate_id' => $todayRate['id'],
-                'amount_usd_equivalent' => $usdEq,
+                'amount_usd_equivalent' => $finalUsdEq,
                 'reference_number' => $reference,
                 'attachment_path' => $attachment_path,
                 'status' => $status,
@@ -136,6 +163,30 @@ class PaymentController {
 
     public function listByAccount($accountId) {
         echo json_encode($this->model->listByAccount((int)$accountId));
+    }
+
+    public function deletePayment($paymentId) {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $payment = $this->model->getById((int)$paymentId);
+            if (!$payment) { http_response_code(404); echo json_encode(['error'=>'Pago no encontrado']); return; }
+
+            // Si el pago ya estaba verificado en efectivo, eliminar el movimiento de caja asociado
+            $isCash = in_array($payment['payment_method'], ['cash_usd','cash_bs']);
+            if ($isCash && $payment['status'] === 'verified') {
+                // Eliminar movimientos ligados a este pago
+                $this->paymentService->deleteCashMovementsForPayment((int)$payment['id']);
+            }
+
+            // Eliminar el pago
+            $this->model->delete((int)$paymentId);
+
+            // Recalcular estado de la cuenta tras la eliminación
+            $this->billingService->refreshAccountStatusByPayments($payment['account_id']);
+
+            echo json_encode(['status'=>'deleted']);
+        } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
     }
 }
 ?>

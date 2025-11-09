@@ -39,6 +39,10 @@ class PaymentModel {
         return $this->db->execute('UPDATE payments SET status = "verified", verified_by = :vb WHERE id = :id', [':vb'=>$verifiedBy, ':id'=>$id]);
     }
 
+    public function delete($id) {
+        return $this->db->execute('DELETE FROM payments WHERE id = :id', [':id'=>$id]);
+    }
+
     // Note: attachment is saved on disk; DB stores only attachment_path
 }
 ?>

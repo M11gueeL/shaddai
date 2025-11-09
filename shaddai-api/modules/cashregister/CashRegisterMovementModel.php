@@ -28,5 +28,9 @@ class CashRegisterMovementModel {
     public function listBySession($sessionId) {
         return $this->db->query('SELECT * FROM cash_register_movements WHERE session_id = :id ORDER BY id ASC', [':id'=>$sessionId]);
     }
+
+    public function deleteByPaymentId($paymentId) {
+        return $this->db->execute('DELETE FROM cash_register_movements WHERE payment_id = :pid', [':pid'=>$paymentId]);
+    }
 }
 ?>

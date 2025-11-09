@@ -35,5 +35,10 @@ class PaymentService {
             ]);
         }
     }
+
+    // Eliminar movimientos de caja ligados a un pago (cuando se borra un pago verificado en efectivo)
+    public function deleteCashMovementsForPayment($paymentId) {
+        $this->movementModel->deleteByPaymentId($paymentId);
+    }
 }
 ?>
