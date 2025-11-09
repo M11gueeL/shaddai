@@ -195,6 +195,23 @@ function CashCard({ status, loading, onChanged }) {
 
   const [openForm, setOpenForm] = useState({ start_balance_usd: '', start_balance_bs: '' });
   const [closeForm, setCloseForm] = useState({ real_end_balance_usd: '', real_end_balance_bs: '', notes: '' });
+  const [movements, setMovements] = useState([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
+
+  // Load movements when session is open
+  useEffect(()=>{
+    let mounted = true;
+    (async()=>{
+      if(!open) { setMovements([]); return; }
+      try {
+        setMovementsLoading(true);
+        const res = await cashApi.listMyMovements(token);
+        if(!mounted) return;
+        setMovements(res.data || []);
+      } catch(e){ /* ignore */ } finally { setMovementsLoading(false); }
+    })();
+    return ()=>{ mounted = false; };
+  }, [open, token, status?.session?.id]);
 
   const handleOpen = async () => {
     const ok = await confirm({ title: 'Abrir sesión de caja', message: '¿Deseas abrir la sesión de caja con los montos indicados?' });
@@ -225,48 +242,137 @@ function CashCard({ status, loading, onChanged }) {
   };
 
   return (
-    <Card title="Caja" action={null}>
-      {loading ? (
-        <div className="space-y-2">
-          <div className="h-8 bg-gray-100 rounded animate-pulse" />
-          <div className="h-8 bg-gray-100 rounded animate-pulse" />
-        </div>
-      ) : open ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">Sesión abierta</div>
-            <span className="px-2 py-1 text-xs rounded bg-emerald-100 text-emerald-700">Activa</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="text-sm text-gray-600">Inició: {status?.session?.opened_at}</div>
-            <div className="text-sm text-gray-600">Usuario: {status?.session?.user_id}</div>
-          </div>
-          <div className="pt-2 border-t">
-            <div className="text-sm font-medium mb-2">Cerrar sesión</div>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" step="0.01" placeholder="Real USD" className="border rounded-lg px-3 py-2 text-sm" value={closeForm.real_end_balance_usd} onChange={(e)=>setCloseForm(f=>({...f,real_end_balance_usd:e.target.value}))} />
-              <input type="number" step="0.01" placeholder="Real Bs" className="border rounded-lg px-3 py-2 text-sm" value={closeForm.real_end_balance_bs} onChange={(e)=>setCloseForm(f=>({...f,real_end_balance_bs:e.target.value}))} />
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Top banner */}
+      <div className="relative p-5 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="text-sm tracking-wide uppercase opacity-70">Sesión de caja</div>
+            <div className="text-xl font-semibold flex items-center gap-2">
+              {open ? 'Sesión abierta' : 'Caja cerrada'}
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${open?'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40':'bg-slate-500/20 text-slate-300 ring-1 ring-slate-400/40'}`}>{open?'Activa':'Inactiva'}</span>
             </div>
-            <textarea placeholder="Notas (opcional)" className="mt-2 w-full border rounded-lg px-3 py-2 text-sm" value={closeForm.notes} onChange={(e)=>setCloseForm(f=>({...f,notes:e.target.value}))} />
-            <div className="mt-2 flex justify-end">
-              <button disabled={closing} onClick={handleClose} className="px-3 py-2 rounded-lg bg-red-600 text-white disabled:opacity-60">{closing?'Cerrando…':'Cerrar caja'}</button>
-            </div>
+            {open && (
+              <div className="text-xs opacity-80">Inicio: {status?.session?.opened_at} · Usuario #{status?.session?.user_id}</div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {!open && !loading && (
+              <div className="flex gap-2">
+                <input type="number" step="0.01" placeholder="USD inicial" className="bg-white/10 placeholder-white/40 text-white border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 w-32" value={openForm.start_balance_usd} onChange={(e)=>setOpenForm(f=>({...f,start_balance_usd:e.target.value}))} />
+                <input type="number" step="0.01" placeholder="Bs inicial" className="bg-white/10 placeholder-white/40 text-white border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 w-32" value={openForm.start_balance_bs} onChange={(e)=>setOpenForm(f=>({...f,start_balance_bs:e.target.value}))} />
+                <button disabled={opening} onClick={handleOpen} className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-sm font-medium text-white shadow disabled:opacity-50">{opening?'Abriendo…':'Abrir caja'}</button>
+              </div>
+            )}
+            {open && (
+              <div className="flex gap-2 items-center">
+                <input type="number" step="0.01" placeholder="USD real" className="bg-white/10 placeholder-white/40 text-white border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 w-28" value={closeForm.real_end_balance_usd} onChange={(e)=>setCloseForm(f=>({...f,real_end_balance_usd:e.target.value}))} />
+                <input type="number" step="0.01" placeholder="Bs real" className="bg-white/10 placeholder-white/40 text-white border border-white/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/40 w-28" value={closeForm.real_end_balance_bs} onChange={(e)=>setCloseForm(f=>({...f,real_end_balance_bs:e.target.value}))} />
+                <button disabled={closing} onClick={handleClose} className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-400 text-sm font-medium text-white shadow disabled:opacity-50">{closing?'Cerrando…':'Cerrar caja'}</button>
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <div>
-          <div className="text-sm text-gray-600">No hay sesión de caja abierta.</div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <input type="number" step="0.01" placeholder="Fondo USD" className="border rounded-lg px-3 py-2 text-sm" value={openForm.start_balance_usd} onChange={(e)=>setOpenForm(f=>({...f,start_balance_usd:e.target.value}))} />
-            <input type="number" step="0.01" placeholder="Fondo Bs" className="border rounded-lg px-3 py-2 text-sm" value={openForm.start_balance_bs} onChange={(e)=>setOpenForm(f=>({...f,start_balance_bs:e.target.value}))} />
+        {open && (
+          <div className="mt-3">
+            <textarea placeholder="Notas (opcional)" className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-xs text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/40" rows={2} value={closeForm.notes} onChange={(e)=>setCloseForm(f=>({...f,notes:e.target.value}))} />
           </div>
-          <div className="mt-2 flex justify-end">
-            <button disabled={opening} onClick={handleOpen} className="px-3 py-2 rounded-lg bg-gray-900 text-white disabled:opacity-60">{opening?'Abriendo…':'Abrir caja'}</button>
+        )}
+      </div>
+
+      {/* Balances (leave visually similar) */}
+      {open && (
+        <div className="px-5 pt-5 pb-3 bg-white">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatBox label="Apertura" valueBs={Number(status?.session?.start_balance_bs||0).toFixed(2)} valueUsd={Number(status?.session?.start_balance_usd||0).toFixed(2)} />
+            <StatBox label="Movimientos" valueBs={Number(status?.session?.movements_bs||0).toFixed(2)} valueUsd={Number(status?.session?.movements_usd||0).toFixed(2)} />
+            <StatBox label="Saldo estimado" valueBs={Number((status?.session?.start_balance_bs||0)+(status?.session?.movements_bs||0)).toFixed(2)} valueUsd={Number((status?.session?.start_balance_usd||0)+(status?.session?.movements_usd||0)).toFixed(2)} highlight />
+            <div className="rounded-xl border border-gray-200 p-4 flex flex-col justify-center bg-gray-50">
+              <div className="text-[11px] uppercase tracking-wide text-gray-500 font-medium">Movs</div>
+              <div className="mt-1 text-xl font-semibold text-gray-800">{movements.length}</div>
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-gray-500">Movimientos: suma neta de ingresos/egresos del día. Saldo estimado = Apertura + Movimientos.</p>
+        </div>
+      )}
+
+      {/* Movements timeline */}
+      {open && (
+        <div className="px-5 pb-6 bg-white">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-sm font-semibold text-gray-800">Movimientos</h4>
+            <button onClick={()=>onChanged?.()} className="text-xs px-2 py-1 rounded-lg border bg-white hover:bg-gray-50">Refrescar</button>
+          </div>
+          <div className="max-h-72 overflow-y-auto pr-1 custom-scrollbar">
+            {movementsLoading ? (
+              <div className="h-24 bg-gray-50 animate-pulse rounded-lg" />
+            ) : movements.length===0 ? (
+              <div className="text-sm text-gray-500 py-6 text-center">Sin movimientos</div>
+            ) : (
+              <ul className="space-y-3">
+                {movements.map(m => (
+                  <li key={m.id} className="relative pl-6">
+                    <span className={`absolute left-0 top-2 w-3 h-3 rounded-full ring-4 ring-white ${dotColor(m.movement_type)}`}></span>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                      <div className="text-xs text-gray-500 font-medium">{m.created_at}</div>
+                      <div className="text-[11px] uppercase tracking-wide font-semibold text-gray-400">{m.movement_type}</div>
+                    </div>
+                    <div className="mt-0.5 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-sm text-gray-800 font-medium">{m.description}</div>
+                      <div className="flex gap-4 text-xs mt-1 sm:mt-0">
+                        <span className="text-gray-600">Bs {Number(m.currency==='BS'?m.amount:0).toFixed(2)}</span>
+                        <span className="text-gray-600">USD {Number(m.currency==='USD'?m.amount:(m.amount_usd||0)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}
-    </Card>
+
+      {!open && !loading && (
+        <div className="p-6 bg-white">
+          <div className="text-sm text-gray-600 mb-3">No hay sesión abierta. Abre una nueva para comenzar a registrar ingresos y egresos.</div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <input type="number" step="0.01" placeholder="USD inicial" className="border rounded-lg px-3 py-2 text-sm" value={openForm.start_balance_usd} onChange={(e)=>setOpenForm(f=>({...f,start_balance_usd:e.target.value}))} />
+            <input type="number" step="0.01" placeholder="Bs inicial" className="border rounded-lg px-3 py-2 text-sm" value={openForm.start_balance_bs} onChange={(e)=>setOpenForm(f=>({...f,start_balance_bs:e.target.value}))} />
+          </div>
+          <button disabled={opening} onClick={handleOpen} className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">{opening?'Abriendo…':'Abrir caja'}</button>
+        </div>
+      )}
+      {loading && (
+        <div className="p-6 space-y-3">
+          <div className="h-10 bg-gray-100 rounded animate-pulse" />
+          <div className="h-40 bg-gray-100 rounded animate-pulse" />
+        </div>
+      )}
+    </div>
   );
+}
+
+function StatBox({ label, valueBs, valueUsd, highlight=false }) {
+  return (
+    <div className={`rounded-xl border p-4 ${highlight?'bg-gray-900 text-white border-gray-800':'bg-gray-50 border-gray-200'} transition`}> 
+      <div className={`text-[11px] uppercase tracking-wide font-medium ${highlight?'text-gray-300':'text-gray-500'}`}>{label}</div>
+      <div className="mt-1 text-sm font-semibold flex flex-col">
+        <span className={highlight?'text-gray-100':'text-gray-800'}>Bs {valueBs}</span>
+        <span className={highlight?'text-gray-300 text-xs':'text-gray-500 text-xs'}>USD {valueUsd}</span>
+      </div>
+    </div>
+  );
+}
+
+function dotColor(t){
+  switch(t){
+    case 'payment_in': return 'bg-emerald-500';
+    case 'expense_out': return 'bg-rose-500';
+    case 'adjustment_in': return 'bg-indigo-500';
+    case 'adjustment_out': return 'bg-orange-500';
+    case 'initial_balance': return 'bg-sky-500';
+    default: return 'bg-gray-400';
+  }
 }
 
 function AccountsManager({ services, accounts, loading, onReload, selectedAccount, setSelectedAccount, rate, cashOpen }) {

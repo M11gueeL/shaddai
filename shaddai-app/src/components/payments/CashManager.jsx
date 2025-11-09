@@ -89,85 +89,99 @@ export default function CashManager(){
     }catch(e){ toast.error(e?.response?.data?.error || 'No se pudo cerrar'); }
   };
 
+
   return (
     <div className="p-4 sm:p-6">
-      <h2 className="text-xl font-semibold text-gray-900">Caja</h2>
-      <p className="text-sm text-gray-600">Gestiona la sesión de caja y revisa movimientos.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Caja</h2>
+          <p className="text-sm text-gray-600">Gestiona la sesión y revisa los movimientos del día.</p>
+        </div>
+      </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 lg:col-span-1">
-          {loading ? (
-            <div className="h-24 bg-gray-100 rounded animate-pulse" />
-          ) : (
-            <div className="space-y-2">
-              {(() => {
+        {/* Panel de sesión - rediseñado */}
+        <div className="lg:col-span-1 rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
+          <div className="p-5 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
+            <div className="flex items-center justify-between">
+              <div className="text-sm opacity-80">Sesión de caja</div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${status==='open' ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40' : 'bg-slate-500/20 text-slate-300 ring-1 ring-slate-400/40'}`}>{status==='open'?'Abierta':'Cerrada'}</span>
+            </div>
+            {loading ? (
+              <div className="mt-3 h-16 bg-white/10 rounded animate-pulse" />
+            ) : (
+              (()=>{
                 const d = deriveSessionMetrics(session, movs);
                 const displayName = [user?.first_name || user?.firstName, user?.last_name || user?.lastName].filter(Boolean).join(' ') || user?.name || user?.email || (session?.user_id ? `ID ${session.user_id}` : '-');
                 return (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-600">Estado</div>
-                      <StatusBadge status={status || 'closed'} />
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Usuario</span>
-                      <span className="text-gray-900">{displayName}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Inicio</span>
-                      <span className="text-gray-900">{d.openedAt ? formatDateTime(d.openedAt) : '-'}</span>
-                    </div>
-                  </>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div className="text-white/80">Usuario</div>
+                    <div className="text-white font-medium text-right" title={displayName}>{displayName}</div>
+                    <div className="text-white/80">Inicio</div>
+                    <div className="text-white font-medium text-right">{d.openedAt ? formatDateTime(d.openedAt) : '-'}</div>
+                  </div>
                 );
-              })()}
-
-              <div className="pt-2 flex gap-2">
-                {canOpen && (
-                  <button onClick={openSession} className="px-3 py-2 rounded-lg bg-gray-900 text-white text-sm">Abrir caja</button>
-                )}
-                {canClose && (
-                  <button onClick={closeSession} className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm">Cerrar caja</button>
-                )}
+              })()
+            )}
+          </div>
+          <div className="p-4">
+            {status !== 'open' ? (
+              <div className="space-y-2">
+                <div className="text-sm text-gray-600">Abrir sesión</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="number" step="0.01" placeholder="USD inicial" value={openingUsd} onChange={(e)=>setOpeningUsd(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
+                  <input type="number" step="0.01" placeholder="Bs inicial" value={openingBs} onChange={(e)=>setOpeningBs(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <div className="flex justify-end">
+                  <button onClick={submitOpen} className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm shadow-sm hover:shadow">Abrir caja</button>
+                </div>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-2">
+                <div className="text-sm text-gray-700">Cerrar sesión</div>
+                <div className="flex justify-end">
+                  <button onClick={closeSession} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm shadow-sm hover:shadow">Cerrar caja</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 lg:col-span-2">
-          {/* resumen */}
+        {/* Panel de resumen y movimientos */}
+        <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-4">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-medium">Resumen de sesión</h3>
           </div>
           <SummaryBar session={session} movs={movs} />
           <p className="text-xs text-gray-600 mt-1">Movimientos: suma neta de ingresos/egresos del día (sin contar apertura ni cierre). Saldo estimado = Apertura + Movimientos.</p>
-          <div className="flex items-center justify-between">
+
+          <div className="mt-4 flex items-center justify-between">
             <h3 className="font-medium">Movimientos</h3>
+            <button onClick={load} className="text-xs px-2 py-1 rounded-lg border bg-white hover:bg-gray-50">Refrescar</button>
           </div>
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-500">
-                  <th className="px-2 py-1">Fecha</th>
-                  <th className="px-2 py-1">Tipo</th>
-                  <th className="px-2 py-1">Descripción</th>
-                  <th className="px-2 py-1 text-right">Monto Bs</th>
-                  <th className="px-2 py-1 text-right">Monto USD</th>
-                </tr>
-              </thead>
-              <tbody>
-                {movs.length === 0 ? (
-                  <tr><td colSpan={5} className="px-2 py-4 text-center text-gray-500">Sin movimientos</td></tr>
-                ) : movs.map(m => (
-                  <tr key={m.id} className="border-t">
-                    <td className="px-2 py-1">{formatDateTime(m.created_at)}</td>
-                    <td className="px-2 py-1">{mapMovementType(m.movement_type)}</td>
-                    <td className="px-2 py-1">{m.description}</td>
-                    <td className="px-2 py-1 text-right">{Number(m.currency === 'BS' ? m.amount : 0).toFixed(2)}</td>
-                    <td className="px-2 py-1 text-right">{Number(m.currency === 'USD' ? m.amount : 0).toFixed(2)}</td>
-                  </tr>
+          <div className="mt-3 max-h-80 overflow-y-auto pr-1">
+            {movs.length === 0 ? (
+              <div className="py-8 text-sm text-gray-500 text-center">Sin movimientos</div>
+            ) : (
+              <ul className="space-y-3">
+                {movs.map(m => (
+                  <li key={m.id} className="relative pl-6">
+                    <span className={`absolute left-0 top-2 w-3 h-3 rounded-full ring-4 ring-white ${dotByType(m.movement_type)}`}></span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs text-gray-500 font-medium">{formatDateTime(m.created_at)}</div>
+                        <div className="text-sm text-gray-800 font-semibold">{mapMovementType(m.movement_type)}</div>
+                        <div className="text-sm text-gray-700">{m.description}</div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <div className="text-xs text-gray-600">Bs {Number(m.currency==='BS'?m.amount:0).toFixed(2)}</div>
+                        <div className="text-xs text-gray-600">USD {Number(m.currency==='USD'?m.amount:0).toFixed(2)}</div>
+                      </div>
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            )}
           </div>
         </div>
       </div>
@@ -236,7 +250,7 @@ function deriveSessionMetrics(session, movs){
   const balanceBs = openingBs + sums.bs;
   const balanceUsd = openingUsd + sums.usd;
 
-  const openedAt = session?.start_time || null;
+  const openedAt = session?.opened_at || session?.start_time || null;
 
   return { openingBs, openingUsd, sumBs: sums.bs, sumUsd: sums.usd, balanceBs, balanceUsd, openedAt };
 }
@@ -259,6 +273,17 @@ function SummaryBar({ session, movs }){
       ))}
     </div>
   );
+}
+
+function dotByType(t){
+  switch(t){
+    case 'payment_in': return 'bg-emerald-500';
+    case 'expense_out': return 'bg-rose-500';
+    case 'adjustment_in': return 'bg-indigo-500';
+    case 'adjustment_out': return 'bg-orange-500';
+    case 'initial_balance': return 'bg-sky-500';
+    default: return 'bg-gray-400';
+  }
 }
 
 function mapMovementType(t){
