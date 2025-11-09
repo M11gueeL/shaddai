@@ -7,12 +7,10 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
-  // Estados para Versículo del Día
   const [votd, setVotd] = useState(null);
   const [loadingVotd, setLoadingVotd] = useState(true);
   const [errorVotd, setErrorVotd] = useState(false);
 
-  // Fetch del Versículo del Día
   useEffect(() => {
     const fetchVotd = async () => {
       try {
@@ -31,13 +29,11 @@ export default function Dashboard() {
     fetchVotd();
   }, []);
 
-  // Reloj en vivo
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Utilidad: Title Case para español
   const toTitleCaseEs = (str) => {
     if (!str) return "";
     const lower = String(str).toLowerCase().trim();
@@ -117,77 +113,121 @@ export default function Dashboard() {
   const fullName = useMemo(() => toTitleCaseEs(fullNameRaw), [fullNameRaw]);
 
   return (
-    <section className="flex flex-col h-full p-6 sm:p-8 lg:p-10 space-y-8">
-      {/* Saludo y reloj */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white">
-        <div className="absolute inset-0 opacity-20" aria-hidden>
-          <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white blur-2xl" />
-          <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-white/60 blur-3xl" />
-        </div>
-        <div className="relative p-6 sm:p-8 lg:p-10">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Hola, {fullName} <span role="img" aria-label="mano saludando">👋</span>
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <p className="text-white/90">{greeting}! Hoy es {todayLabel}.</p>
-                {roleTitle && (
-                  <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-sm font-medium">
-                    {roleTitle}
-                  </span>
-                )}
+    <section className="relative min-h-full overflow-hidden bg-slate-950/5">
+      <div className="absolute inset-0 -z-20 bg-gradient-to-br from-indigo-50 via-white to-cyan-50" aria-hidden />
+      <div className="absolute -top-40 -left-32 -z-10 h-80 w-80 rounded-full bg-indigo-200/70 blur-3xl" aria-hidden />
+      <div className="absolute -bottom-40 -right-32 -z-10 h-96 w-96 rounded-full bg-cyan-200/60 blur-3xl" aria-hidden />
+
+      <div className="relative flex flex-col gap-8 px-4 py-8 sm:px-6 md:px-10 lg:px-16">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">
+          <article className="relative overflow-hidden rounded-3xl border border-white/20 bg-slate-950 text-white shadow-xl shadow-indigo-500/20">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/90 via-indigo-500/80 to-cyan-500/80" aria-hidden />
+            <div className="absolute -top-24 right-10 h-48 w-48 rounded-full bg-white/20 blur-3xl" aria-hidden />
+            <div className="absolute bottom-0 left-0 h-32 w-56 bg-white/10 blur-2xl" aria-hidden />
+            <div className="relative p-7 sm:p-9 lg:p-12">
+              <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-4">
+                  <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1 text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
+                    Panel Principal
+                  </p>
+                  <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
+                    Hola, {fullName} <span role="img" aria-label="mano saludando">👋</span>
+                  </h1>
+                  <div className="space-y-2 text-lg text-white/85">
+                    <p>
+                      {greeting}! Hoy es {todayLabel}.
+                    </p>
+                    <p>
+                      {greetingWord} de nuevo. Esperamos que tengas un gran día lleno de propósito.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex min-w-[230px] flex-col gap-3 rounded-2xl border border-white/30 bg-white/10 px-5 py-4 backdrop-blur-lg">
+                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Hora actual</span>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15">
+                      <Clock className="h-6 w-6" />
+                    </span>
+                    <span className="font-mono text-2xl font-semibold" aria-live="polite">{timeLabel}</span>
+                  </div>
+                  {roleTitle && (
+                    <span className="inline-flex items-center self-start rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                      {roleTitle}
+                    </span>
+                  )}
+                </div>
+              </header>
+            </div>
+          </article>
+
+          <aside className="rounded-3xl border border-slate-200/70 bg-white/80 px-6 py-7 shadow-xl shadow-indigo-500/10 backdrop-blur-lg sm:px-7">
+            <div className="space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Resumen Personal</p>
+              <div className="space-y-3 text-sm text-slate-600">
+                <p className="text-base font-semibold text-slate-900">{fullName || "Usuario"}</p>
+                <p className="leading-relaxed text-slate-600">
+                  Administra tu agenda, registra actividades y mantente al día con tus pacientes.
+                </p>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium tracking-[0.25em] text-slate-500">
+                  {roles.length ? roles.map((role) => toTitleCaseEs(role)).join(" · ") : "Sin rol asignado"}
+                </div>
               </div>
-              <p className="mt-2 text-white/90">
-                {greetingWord} de nuevo. Esperamos que tengas un gran día.
-              </p>
             </div>
-            <div className="flex items-center gap-3 rounded-xl bg-white/15 px-4 py-3">
-              <Clock className="h-5 w-5" />
-              <span className="font-mono text-lg" aria-live="polite">{timeLabel}</span>
-            </div>
-          </div>
+          </aside>
         </div>
-      </div>
 
-      {/* Sección del Versículo del Día */}
-      <div className="mb-8 bg-white p-6 rounded-lg shadow-md border-l-4 border-indigo-500">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-          <span className="mr-2">📖</span> Versículo del Día
-        </h2>
+        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-indigo-500/10">
+          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent" aria-hidden />
+          <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-400" aria-hidden />
+          <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.2fr,0.8fr] lg:items-center">
+            <div className="space-y-4">
+              <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900 sm:text-2xl">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-100 text-2xl">📖</span>
+                Versículo del Día
+              </h2>
 
-        {loadingVotd ? (
-          <div className="animate-pulse flex space-x-4">
-            <div className="flex-1 space-y-4 py-1">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              {loadingVotd ? (
+                <div className="flex animate-pulse flex-col gap-3 rounded-2xl border border-dashed border-indigo-200/70 bg-indigo-50/40 p-6">
+                  <div className="h-4 w-3/4 rounded-full bg-indigo-200/80" />
+                  <div className="h-4 w-1/2 rounded-full bg-indigo-200/60" />
+                  <div className="h-4 w-full rounded-full bg-indigo-200/40" />
+                </div>
+              ) : errorVotd ? (
+                <figure className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-6 text-slate-600">
+                  <blockquote className="text-lg italic leading-relaxed text-slate-700">
+                    "Lámpara es a mis pies tu palabra, y lumbrera a mi camino."
+                  </blockquote>
+                  <figcaption className="text-right text-sm font-semibold text-indigo-600">— Salmos 119:105</figcaption>
+                </figure>
+              ) : (
+                <figure className="space-y-4">
+                  <blockquote className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-6 text-base leading-relaxed text-slate-700 sm:text-lg">
+                    <span dangerouslySetInnerHTML={{ __html: votd.text }} />
+                  </blockquote>
+                  <figcaption className="flex justify-end text-sm font-semibold text-indigo-600">
+                    <a
+                      href={votd.permalink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full px-3 py-1 transition-colors hover:bg-indigo-100"
+                      title="Ver en BibleGateway"
+                    >
+                      — {votd.display_ref}
+                    </a>
+                  </figcaption>
+                </figure>
+              )}
+            </div>
+
+            <div className="hidden h-full rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-100 via-white to-cyan-100 p-6 shadow-inner lg:flex lg:flex-col lg:justify-between">
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500">Reflexiona</p>
+              <p className="text-sm leading-relaxed text-slate-600">
+                Toma un momento para meditar y llevar la inspiración del día a cada encuentro con tus pacientes y equipo.
+              </p>
+              <span className="self-end text-3xl">✨</span>
             </div>
           </div>
-        ) : errorVotd ? (
-          <blockquote className="text-gray-600 italic border-l-4 border-gray-300 pl-4 py-2">
-            "Lámpara es a mis pies tu palabra, y lumbrera a mi camino."
-            <footer className="text-right font-semibold mt-2 text-sm text-indigo-700">
-              — Salmos 119:105
-            </footer>
-          </blockquote>
-        ) : (
-          <div className="bg-indigo-50 rounded-r-lg p-4">
-            <blockquote className="text-lg text-gray-700 italic leading-relaxed">
-              <span dangerouslySetInnerHTML={{ __html: votd.text }} />
-            </blockquote>
-            <div className="mt-4 flex justify-end">
-              <a
-                href={votd.permalink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
-                title="Ver en BibleGateway"
-              >
-                — {votd.display_ref}
-              </a>
-            </div>
-          </div>
-        )}
+        </section>
       </div>
     </section>
   );
