@@ -43,6 +43,19 @@ class PaymentModel {
         return $this->db->execute('DELETE FROM payments WHERE id = :id', [':id'=>$id]);
     }
 
+    public function listPending($limit = 200) {
+        $limit = max(1, min(500, (int)$limit));
+        $sql = 'SELECT p.id, p.account_id, p.payment_date, p.payment_method, p.amount, p.currency, p.exchange_rate_id, p.amount_usd_equivalent,
+                       p.reference_number, p.attachment_path, p.status, p.notes, p.registered_by, p.verified_by,
+                       a.status AS account_status, a.total_usd, a.total_bs
+                FROM payments p
+                INNER JOIN billing_accounts a ON a.id = p.account_id
+                WHERE p.status = "pending_verification"
+                ORDER BY p.payment_date DESC, p.id DESC
+                LIMIT ' . $limit;
+        return $this->db->query($sql);
+    }
+
     // Note: attachment is saved on disk; DB stores only attachment_path
 }
 ?>

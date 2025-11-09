@@ -165,6 +165,16 @@ class PaymentController {
         echo json_encode($this->model->listByAccount((int)$accountId));
     }
 
+    public function listPendingAdmin() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if(!$payload) throw new Exception('No autorizado');
+            // Could enforce role check via middleware already
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 200;
+            echo json_encode($this->model->listPending($limit));
+        } catch(Exception $e){ http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
+    }
+
     public function deletePayment($paymentId) {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
