@@ -1,12 +1,43 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { Clock } from "lucide-react";
+import { getVerseOfTheDay } from "../../api/bibleApi";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [now, setNow] = useState(() => new Date());
 
-  // Utilidad: Title Case amigable para nombres en español (con pequeñas excepciones)
+  // Estados para Versículo del Día
+  const [votd, setVotd] = useState(null);
+  const [loadingVotd, setLoadingVotd] = useState(true);
+  const [errorVotd, setErrorVotd] = useState(false);
+
+  // Fetch del Versículo del Día
+  useEffect(() => {
+    const fetchVotd = async () => {
+      try {
+        const data = await getVerseOfTheDay();
+        if (data && data.votd) {
+          setVotd(data.votd);
+        } else {
+          setErrorVotd(true);
+        }
+      } catch (error) {
+        setErrorVotd(true);
+      } finally {
+        setLoadingVotd(false);
+      }
+    };
+    fetchVotd();
+  }, []);
+
+  // Reloj en vivo
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Utilidad: Title Case para español
   const toTitleCaseEs = (str) => {
     if (!str) return "";
     const lower = String(str).toLowerCase().trim();
@@ -14,7 +45,6 @@ export default function Dashboard() {
     return lower
       .split(/\s+/)
       .map((w, i) => {
-        // Mantener minúsculas para ciertas preposiciones en medio del nombre
         if (i !== 0 && smallWords.has(w)) return w;
         return w.replace(/^(\p{L})(.*)$/u, (_, f, r) => f.toUpperCase() + r);
       })
@@ -26,7 +56,6 @@ export default function Dashboard() {
     return Array.isArray(user.roles) ? user.roles : [user.roles];
   }, [user]);
 
-  // Saludo por momento del día (actualiza en vivo con el reloj)
   const greeting = useMemo(() => {
     const h = now.getHours();
     if (h < 12) return "¡Buenos días";
@@ -49,12 +78,6 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Reloj en vivo
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
   const timeLabel = useMemo(() => {
     try {
       return new Intl.DateTimeFormat("es-ES", {
@@ -70,13 +93,9 @@ export default function Dashboard() {
 
   const gender = String(user?.gender ?? "").toLowerCase();
   const isFemale = ["f", "fem", "female", "femenino", "mujer"].includes(gender);
-
   const greetingWord = isFemale ? "Bienvenida" : "Bienvenido";
 
-  // Normalizar roles a minúsculas para comparaciones robustas
   const rolesNormalized = useMemo(() => roles.map((r) => String(r).toLowerCase()), [roles]);
-
-  // Prioridad de título: Admin > Médico > (Recepción u otros => sin título)
   const roleTitle = useMemo(() => {
     const has = (r) => rolesNormalized.includes(r);
     if (has("admin")) return "Administrador";
@@ -85,7 +104,6 @@ export default function Dashboard() {
     return "";
   }, [rolesNormalized]);
 
-  // Nombre completo: usar todos los tokens de first_name/last_name; fallback a name
   const fullNameRaw = useMemo(() => {
     const first = (user?.first_name || user?.firstName || "").toString().trim();
     const last = (user?.last_name || user?.lastName || "").toString().trim();
@@ -100,7 +118,7 @@ export default function Dashboard() {
 
   return (
     <section className="flex flex-col h-full p-6 sm:p-8 lg:p-10 space-y-8">
-      {/* Bienvenida enfocada al usuario */}
+      {/* Saludo y reloj */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white">
         <div className="absolute inset-0 opacity-20" aria-hidden>
           <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white blur-2xl" />
@@ -109,11 +127,9 @@ export default function Dashboard() {
         <div className="relative p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              {/* Línea 1: Estilo banco - Hola, Nombre Completo */}
               <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
                 Hola, {fullName} <span role="img" aria-label="mano saludando">👋</span>
               </h1>
-              {/* Línea 2: Saludo por momento del día + chip de rol si aplica */}
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <p className="text-white/90">{greeting}! Hoy es {todayLabel}.</p>
                 {roleTitle && (
@@ -122,7 +138,6 @@ export default function Dashboard() {
                   </span>
                 )}
               </div>
-              {/* Línea 3: Mensaje corto estilo banco */}
               <p className="mt-2 text-white/90">
                 {greetingWord} de nuevo. Esperamos que tengas un gran día.
               </p>
@@ -133,6 +148,46 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Sección del Versículo del Día */}
+      <div className="mb-8 bg-white p-6 rounded-lg shadow-md border-l-4 border-indigo-500">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+          <span className="mr-2">📖</span> Versículo del Día
+        </h2>
+
+        {loadingVotd ? (
+          <div className="animate-pulse flex space-x-4">
+            <div className="flex-1 space-y-4 py-1">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          </div>
+        ) : errorVotd ? (
+          <blockquote className="text-gray-600 italic border-l-4 border-gray-300 pl-4 py-2">
+            "Lámpara es a mis pies tu palabra, y lumbrera a mi camino."
+            <footer className="text-right font-semibold mt-2 text-sm text-indigo-700">
+              — Salmos 119:105
+            </footer>
+          </blockquote>
+        ) : (
+          <div className="bg-indigo-50 rounded-r-lg p-4">
+            <blockquote className="text-lg text-gray-700 italic leading-relaxed">
+              <span dangerouslySetInnerHTML={{ __html: votd.text }} />
+            </blockquote>
+            <div className="mt-4 flex justify-end">
+              <a
+                href={votd.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                title="Ver en BibleGateway"
+              >
+                — {votd.display_ref}
+              </a>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
