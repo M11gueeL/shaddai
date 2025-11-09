@@ -12,13 +12,14 @@ import { useConfirm } from '../../context/ConfirmContext';
 
 function StatusBadge({ status }){
   const map = {
-    pending: { label: 'Pendiente', cls: 'bg-amber-100 text-amber-700' },
-    partially_paid: { label: 'Parcial', cls: 'bg-blue-100 text-blue-700' },
-    paid: { label: 'Pagada', cls: 'bg-emerald-100 text-emerald-700' },
-    cancelled: { label: 'Anulada', cls: 'bg-gray-100 text-gray-700' }
+    pending: { label: 'Pendiente', classes: 'text-amber-700 bg-amber-50 ring-1 ring-amber-200' },
+    partially_paid: { label: 'Parcial', classes: 'text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200' },
+    paid: { label: 'Pagada', classes: 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200' },
+    cancelled: { label: 'Anulada', classes: 'text-slate-700 bg-slate-100 ring-1 ring-slate-300' },
+    pending_verification: { label: 'Por verificar', classes: 'text-sky-700 bg-sky-50 ring-1 ring-sky-200' }
   };
-  const m = map[status] || { label: status, cls: 'bg-gray-100 text-gray-700' };
-  return <span className={`px-2 py-1 rounded text-xs ${m.cls}`}>{m.label}</span>;
+  const m = map[status] || { label: status, classes: 'text-slate-700 bg-slate-100 ring-1 ring-slate-300' };
+  return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${m.classes}`}>{m.label}</span>;
 }
 
 export default function AccountsWorkspace(){
@@ -321,7 +322,7 @@ export default function AccountsWorkspace(){
                   <div className="text-base font-semibold">Pagador: {selected.payer_name}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="bg-white/10 rounded-lg px-2 py-1 text-xs">
+                  <div className="px-2 py-1 text-xs">
                     <StatusBadge status={selected.status} />
                   </div>
                   <button
@@ -488,7 +489,9 @@ export default function AccountsWorkspace(){
                                 )}
                               </div>
                               <div className="text-xs text-gray-500 flex items-center gap-2">
-                                <span>Eq. USD {Number(p.amount_usd_equivalent||0).toFixed(2)}</span>
+                                {p.currency === 'BS' && (
+                                  <span>Eq. USD {Number(p.amount_usd_equivalent||0).toFixed(2)}</span>
+                                )}
                                 {p.status === 'verified' ? (
                                   <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"><CheckCircle2 className="w-3 h-3"/> Verificado</span>
                                 ) : p.status === 'rejected' ? (
@@ -561,7 +564,7 @@ export default function AccountsWorkspace(){
                         {!canModify && (
                           <div className="text-[11px] text-gray-500 mt-1">Cuenta pagada/anulada: no se permiten nuevos pagos.</div>
                         )}
-                        {canModify && !exceedsElectronic && amountUsdEntered>0 && (
+                        {canModify && method !== 'cash_usd' && !exceedsElectronic && amountUsdEntered>0 && (
                           <div className="mt-2 text-[11px] text-gray-400">Equivalente USD estimado: {amountUsdEntered.toFixed(2)}</div>
                         )}
                       </form>

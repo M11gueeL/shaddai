@@ -12,7 +12,7 @@ export default function PaymentPanel() {
         <p className="text-gray-600 mt-1">Gestiona sesiones de caja, cuentas, servicios, tasas y pagos.</p>
       </div>
 
-      <div className="px-4 sm:px-6 mt-6">
+      <div className="p-4 sm:px-6 mt-6">
         <div className="bg-white/70 backdrop-blur rounded-2xl border border-gray-200">
           <nav className="flex gap-2 p-2">
             <Tab to="/payment" end label="Inicio" icon={<span>🏠</span>} />
