@@ -1,6 +1,26 @@
 import React, { useMemo, useState } from 'react';
 import { X, ArrowUpCircle, ArrowDownCircle, Loader2, CalendarDays, Filter } from 'lucide-react';
 
+const MOVEMENT_META = {
+  in_initial: { label: 'Stock inicial', direction: 'in' },
+  in_restock: { label: 'Abastecimiento', direction: 'in' },
+  in_adjust: { label: 'Ajuste positivo', direction: 'in' },
+  out_adjust: { label: 'Ajuste negativo', direction: 'out' },
+  out_adjustment: { label: 'Ajuste negativo', direction: 'out' },
+  out_billed: { label: 'Consumo facturado', direction: 'out' },
+  out_consume: { label: 'Consumo', direction: 'out' },
+  in_return: { label: 'Devolución', direction: 'in' }
+};
+
+function resolveMeta(rawType) {
+  const normalized = (rawType || '').trim();
+  if (MOVEMENT_META[normalized]) {
+    return { type: normalized, ...MOVEMENT_META[normalized] };
+  }
+  const direction = normalized.startsWith('in_') ? 'in' : 'out';
+  return { type: normalized, label: normalized || 'Movimiento', direction };
+}
+
 // Helper para agrupar por día (YYYY-MM-DD)
 function groupByDate(rows) {
   return rows.reduce((acc, r) => {
@@ -30,16 +50,16 @@ export default function MovementsDrawer({ open, item, movements, loading, onClos
   const stats = useMemo(() => {
     let totalIn = 0, totalOut = 0;
     for (const m of movements) {
-      const isIn = m.movement_type?.startsWith('in_');
-      if (isIn) totalIn += Number(m.quantity || 0); else totalOut += Number(m.quantity || 0);
+      const { direction } = resolveMeta(m.movement_type);
+      if (direction === 'in') totalIn += Number(m.quantity || 0); else totalOut += Number(m.quantity || 0);
     }
     return { totalIn, totalOut };
   }, [movements]);
 
   const filtered = useMemo(() => {
     if (tab === 'all') return movements;
-    if (tab === 'in') return movements.filter(m => m.movement_type?.startsWith('in_'));
-    return movements.filter(m => !m.movement_type?.startsWith('in_'));
+    if (tab === 'in') return movements.filter(m => resolveMeta(m.movement_type).direction === 'in');
+    return movements.filter(m => resolveMeta(m.movement_type).direction === 'out');
   }, [movements, tab]);
 
   const grouped = useMemo(() => groupByDate(filtered), [filtered]);
@@ -68,7 +88,7 @@ export default function MovementsDrawer({ open, item, movements, loading, onClos
             <button onClick={() => setTab('out')} className={`px-3 py-2 rounded-lg border ${tab==='out'?'bg-rose-600 text-white border-rose-600':'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>Salidas</button>
           </div>
           {/* Resumen */}
-          <div className="mt-3 flex items-center gap-2 text-[11px]">
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">↑ Entradas {stats.totalIn}</span>
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200">↓ Salidas {stats.totalOut}</span>
           </div>
@@ -98,7 +118,17 @@ export default function MovementsDrawer({ open, item, movements, loading, onClos
                 <div className="absolute left-1 top-0 bottom-0 w-px bg-gradient-to-b from-gray-200 via-gray-300 to-gray-200" />
                 <div className="space-y-3">
                   {grouped[dateKey].map(m => {
-                    const isIn = m.movement_type?.startsWith('in_');
+                    const meta = resolveMeta(m.movement_type);
+                    let displayLabel = meta.label;
+                    const notesLower = (m.notes || '').toLowerCase();
+                    if (meta.type === 'in_restock') {
+                      if (notesLower.includes('manual')) {
+                        displayLabel = 'Abastecimiento manual desde edición';
+                      } else if (notesLower.includes('inicial')) {
+                        displayLabel = 'Stock inicial';
+                      }
+                    }
+                    const isIn = meta.direction === 'in';
                     return (
                       <div key={m.id} className="relative rounded-xl border border-gray-200 p-3 bg-white shadow-sm">
                         <div className="absolute -left-[7px] top-4 w-3.5 h-3.5 rounded-full ring-2 ring-white border border-gray-300 bg-white" />
@@ -108,7 +138,7 @@ export default function MovementsDrawer({ open, item, movements, loading, onClos
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <p className="text-sm font-semibold text-gray-800 truncate">{m.movement_type}</p>
+                              <p className="text-sm font-semibold text-gray-800 truncate">{displayLabel}</p>
                               <span className="text-[11px] text-gray-400 shrink-0">{new Date(m.created_at).toLocaleString()}</span>
                             </div>
                             <div className="mt-1 text-xs text-gray-600">Cantidad: <span className="font-semibold">{m.quantity}</span></div>
@@ -127,7 +157,7 @@ export default function MovementsDrawer({ open, item, movements, loading, onClos
 
         {/* Footer fijo en mobile */}
         <div className="p-4 border-t bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 flex justify-end">
-          <button onClick={onClose} className="px-4 py-2.5 text-sm rounded-xl bg-gray-900 text-white hover:opacity-90">Cerrar</button>
+          <button onClick={onClose} className="w-full sm:w-auto px-4 py-2.5 text-sm rounded-xl bg-gray-900 text-white hover:opacity-90">Cerrar</button>
         </div>
       </div>
     </div>

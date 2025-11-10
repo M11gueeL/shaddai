@@ -36,6 +36,7 @@ class InventoryController {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
             if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub ?? null;
 
             $data = $_POST;
             if (empty($data['name']) || !isset($data['price_usd'])) {
@@ -43,7 +44,7 @@ class InventoryController {
                 echo json_encode(['error' => 'name and price_usd are required']);
                 return;
             }
-            $id = $this->model->create($data);
+            $id = $this->model->create($data, $userId);
             http_response_code(201);
             echo json_encode(['id' => (int)$id]);
         } catch (Exception $e) {
@@ -54,13 +55,17 @@ class InventoryController {
 
     public function update($id) {
         try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub ?? null;
+
             $data = $_POST;
             if (empty($data['name']) || !isset($data['price_usd'])) {
                 http_response_code(400);
                 echo json_encode(['error' => 'name and price_usd are required']);
                 return;
             }
-            $ok = $this->model->update($id, $data);
+            $ok = $this->model->update($id, $data, $userId);
             echo json_encode(['updated' => (bool)$ok]);
         } catch (Exception $e) {
             http_response_code(400);

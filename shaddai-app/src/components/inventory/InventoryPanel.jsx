@@ -94,6 +94,7 @@ function MovementsDrawer({ open, item, movements, loading, onClose }) {
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, listInventoryMovements } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryActions from './InventoryActions';
@@ -106,6 +107,7 @@ import MovementsDrawer from './MovementsDrawer';
 export default function InventoryPanel() {
     const { token, hasRole } = useAuth();
     const toast = useToast();
+    const { confirm } = useConfirm();
     const canEdit = hasRole(['admin']);
 
     const [items, setItems] = useState([]);
@@ -159,7 +161,14 @@ export default function InventoryPanel() {
     };
 
     const handleDelete = async (item) => {
-        if (!window.confirm(`¿Borrar (lógico) el insumo "${item.name}"?`)) return;
+        const accepted = await confirm({
+            title: `Eliminar ${item.name}`,
+            message: 'Esta acción solo desactiva el insumo, pero impacta los procesos que lo usan. ¿Deseas continuar?',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            tone: 'danger'
+        });
+        if (!accepted) return;
         try {
             await deleteInventoryItem(item.id, token);
             toast.success('Borrado lógico');
@@ -218,18 +227,22 @@ export default function InventoryPanel() {
     const lowCount = useMemo(() => items.filter(i => i.stock_quantity <= i.reorder_level).length, [items]);
 
     return (
-        <div className="space-y-8 p-4">
+        <div className="space-y-6 sm:space-y-8 p-4 sm:p-6">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white p-8 shadow-lg">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white p-6 sm:p-8 shadow-lg">
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent)]" />
                 <div className="relative">
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3">
-                        <Package className="w-8 h-8" /> Inventario de Insumos Médicos
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-3">
+                        <Package className="w-7 h-7 sm:w-8 sm:h-8" /> Inventario de Insumos Médicos
                     </h1>
-                    <p className="text-sm mt-2 text-indigo-100 max-w-2xl">Gestiona insumos. Controla stock, abastece y consulta historial de movimientos fácilmente.</p>
-                    <div className="mt-5 flex gap-6 text-sm">
-                        <div className="flex flex-col"><span className="text-indigo-100">Insumos</span><span className="font-semibold">{totalItems}</span></div>
-                        <div className="flex flex-col"><span className="text-indigo-100">Bajo stock</span><span className="font-semibold">{lowCount}</span></div>
+                    <p className="text-sm mt-2 text-indigo-100/90 max-w-2xl">Gestiona insumos. Controla stock, abastece y consulta historial de movimientos fácilmente.</p>
+                    <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
+                        <div className="flex items-center justify-between sm:flex-col sm:items-start sm:justify-start rounded-2xl bg-white/10 px-4 py-3">
+                            <span className="text-indigo-100">Insumos</span><span className="text-lg font-semibold">{totalItems}</span>
+                        </div>
+                        <div className="flex items-center justify-between sm:flex-col sm:items-start sm:justify-start rounded-2xl bg-white/10 px-4 py-3">
+                            <span className="text-indigo-100">Bajo stock</span><span className="text-lg font-semibold">{lowCount}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -257,13 +270,13 @@ export default function InventoryPanel() {
             />
 
             {/* Modals */}
-            <Modal open={creating} title="Nuevo Insumo" onClose={() => setCreating(false)}>
+            <Modal open={creating} title="Nuevo Insumo" onClose={() => setCreating(false)} maxWidth="max-w-md lg:max-w-xl">
                 <ItemForm loading={false} onSubmit={handleCreate} />
             </Modal>
-            <Modal open={!!editingItem} title={`Editar: ${editingItem?.name || ''}`} onClose={() => setEditingItem(null)}>
+            <Modal open={!!editingItem} title={`Editar: ${editingItem?.name || ''}`} onClose={() => setEditingItem(null)} maxWidth="max-w-md lg:max-w-xl">
                 {editingItem && <ItemForm initial={editingItem} loading={false} onSubmit={handleUpdate} />}
             </Modal>
-            <Modal open={!!restockItem} title={`Abastecer: ${restockItem?.name || ''}`} onClose={() => setRestockItem(null)}>
+            <Modal open={!!restockItem} title={`Abastecer: ${restockItem?.name || ''}`} onClose={() => setRestockItem(null)} maxWidth="max-w-sm md:max-w-md">
                 {restockItem && <RestockForm item={restockItem} loading={false} onSubmit={handleRestock} />}
             </Modal>
 

@@ -39,7 +39,7 @@ class InventoryModel {
         return $res[0] ?? null;
     }
 
-    public function create($data) {
+    public function create($data, $userId = null) {
         $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active) VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :price_usd, :is_active)';
         $params = [
             ':code' => $data['code'] ?? null,
@@ -51,24 +51,64 @@ class InventoryModel {
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
         ];
-        $this->db->execute($sql, $params);
-        return $this->db->lastInsertId();
+
+        try {
+            $this->db->beginTransaction();
+            $this->db->execute($sql, $params);
+            $id = (int)$this->db->lastInsertId();
+
+            if ($userId && $params[':stock_quantity'] > 0) {
+                $this->recordMovement($id, 'in_restock', (int)$params[':stock_quantity'], $userId, 'Stock inicial al crear el insumo');
+            }
+
+            $this->db->commit();
+            return $id;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
 
-    public function update($id, $data) {
+    public function update($id, $data, $userId = null) {
+        $current = $this->getById($id);
+        if (!$current) {
+            throw new Exception('Item not found');
+        }
+
+        $newStock = isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : (int)$current['stock_quantity'];
         $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, stock_quantity = :stock_quantity, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, price_usd = :price_usd, is_active = :is_active WHERE id = :id';
         $params = [
             ':code' => $data['code'] ?? null,
             ':name' => $data['name'],
             ':description' => $data['description'] ?? null,
-            ':stock_quantity' => isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : 0,
+            ':stock_quantity' => $newStock,
             ':unit_of_measure' => $data['unit_of_measure'] ?? 'unidad',
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
             ':id' => $id
         ];
-        return $this->db->execute($sql, $params);
+        $previousStock = (int)$current['stock_quantity'];
+
+        try {
+            $this->db->beginTransaction();
+            $result = $this->db->execute($sql, $params);
+
+            if ($result && $userId && $newStock !== $previousStock) {
+                $difference = $newStock - $previousStock;
+                if ($difference > 0) {
+                    $this->recordMovement($id, 'in_restock', abs($difference), $userId, 'Abastecimiento manual desde edición');
+                } else {
+                    $this->recordMovement($id, 'out_adjustment', abs($difference), $userId, 'Reducción manual desde edición');
+                }
+            }
+
+            $this->db->commit();
+            return $result;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
     }
 
     /** Borrado lógico */
@@ -181,6 +221,20 @@ class InventoryModel {
     public function getMovementsByItem($id, $limit = 100) {
         $sql = 'SELECT id, movement_type, quantity, notes, created_by, created_at FROM inventory_movements WHERE item_id = :id ORDER BY id DESC LIMIT ' . (int)$limit;
         return $this->db->query($sql, [':id' => $id]);
+    }
+
+    private function recordMovement($itemId, $movementType, $quantity, $userId, $notes = null) {
+        if ($quantity <= 0) {
+            return;
+        }
+        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
+        $this->db->execute($sql, [
+            ':item_id' => $itemId,
+            ':movement_type' => $movementType,
+            ':quantity' => $quantity,
+            ':notes' => $notes,
+            ':created_by' => $userId
+        ]);
     }
 }
 

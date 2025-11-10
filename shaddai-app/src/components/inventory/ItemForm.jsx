@@ -49,13 +49,13 @@ export default function ItemForm({ initial, onSubmit, loading }) {
           <label className="text-xs font-semibold text-gray-600">Descripción</label>
           <textarea name="description" value={form.description} onChange={handleChange} rows={3} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 md:col-span-2">
           <input id="is_active" type="checkbox" name="is_active" checked={form.is_active === 1} onChange={handleChange} className="rounded" />
           <label htmlFor="is_active" className="text-xs font-semibold text-gray-600">Activo</label>
         </div>
       </div>
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="submit" disabled={loading} className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+        <button type="submit" disabled={loading} className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium shadow hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2">
           {loading && <Loader2 className="w-4 h-4 animate-spin" />} Guardar
         </button>
       </div>
