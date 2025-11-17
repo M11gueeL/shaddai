@@ -62,7 +62,7 @@ const Footer = () => {
                 {/* Copyright */}
                 <div className="py-4 flex flex-col md:flex-row justify-between items-center">
                 <p className="text-gray-500 text-sm">
-                    &copy; {new Date().getFullYear()} Shaddai App. Todos los
+                    &copy; {new Date().getFullYear()} Sistema Médico Shaddai. Todos los
                     derechos reservados.
                 </p>
                 <div className="mt-2 md:mt-0">

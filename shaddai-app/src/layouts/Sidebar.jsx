@@ -102,7 +102,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
             <div className={`font-bold text-white mb-8 transition-all
               ${isOpen ? "text-2xl tracking-tight" : "text-center text-xs mt-8 md:block hidden"}`}>
-              {isOpen ? "Shaddai" : "S"}
+              {isOpen ? "Shaddai" : ""}
             </div>
           </div>
           
@@ -149,7 +149,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             {/* Info de versión */}
             <div className={`text-center ${!isOpen && "md:hidden"}`}>
               <p className="text-slate-400 text-xs">Versión Beta</p>
-              <p className="text-slate-500 text-xs">Shaddai Medical</p>
+              <p className="text-slate-500 text-xs">Sistema Médico Shaddai</p>
             </div>
 
             {/* Botón de cerrar sesión al final */}
