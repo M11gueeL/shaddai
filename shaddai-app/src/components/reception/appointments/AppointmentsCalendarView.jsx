@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, User } from 'lucide-react';
+import { getLocalDateString } from '../../../utils/dateUtils';
 
 const AppointmentsCalendarView = ({ appointments, onViewAppointment, getStatusBadge }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -32,7 +33,7 @@ const AppointmentsCalendarView = ({ appointments, onViewAppointment, getStatusBa
   const getAppointmentsForDate = (date) => {
     if (!date) return [];
     
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = getLocalDateString(date);
     return appointments.filter(apt => apt.appointment_date === dateString);
   };
 

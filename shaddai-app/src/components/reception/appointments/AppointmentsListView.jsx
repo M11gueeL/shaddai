@@ -1,14 +1,10 @@
 import React from 'react';
 import { Calendar, Clock, User, Stethoscope, Eye, MoreHorizontal } from 'lucide-react';
+import { formatDateLocal } from '../../../utils/dateUtils';
 
 const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge }) => {
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDateLocal(dateString);
   };
 
   const formatTime = (timeString) => {

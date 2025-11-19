@@ -20,6 +20,7 @@ import appointmentsAPI from '../../../api/appointments';
 import AppointmentDetailModal from './AppointmentDetailModal';
 import AppointmentsListView from './AppointmentsListView';
 import AppointmentsCalendarView from './AppointmentsCalendarView';
+import { getLocalDateString } from '../../../utils/dateUtils';
 
 const AppointmentsList = ({ onClose }) => {
   const [appointments, setAppointments] = useState([]);
@@ -28,6 +29,7 @@ const AppointmentsList = ({ onClose }) => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [showFilters, setShowFilters] = useState(true);
   
   // Estados de filtros
   const [filters, setFilters] = useState({
@@ -91,19 +93,28 @@ const AppointmentsList = ({ onClose }) => {
     // Filtro por rango de fechas
     if (filters.dateRange !== 'all') {
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const startDate = new Date(today);
       
       switch (filters.dateRange) {
         case 'today':
-          filtered = filtered.filter(apt => apt.appointment_date === today.toISOString().split('T')[0]);
+          filtered = filtered.filter(apt => apt.appointment_date === getLocalDateString(today));
           break;
         case 'week':
           startDate.setDate(today.getDate() - 7);
-          filtered = filtered.filter(apt => new Date(apt.appointment_date) >= startDate);
+          filtered = filtered.filter(apt => {
+            const [y, m, d] = apt.appointment_date.split('-');
+            const aptDate = new Date(y, m - 1, d);
+            return aptDate >= startDate;
+          });
           break;
         case 'month':
           startDate.setMonth(today.getMonth() - 1);
-          filtered = filtered.filter(apt => new Date(apt.appointment_date) >= startDate);
+          filtered = filtered.filter(apt => {
+            const [y, m, d] = apt.appointment_date.split('-');
+            const aptDate = new Date(y, m - 1, d);
+            return aptDate >= startDate;
+          });
           break;
       }
     }
@@ -167,15 +178,25 @@ const AppointmentsList = ({ onClose }) => {
             Gestiona y visualiza todas las citas programadas
           </p>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5 text-gray-400" />
-        </button>
+        <div className="flex items-center">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-2 rounded-full transition-colors mr-2 ${showFilters ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-400'}`}
+            title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+          >
+            <Filter className="w-5 h-5" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
       </div>
 
       {/* Filtros y controles */}
+      {showFilters && (
       <div className="p-6 border-b border-gray-200 bg-gray-50">
         <div className="flex flex-col lg:flex-row gap-4 mb-4">
           {/* Barra de búsqueda */}
@@ -260,9 +281,10 @@ const AppointmentsList = ({ onClose }) => {
         <div className="mt-4 flex gap-4 text-sm text-gray-600">
           <span>Total: {filteredAppointments.length}</span>
           <span>Confirmadas: {filteredAppointments.filter(a => a.status === 'confirmada').length}</span>
-          <span>Hoy: {filteredAppointments.filter(a => a.appointment_date === new Date().toISOString().split('T')[0]).length}</span>
+          <span>Hoy: {filteredAppointments.filter(a => a.appointment_date === getLocalDateString(new Date())).length}</span>
         </div>
       </div>
+      )}
 
   {/* Contenido principal (ahora con scroll interno cuando el contenido excede la altura) */}
   <div className="flex-1 overflow-y-auto">

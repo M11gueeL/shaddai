@@ -1,4 +1,4 @@
-import React, { useState } from 'react'; // 👈 CORREGIR: React, useState (no { React, useState })
+import React, { useState } from 'react';
 import { 
   X, 
   User, 
@@ -10,9 +10,10 @@ import {
   Mail, 
   FileText,
   Activity,
-  Edit3 // 👈 AGREGAR Edit3 a las importaciones
+  Edit3 
 } from 'lucide-react';
 import EditAppointmentModal from './EditAppointmentModal';
+import { formatDateLocal } from '../../../utils/dateUtils';
 
 const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
   const [showEditModal, setShowEditModal] = useState(false);
@@ -20,12 +21,7 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
   if (!appointment) return null;
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    return formatDateLocal(dateString);
   };
 
   const formatTime = (timeString) => {
