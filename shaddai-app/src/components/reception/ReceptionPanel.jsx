@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import PatientRegistration from './patients/PatientRegistration';
 import PatientList from './patients/PatientsList';
 import AppointmentForm from './appointments/AppointmentForm';
@@ -198,6 +198,18 @@ export default function ReceptionPanel() {
 
 // Header Component
 function Header() {
+  // Estado para el reloj
+  const [time, setTime] = useState(new Date());
+
+  // Efecto para actualizar el reloj cada segundo
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const currentDate = new Date().toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
@@ -205,9 +217,18 @@ function Header() {
     day: 'numeric'
   });
 
+  // Formato de hora con segundos (HH:MM:SS)
+  const formattedTime = time.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
   return (
     <div className={cardBase}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between ">
+        {/* Lado Izquierdo: Título y Fecha */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Panel de Recepción
@@ -216,6 +237,16 @@ function Header() {
             <Calendar className="w-4 h-4 mr-2" />
             {currentDate}
           </p>
+        </div>
+
+        {/* Lado Derecho: Reloj Exacto */}
+        <div className="mt-4 md:mt-0 flex items-center bg-gray-50 px-5 py-3 rounded-xl border border-gray-200 shadow-sm">
+          <Clock className="w-5 h-5 text-blue-600 mr-3 animate-pulse" />
+          <div className="flex flex-col items-end">
+            <span className="text-2xl font-mono font-bold text-gray-800 tracking-widest leading-none">
+              {formattedTime}
+            </span>
+          </div>
         </div>
       </div>
     </div>

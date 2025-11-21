@@ -81,7 +81,6 @@ export default function Header({ sidebarOpen, toggleSidebar }) {
             </div>
           </div>
 
-          {/* --- DERECHA: Perfil de Usuario --- */}
           <div className="flex items-center" ref={dropdownRef}>
             <div className="relative">
               <button
@@ -93,11 +92,10 @@ export default function Header({ sidebarOpen, toggleSidebar }) {
                 }`}
               >
                 {/* Avatar con Iniciales */}
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-semibold shadow-md ring-2 ring-white">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-semibold shadow-md ring-2 ring-white">
                   {getInitials()}
                 </div>
 
-                {/* Info Usuario (Visible en escritorio) */}
                 <div className="hidden md:flex flex-col items-end mr-1">
                   <span className="text-sm font-semibold text-slate-700 leading-none">
                     {displayName}
@@ -110,17 +108,14 @@ export default function Header({ sidebarOpen, toggleSidebar }) {
                 <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
               </button>
 
-              {/* --- MENÚ DESPLEGABLE --- */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-xl border border-slate-100 ring-1 ring-black/5 py-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                   
-                  {/* Cabecera Móvil (Solo visible en pantallas pequeñas) */}
                   <div className="px-4 py-3 border-b border-slate-100 md:hidden">
                     <p className="text-sm font-semibold text-slate-800">{displayName}</p>
                     <p className="text-xs text-blue-600 font-medium">{displayRole}</p>
                   </div>
 
-                  {/* Opciones de Menú */}
                   <div className="py-1">
                     <Link 
                       to="/profile" 
