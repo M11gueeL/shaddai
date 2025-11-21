@@ -5,10 +5,15 @@ const Footer = () => {
         <footer className="bg-black border-t border-gray-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col md:flex-row justify-between items-center py-6">
-                {/* Logo/Imagen */}
+                
                 <div className="mb-4 md:mb-0">
-                    <div className="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
-                        <span className="text-xs text-gray-500">LOGO</span>
+                    <div className="flex items-center justify-center">
+                        <img 
+                            src="/shaddai_logo.png" 
+                            alt="Logo Shaddai" 
+                            className="h-32 w-32 object-contain"
+                            onError={(e) => { e.target.style.display = 'none'; }} 
+                        />
                     </div>
                 </div>
 

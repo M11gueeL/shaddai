@@ -9,35 +9,35 @@ export default function QuickActionsCard({ onAction, horizontal = false }) {
       id: 'register',
       title: 'Registrar Paciente',
       icon: UserPlus,
-      color: 'bg-green-500 hover:bg-green-600',
+      color: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-200',
       description: 'Nuevo paciente',
     },
     {
       id: 'schedule',
       title: 'Agendar Cita',
       icon: CalendarPlus,
-      color: 'bg-blue-500 hover:bg-blue-600',
+      color: 'bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-rose-700 shadow-pink-200',
       description: 'Nueva cita',
     },
     {
       id: 'list',
       title: 'Buscar Pacientes',
       icon: Search,
-      color: 'bg-purple-500 hover:bg-purple-600',
+      color: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-200',
       description: 'Ver listado',
     },
     {
       id: 'consult',
       title: 'Consultar Citas',
       icon: FileText,
-      color: 'bg-orange-500 hover:bg-orange-600',
+      color: 'bg-gradient-to-r from-pink-500 to-pink-400 hover:from-pink-600 hover:to-rose-700 shadow-pink-200',
       description: 'Ver agenda',
     },
     {
       id: 'medicalSchedules',
       title: 'Horarios Médicos',
       icon: Clock,
-      color: 'bg-teal-600 hover:bg-teal-700',
+      color: 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-200',
       description: 'Gestionar horarios',
     },
   ];
@@ -56,7 +56,7 @@ export default function QuickActionsCard({ onAction, horizontal = false }) {
                 <button
                   key={action.id}
                   onClick={() => onAction(action.id)}
-                  className={`flex items-center gap-2 ${action.color} text-white px-4 py-3 rounded-xl whitespace-nowrap hover:shadow-lg transition-all`}
+                  className={`flex items-center gap-2 ${action.color} text-white px-5 py-3 rounded-xl whitespace-nowrap shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 active:scale-95`}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{action.title}</span>
@@ -79,12 +79,20 @@ export default function QuickActionsCard({ onAction, horizontal = false }) {
             <button
               key={action.id}
               onClick={() => onAction(action.id)}
-              className={`w-full ${action.color} text-white p-4 h-14 rounded-xl transition-all duration-200 hover:scale-105 hover:shadow-lg flex items-center group`}
+              className={`w-full ${action.color} text-white p-4 h-16 rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 active:scale-95 flex items-center group relative overflow-hidden`}
             >
-              <Icon className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform" />
-              <div className="text-left flex-1">
-                <div className="font-medium">{action.title}</div>
-                <div className="text-xs opacity-90">{action.description}</div>
+              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="bg-white/20 p-2 rounded-lg mr-4 group-hover:scale-110 transition-transform duration-300 backdrop-blur-sm">
+                <Icon className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1 z-10">
+                <div className="font-bold text-lg tracking-wide">{action.title}</div>
+                <div className="text-xs text-blue-50/90 font-medium">{action.description}</div>
+              </div>
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
+                <svg className="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </button>
           );
