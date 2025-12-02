@@ -84,16 +84,6 @@ export default function ForgotPassword() {
         <div className="w-full max-w-md space-y-6">
           
           <div className="text-center lg:text-left space-y-1">
-             {/* Botón Volver más visible y estilizado */}
-            <Link 
-              to="/login" 
-              className="inline-flex items-center text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-full transition-all duration-300 mb-6 group"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Volver a Iniciar Sesión
-            </Link>
             <h2 className="text-3xl font-bold text-gray-900 tracking-tight">¿Olvidaste tu contraseña?</h2>
             <p className="text-gray-500 text-base">No te preocupes, te enviaremos las instrucciones.</p>
           </div>
@@ -159,7 +149,19 @@ export default function ForgotPassword() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="flex justify-center pt-2">
+            <Link 
+              to="/login" 
+              className="inline-flex items-center text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-5 py-2 rounded-full transition-all duration-300 group"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Volver a Iniciar Sesión
+            </Link>
+          </div>
+
+          <div className="mt-6 text-center border-t border-gray-100 pt-6">
             <p className="text-xs text-gray-400 font-medium">© 2025 Centro de Especialidades Médicas Shaddai Rafa.</p>
             <p className="text-xs text-gray-400 font-medium ">
               Todos los derechos reservados.

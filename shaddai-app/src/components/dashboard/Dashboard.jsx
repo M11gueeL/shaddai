@@ -139,6 +139,26 @@ export default function Dashboard() {
 
   const activeShortcuts = shortcuts.filter(s => hasRole(s.role));
 
+  // --- Limpieza de Texto del Versículo ---
+  const cleanVerseText = (rawText) => {
+    if (!rawText) return "";
+
+    // 1. Decodificar entidades HTML (ej: &ldquo; -> ", &#237; -> í)
+    // Usamos el DOMParser nativo del navegador para convertir el HTML a texto real
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(rawText, "text/html");
+    let text = doc.body.textContent || "";
+
+    // 2. Eliminar bloques de texto entre corchetes [Título]
+    text = text.replace(/\[.*?\]/g, "");
+
+    // 3. (Opcional) Eliminar comillas dobles al inicio y final si la API las trae
+    // ya que tú probablemente quieras controlar el estilo de las comillas en tu UI.
+    text = text.replace(/^["“]/, '').replace(/["”]$/, '');
+
+    return text.trim();
+  };
+
   return (
     <div className="min-h-full p-4 md:p-8 space-y-8 animate-fade-in">
       
@@ -225,7 +245,15 @@ export default function Dashboard() {
                 </div>
               ) : votd ? (
                 <blockquote className="text-2xl font-serif text-slate-700 italic leading-relaxed">
-                  "{votd.text?.replace(/<[^>]*>?/gm, '')}"
+                  <span className="text-3xl text-emerald-500 font-bold leading-none mr-1 align-text-top">
+                    “
+                  </span>
+                  
+                  {cleanVerseText(votd.text)}
+                  
+                  <span className="text-3xl text-emerald-500 font-bold leading-none ml-1 align-text-bottom">
+                    ”
+                  </span>
                 </blockquote>
               ) : (
                 <p className="text-slate-400 italic text-xl">"Lámpara es a mis pies tu palabra, y lumbrera a mi camino."</p>

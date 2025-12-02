@@ -160,7 +160,7 @@ export default function Login() {
                     type="email"
                     id="email"
                     name="email"
-                    placeholder="ejemplo@shaddai.com"
+                    placeholder="tu@email.com"
                     className="block w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all duration-300 ease-in-out" 
                     onChange={handleChange}
                     value={form.email}
