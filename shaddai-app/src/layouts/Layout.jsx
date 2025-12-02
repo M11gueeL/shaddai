@@ -15,12 +15,8 @@ export default function Layout() {
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
       />
       
-      <div className={`flex flex-col flex-1 transition-all duration-300
-        ${sidebarOpen 
-          ? 'md:ml-64' 
-          : 'md:ml-20'  
-        }
-      `}>
+      
+      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'md:ml-24'}`}>
         
         <div className="sticky top-0 z-30">
           <Header 

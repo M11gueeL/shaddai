@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Menu, ChevronDown, LogOut, User as UserIcon, Settings } from "lucide-react";
+import { Menu, ChevronDown, LogOut, User as UserIcon, Bell } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { Link } from "react-router-dom";
 
@@ -27,21 +27,17 @@ export default function Header({ sidebarOpen, toggleSidebar }) {
 
   const getUserRole = () => {
     if (!user || !user.roles || user.roles.length === 0) return "Usuario";
-
-    const firstRole = user.roles[0]; // Tomamos solo el primero
-
+    const firstRole = user.roles[0];
     const roleMap = {
       admin: "Administrador",
       medico: "Médico",
       recepcionista: "Recepcionista",
     };
-
-    return roleMap[firstRole] || firstRole; // Retorna el mapeo o el rol original si no coincide
+    return roleMap[firstRole] || firstRole;
   };
 
   const displayRole = getUserRole();
 
-  // Generar iniciales usando first_name y last_name
   const getInitials = () => {
     if (!user) return "U";
     const first = user.first_name?.charAt(0) || "";
@@ -50,91 +46,128 @@ export default function Header({ sidebarOpen, toggleSidebar }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300">
+    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl transition-all duration-300">
+      
+      {/* Línea decorativa inferior con gradiente sutil */}
+      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-200 to-transparent"></div>
+
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-3">
+        <div className="flex justify-between items-center h-20">
+          
+          {/* --- SECCIÓN IZQUIERDA: MENÚ Y LOGO --- */}
+          <div className="flex items-center gap-4">
+            {/* Botón Hamburguesa (Solo Móvil) */}
             <button
-              className="p-2 -ml-2 mr-2 rounded-lg text-slate-500 hover:bg-slate-100 lg:hidden"
+              className="p-2 -ml-2 rounded-xl text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition-colors md:hidden"
               onClick={toggleSidebar}
               aria-label="Abrir menú"
             >
               <Menu className="h-6 w-6" />
             </button>
             
-            <div className="flex items-center gap-3 select-none">
-              <img 
-                src="/shaddai_logo.png" 
-                alt="Logo Shaddai" 
-                className="h-16 w-16 object-contain drop-shadow-sm"
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
+            <div className="flex items-center gap-3 select-none group">
+              {/* Logo con efecto hover sutil */}
+              <div className="relative transition-transform duration-500 group-hover:scale-105">
+                <div className="absolute inset-0 bg-indigo-400 blur-lg opacity-20 rounded-full"></div>
+                <img 
+                  src="/shaddai_logo.png" 
+                  alt="Logo Shaddai" 
+                  className="h-12 w-12 object-contain relative z-10"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              </div>
               
               <div className="flex flex-col justify-center">
-                <h1 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight leading-tight">
-                  Shaddai Rafa
+                <h1 className="text-xl font-bold tracking-tight leading-none">
+                  <span className="text-slate-800">Shaddai</span>
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 ml-1">
+                    Rafa
+                  </span>
                 </h1>
-                <span className="text-xs font-medium text-slate-500 tracking-wider">
+                <span className="text-[10px] font-semibold text-slate-400 tracking-widest uppercase mt-0.5">
                   Sistema Médico Shaddai
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center" ref={dropdownRef}>
+          {/* --- SECCIÓN DERECHA: PERFIL --- */}
+          <div className="flex items-center gap-4" ref={dropdownRef}>
+
+            {/* Dropdown Wrapper */}
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center gap-3 p-1.5 pr-3 rounded-full transition-all duration-200 border ${
-                  isDropdownOpen 
-                    ? "bg-slate-50 border-blue-200 ring-2 ring-blue-100/50" 
-                    : "bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200"
-                }`}
+                className={`
+                  flex items-center gap-3 pl-1 pr-1 py-1 rounded-full transition-all duration-300
+                  border border-transparent
+                  ${isDropdownOpen 
+                    ? "bg-white border-indigo-100 shadow-md ring-2 ring-indigo-50" 
+                    : "hover:bg-slate-50 hover:border-slate-200 border-slate-100/50"
+                  }
+                `}
               >
-                {/* Avatar con Iniciales */}
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-semibold shadow-md ring-2 ring-white">
-                  {getInitials()}
+                {/* Avatar */}
+                <div className="relative">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md ring-2 ring-white">
+                    {getInitials()}
+                  </div>
+                  {/* Indicador Online */}
+                  <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                 </div>
 
-                <div className="hidden md:flex flex-col items-end mr-1">
-                  <span className="text-sm font-semibold text-slate-700 leading-none">
+                {/* Texto (Desktop) */}
+                <div className="hidden md:flex flex-col items-start mr-2 text-left">
+                  <span className="text-sm font-bold text-slate-700 leading-none">
                     {displayName}
                   </span>
-                  <span className="text-[10px] font-medium text-slate-500 mt-0.5">
+                  <span className="text-[11px] font-semibold text-indigo-500 mt-0.5 tracking-wide">
                     {displayRole}
                   </span>
                 </div>
 
-                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""}`} />
+                <div className="pr-2 hidden md:block">
+                  <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180 text-indigo-500" : ""}`} />
+                </div>
               </button>
 
+              {/* Menú Desplegable */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-xl border border-slate-100 ring-1 ring-black/5 py-2 animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                <div className="absolute right-0 mt-2 w-56 bg-white/95 backdrop-blur-xl rounded-xl shadow-xl border border-slate-100 ring-1 ring-black/5 py-1 animate-in fade-in zoom-in-95 duration-200 origin-top-right z-50">
                   
-                  <div className="px-4 py-3 border-b border-slate-100 md:hidden">
-                    <p className="text-sm font-semibold text-slate-800">{displayName}</p>
-                    <p className="text-xs text-blue-600 font-medium">{displayRole}</p>
+                  {/* Info Móvil */}
+                  <div className="px-4 py-3 border-b border-slate-100 md:hidden text-center bg-slate-50/50">
+                    <div className="h-10 w-10 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md mb-1.5">
+                      {getInitials()}
+                    </div>
+                    <p className="text-sm font-bold text-slate-800 truncate">{displayName}</p>
+                    <p className="text-[11px] text-indigo-600 font-semibold tracking-wide">{displayRole}</p>
                   </div>
 
-                  <div className="py-1">
+                  {/* Opciones */}
+                  <div className="p-1 space-y-0.5">
                     <Link 
                       to="/profile" 
-                      className="flex items-center px-4 py-2.5 text-sm text-slate-600 hover:text-blue-600 hover:bg-slate-50 transition-colors group"
+                      className="flex items-center px-3 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all group"
                       onClick={() => setIsDropdownOpen(false)}
                     >
-                      <UserIcon className="h-4 w-4 mr-3 text-slate-400 group-hover:text-blue-500" />
+                      <div className="p-1 bg-slate-100 text-slate-500 rounded group-hover:bg-indigo-100 group-hover:text-indigo-600 mr-2.5 transition-colors">
+                        <UserIcon className="h-4 w-4" />
+                      </div>
                       Mi Perfil
                     </Link>
                   </div>
 
-                  <div className="border-t border-slate-100 my-1"></div>
+                  <div className="h-px bg-slate-100 my-1 mx-2"></div>
 
-                  <div className="py-1">
+                  <div className="p-1">
                     <button
                       onClick={handleLogout}
-                      className="flex w-full items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors group"
+                      className="flex w-full items-center px-3 py-2 text-sm font-medium text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group"
                     >
-                      <LogOut className="h-4 w-4 mr-3 text-red-400 group-hover:text-red-500" />
+                      <div className="p-1 bg-slate-100 text-slate-500 rounded group-hover:bg-red-100 group-hover:text-red-500 mr-2.5 transition-colors">
+                        <LogOut className="h-4 w-4" />
+                      </div>
                       Cerrar Sesión
                     </button>
                   </div>
