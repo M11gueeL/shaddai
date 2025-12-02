@@ -8,7 +8,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-200">
       
       <Sidebar 
         isOpen={sidebarOpen} 

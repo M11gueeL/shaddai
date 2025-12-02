@@ -1,27 +1,38 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Clock } from "lucide-react";
 import { getVerseOfTheDay } from "../../api/bibleApi";
+import { 
+  Clock, 
+  Calendar, 
+  User, 
+  Users, 
+  Stethoscope, 
+  Wallet, 
+  Package, 
+  Shield, 
+  Activity,
+  ArrowRight,
+  Sparkles,
+  Quote,
+  BadgeCheck // Icono para el rol
+} from "lucide-react";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
   const [now, setNow] = useState(() => new Date());
-
   const [votd, setVotd] = useState(null);
   const [loadingVotd, setLoadingVotd] = useState(true);
-  const [errorVotd, setErrorVotd] = useState(false);
+
+  // --- Lógica de Datos ---
 
   useEffect(() => {
     const fetchVotd = async () => {
       try {
         const data = await getVerseOfTheDay();
-        if (data && data.votd) {
-          setVotd(data.votd);
-        } else {
-          setErrorVotd(true);
-        }
+        if (data && data.votd) setVotd(data.votd);
       } catch (error) {
-        setErrorVotd(true);
+        console.error("Error cargando versículo", error);
       } finally {
         setLoadingVotd(false);
       }
@@ -29,206 +40,272 @@ export default function Dashboard() {
     fetchVotd();
   }, []);
 
+  // Reloj
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const toTitleCaseEs = (str) => {
+  // --- Formatters ---
+
+  const toTitleCase = (str) => {
     if (!str) return "";
-    const lower = String(str).toLowerCase().trim();
-    const smallWords = new Set(["de", "del", "la", "las", "los", "y", "e", "o", "a"]);
-    return lower
-      .split(/\s+/)
-      .map((w, i) => {
-        if (i !== 0 && smallWords.has(w)) return w;
-        return w.replace(/^(\p{L})(.*)$/u, (_, f, r) => f.toUpperCase() + r);
-      })
-      .join(" ");
+    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
   };
 
-  const roles = useMemo(() => {
-    if (!user?.roles) return [];
-    return Array.isArray(user.roles) ? user.roles : [user.roles];
+  const fullName = useMemo(() => {
+    const first = (user?.first_name || "").trim();
+    const last = (user?.last_name || "").trim();
+    return toTitleCase(`${first} ${last}` || "Usuario");
   }, [user]);
 
-  const greeting = useMemo(() => {
-    const h = now.getHours();
-    if (h < 12) return "¡Buenos días";
-    if (h < 19) return "¡Buenas tardes";
-    return "¡Buenas noches";
-  }, [now]);
-
-  const todayLabel = useMemo(() => {
-    try {
-      return new Intl.DateTimeFormat("es-ES", {
-        weekday: "long",
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
-        .format(new Date())
-        .replace(/^(\w)/, (m) => m.toUpperCase());
-    } catch (e) {
-      return new Date().toLocaleDateString("es-ES");
-    }
-  }, []);
-
-  const timeLabel = useMemo(() => {
-    try {
-      return new Intl.DateTimeFormat("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      }).format(now);
-    } catch (e) {
-      return now.toLocaleTimeString("es-ES");
-    }
-  }, [now]);
-
-  const gender = String(user?.gender ?? "").toLowerCase();
-  const isFemale = ["f", "fem", "female", "femenino", "mujer"].includes(gender);
-  const greetingWord = isFemale ? "Bienvenida" : "Bienvenido";
-
-  const rolesNormalized = useMemo(() => roles.map((r) => String(r).toLowerCase()), [roles]);
-  const roleTitle = useMemo(() => {
-    const has = (r) => rolesNormalized.includes(r);
-    if (has("admin")) return "Administrador";
-    if (has("medico") || has("doctor") || has("doctora")) return "Médico";
-    if (has("recepcionista") || has("recepcion") || has("receptionist")) return "Recepcionista";
-    return "";
-  }, [rolesNormalized]);
-
-  const fullNameRaw = useMemo(() => {
-    const first = (user?.first_name || user?.firstName || "").toString().trim();
-    const last = (user?.last_name || user?.lastName || "").toString().trim();
-    let combined = `${first} ${last}`.trim();
-    if (!combined) {
-      combined = (user?.name || "").toString().trim();
-    }
-    return combined.replace(/\s+/g, " ");
+  // Obtener Rol Principal para mostrar
+  const userRoleDisplay = useMemo(() => {
+    if (!user || !user.roles || user.roles.length === 0) return "Usuario";
+    // Tomamos el primer rol y lo mapeamos a un nombre bonito
+    const rawRole = typeof user.roles[0] === 'string' ? user.roles[0] : (user.roles[0].name || 'Usuario');
+    
+    const roleMap = {
+      'admin': 'Administrador',
+      'medico': 'Médico Especialista',
+      'recepcionista': 'Recepcionista',
+      'doctor': 'Doctor',
+    };
+    
+    return roleMap[rawRole] || toTitleCase(rawRole);
   }, [user]);
 
-  const fullName = useMemo(() => toTitleCaseEs(fullNameRaw), [fullNameRaw]);
+  // Hora Militar con Segundos (HH:mm:ss)
+  const timeString = now.toLocaleTimeString("es-VE", { 
+    hour: "2-digit", 
+    minute: "2-digit", 
+    second: "2-digit", 
+    hour12: false // Formato 24h (Militar)
+  });
+  
+  const dateString = now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+
+  // --- Accesos Directos ---
+  const shortcuts = [
+    {
+      role: ["admin", "recepcionista"],
+      to: "/reception",
+      title: "Recepción",
+      desc: "Gestión de pacientes",
+      icon: Users,
+      color: "bg-blue-600",
+      gradient: "from-blue-600 to-cyan-500"
+    },
+    {
+      role: ["admin", "medico"],
+      to: "/medicalrecords",
+      title: "Hist. Clínicas",
+      desc: "Expedientes médicos",
+      icon: Stethoscope,
+      color: "bg-emerald-600",
+      gradient: "from-emerald-600 to-teal-500"
+    },
+    {
+      role: ["admin", "recepcionista"],
+      to: "/payment",
+      title: "Caja y Pagos",
+      desc: "Control financiero",
+      icon: Wallet,
+      color: "bg-indigo-600",
+      gradient: "from-indigo-600 to-violet-600"
+    },
+    {
+      role: ["admin", "recepcionista"],
+      to: "/inventory",
+      title: "Inventario",
+      desc: "Stock de insumos",
+      icon: Package,
+      color: "bg-orange-500",
+      gradient: "from-orange-500 to-amber-500"
+    },
+    {
+      role: ["admin"],
+      to: "/controlpanel",
+      title: "Panel Control",
+      desc: "Sistema y usuarios",
+      icon: Shield,
+      color: "bg-slate-700",
+      gradient: "from-slate-700 to-slate-900"
+    },
+  ];
+
+  const activeShortcuts = shortcuts.filter(s => hasRole(s.role));
 
   return (
-    <section className="relative min-h-full overflow-hidden bg-slate-950/5">
-      <div className="absolute inset-0 -z-20 bg-gradient-to-br from-indigo-50 via-white to-cyan-50" aria-hidden />
-      <div className="absolute -top-40 -left-32 -z-10 h-80 w-80 rounded-full bg-indigo-200/70 blur-3xl" aria-hidden />
-      <div className="absolute -bottom-40 -right-32 -z-10 h-96 w-96 rounded-full bg-cyan-200/60 blur-3xl" aria-hidden />
-
-      <div className="relative flex flex-col gap-8 px-4 py-8 sm:px-6 md:px-10 lg:px-16">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr),320px]">
-          <article className="relative overflow-hidden rounded-3xl border border-white/20 bg-slate-950 text-white shadow-xl shadow-indigo-500/20">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/90 via-indigo-500/80 to-cyan-500/80" aria-hidden />
-            <div className="absolute -top-24 right-10 h-48 w-48 rounded-full bg-white/20 blur-3xl" aria-hidden />
-            <div className="absolute bottom-0 left-0 h-32 w-56 bg-white/10 blur-2xl" aria-hidden />
-            <div className="relative p-7 sm:p-9 lg:p-12">
-              <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                <div className="space-y-4">
-                  <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1 text-sm font-semibold uppercase tracking-[0.2em] text-white/80">
-                    Panel Principal
-                  </p>
-                  <h1 className="text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
-                    Hola, {fullName} <span role="img" aria-label="mano saludando">👋</span>
-                  </h1>
-                  <div className="space-y-2 text-lg text-white/85">
-                    <p>
-                      {greeting}! Hoy es {todayLabel}.
-                    </p>
-                    <p>
-                      {greetingWord} de nuevo. Esperamos que tengas un gran día lleno de propósito.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex min-w-[230px] flex-col gap-3 rounded-2xl border border-white/30 bg-white/10 px-5 py-4 backdrop-blur-lg">
-                  <span className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">Hora actual</span>
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/15">
-                      <Clock className="h-6 w-6" />
-                    </span>
-                    <span className="font-mono text-2xl font-semibold" aria-live="polite">{timeLabel}</span>
-                  </div>
-                  {roleTitle && (
-                    <span className="inline-flex items-center self-start rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
-                      {roleTitle}
-                    </span>
-                  )}
-                </div>
-              </header>
+    <div className="min-h-full p-4 md:p-8 space-y-8 animate-fade-in">
+      
+      {/* --- GRID PRINCIPAL (Bento Layout) --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* 1. HERO CARD PREMIUM (Bienvenida + Info) - Ocupa 2 columnas */}
+        <div className="lg:col-span-2 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#312e81] text-white shadow-2xl p-8 md:p-10 flex flex-col justify-between min-h-[320px] group border border-white/5">
+          
+          {/* Efectos de Fondo (Glows) */}
+          <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-indigo-500 rounded-full mix-blend-screen filter blur-[80px] opacity-30 animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-purple-600 rounded-full mix-blend-screen filter blur-[80px] opacity-20"></div>
+          
+          {/* Contenido Superior */}
+          <div className="relative z-10 space-y-4">
+            {/* Badges de Estado */}
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="px-3 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs font-bold tracking-wider uppercase flex items-center gap-2 text-indigo-200">
+                Panel Principal
+              </span>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-xs font-bold tracking-wider uppercase flex items-center gap-2 text-emerald-300">
+                <BadgeCheck className="w-3 h-3" />
+                {userRoleDisplay}
+              </span>
             </div>
-          </article>
 
-          <aside className="rounded-3xl border border-slate-200/70 bg-white/80 px-6 py-7 shadow-xl shadow-indigo-500/10 backdrop-blur-lg sm:px-7">
-            <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Resumen Personal</p>
-              <div className="space-y-3 text-sm text-slate-600">
-                <p className="text-base font-semibold text-slate-900">{fullName || "Usuario"}</p>
-                <p className="leading-relaxed text-slate-600">
-                  Administra tu agenda, registra actividades y mantente al día con tus pacientes.
+            {/* Saludo Principal */}
+            <div>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
+                Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300">{fullName.split(' ')[0]}</span>
+              </h1>
+              {/* Mensaje */}
+              <p className="mt-4 text-indigo-100/90 text-lg md:text-xl max-w-xl leading-relaxed font-light border-l-4 border-indigo-500 pl-4">
+                Potencia tu gestión médica con precisión y elegancia. <br/>
+                <span className="font-semibold text-white">Sistema Médico Shaddai</span> está listo para la excelencia.
+              </p>
+            </div>
+          </div>
+
+          {/* Contenido Inferior (Reloj Militar y Fecha) */}
+          <div className="relative z-10 flex flex-wrap items-end justify-between gap-6 mt-10 pt-6 border-t border-white/10">
+            <div className="flex items-center gap-4 group-hover:translate-x-2 transition-transform duration-500">
+              <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/5">
+                <Clock className="w-8 h-8 text-indigo-300" />
+              </div>
+              <div>
+                <p className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold mb-0.5">Tiempo Real</p>
+                <p className="text-4xl font-mono font-bold text-white tracking-tight tabular-nums shadow-black drop-shadow-lg">
+                  {timeString}
                 </p>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium tracking-[0.25em] text-slate-500">
-                  {roles.length ? roles.map((role) => toTitleCaseEs(role)).join(" · ") : "Sin rol asignado"}
-                </div>
               </div>
             </div>
-          </aside>
+            
+            <div className="flex items-center gap-3 text-indigo-200 bg-black/20 px-5 py-2.5 rounded-full backdrop-blur-md border border-white/5">
+              <Calendar className="w-5 h-5" />
+              <span className="text-sm font-medium capitalize">{dateString}</span>
+            </div>
+          </div>
         </div>
 
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-indigo-500/10">
-          <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent" aria-hidden />
-          <div className="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-indigo-500 via-violet-500 to-cyan-400" aria-hidden />
-          <div className="relative grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.2fr,0.8fr] lg:items-center">
-            <div className="space-y-4">
-              <h2 className="flex items-center gap-3 text-xl font-semibold text-slate-900 sm:text-2xl">
-                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-100 text-2xl">📖</span>
-                Versículo del Día
-              </h2>
-
+        {/* 2. VERSE CARD (Estética Minimalista) - Ocupa 1 columna */}
+        <div className="relative overflow-hidden rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-8 flex flex-col justify-center min-h-[320px]">
+          {/* Decoración superior */}
+          <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500"></div>
+          <Quote className="absolute top-8 right-8 w-16 h-16 text-slate-50 rotate-180 transform scale-y-[-1]" />
+          
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            <div>
+              <h3 className="text-xs font-black text-emerald-600 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                Inspiración Diaria
+              </h3>
+              
               {loadingVotd ? (
-                <div className="flex animate-pulse flex-col gap-3 rounded-2xl border border-dashed border-indigo-200/70 bg-indigo-50/40 p-6">
-                  <div className="h-4 w-3/4 rounded-full bg-indigo-200/80" />
-                  <div className="h-4 w-1/2 rounded-full bg-indigo-200/60" />
-                  <div className="h-4 w-full rounded-full bg-indigo-200/40" />
+                <div className="space-y-4 animate-pulse">
+                  <div className="h-4 bg-slate-100 rounded-full w-full"></div>
+                  <div className="h-4 bg-slate-100 rounded-full w-5/6"></div>
+                  <div className="h-4 bg-slate-100 rounded-full w-4/6"></div>
                 </div>
-              ) : errorVotd ? (
-                <figure className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-6 text-slate-600">
-                  <blockquote className="text-lg italic leading-relaxed text-slate-700">
-                    "Lámpara es a mis pies tu palabra, y lumbrera a mi camino."
-                  </blockquote>
-                  <figcaption className="text-right text-sm font-semibold text-indigo-600">— Salmos 119:105</figcaption>
-                </figure>
+              ) : votd ? (
+                <blockquote className="text-2xl font-serif text-slate-700 italic leading-relaxed">
+                  "{votd.text?.replace(/<[^>]*>?/gm, '')}"
+                </blockquote>
               ) : (
-                <figure className="space-y-4">
-                  <blockquote className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-6 text-base leading-relaxed text-slate-700 sm:text-lg">
-                    <span dangerouslySetInnerHTML={{ __html: votd.text }} />
-                  </blockquote>
-                  <figcaption className="flex justify-end text-sm font-semibold text-indigo-600">
-                    <a
-                      href={votd.permalink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full px-3 py-1 transition-colors hover:bg-indigo-100"
-                      title="Ver en BibleGateway"
-                    >
-                      — {votd.display_ref}
-                    </a>
-                  </figcaption>
-                </figure>
+                <p className="text-slate-400 italic text-xl">"Lámpara es a mis pies tu palabra, y lumbrera a mi camino."</p>
               )}
             </div>
 
-            <div className="hidden h-full rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-100 via-white to-cyan-100 p-6 shadow-inner lg:flex lg:flex-col lg:justify-between">
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-indigo-500">Reflexiona</p>
-              <p className="text-sm leading-relaxed text-slate-600">
-                Toma un momento para meditar y llevar la inspiración del día a cada encuentro con tus pacientes y equipo.
-              </p>
-              <span className="self-end text-3xl">✨</span>
-            </div>
+            {votd && (
+              <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                <span className="font-bold text-slate-800 text-sm bg-slate-100 px-4 py-1.5 rounded-full">
+                  {votd.display_ref}
+                </span>
+                <a 
+                  href={votd.permalink} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 group"
+                >
+                  Leer contexto 
+                  <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
+                </a>
+              </div>
+            )}
           </div>
-        </section>
+        </div>
       </div>
-    </section>
+
+      {/* --- GRID SECUNDARIO --- */}
+      <div>
+        <div className="flex items-center gap-3 mb-6 px-1">
+          <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
+            <Activity className="w-5 h-5" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800">
+            Centro de Comando
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+          {/* Card: Mi Perfil (Fija) */}
+          <Link to="/profile" className="group relative overflow-hidden rounded-3xl bg-white p-6 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300">
+            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity transform group-hover:scale-125 duration-500">
+              <User className="w-24 h-24" />
+            </div>
+            <div className="relative z-10 flex flex-col h-full justify-between gap-4">
+              <div className="p-3.5 bg-slate-50 w-fit rounded-2xl text-slate-600 group-hover:bg-slate-900 group-hover:text-white transition-all duration-300 shadow-sm">
+                <User className="w-7 h-7" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 text-lg group-hover:text-indigo-600 transition-colors">Mi Perfil</h4>
+                <p className="text-sm text-slate-500 mt-1 font-medium">Configuración personal</p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Cards Dinámicas */}
+          {activeShortcuts.map((item, idx) => (
+            <Link 
+              key={idx} 
+              to={item.to} 
+              className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300"
+            >
+              {/* Fondo Gradiente Animado */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              
+              {/* Icono Grande Decorativo */}
+              <div className="absolute -bottom-4 -right-4 p-4 opacity-[0.05] group-hover:opacity-20 transition-opacity group-hover:text-white group-hover:rotate-12 duration-500">
+                <item.icon className="w-32 h-32" />
+              </div>
+
+              <div className="relative z-10 flex flex-col h-full justify-between gap-6">
+                <div className={`p-3.5 w-fit rounded-2xl text-white shadow-lg shadow-indigo-500/20 ${item.color} group-hover:bg-white/20 group-hover:backdrop-blur-sm transition-all duration-300 ring-4 ring-white`}>
+                  <item.icon className="w-7 h-7" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-800 text-lg group-hover:text-white transition-colors flex items-center justify-between">
+                    {item.title}
+                    <div className="bg-slate-100 rounded-full p-1 opacity-0 group-hover:opacity-100 group-hover:bg-white/20 transition-all duration-300">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
+                  </h4>
+                  <p className="text-sm text-slate-500 mt-1 font-medium group-hover:text-white/90 transition-colors">{item.desc}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+    </div>
   );
 }
