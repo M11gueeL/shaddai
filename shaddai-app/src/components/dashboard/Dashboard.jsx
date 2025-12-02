@@ -15,7 +15,7 @@ import {
   ArrowRight,
   Sparkles,
   Quote,
-  BadgeCheck // Icono para el rol
+  BadgeCheck
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -59,19 +59,22 @@ export default function Dashboard() {
     return toTitleCase(`${first} ${last}` || "Usuario");
   }, [user]);
 
-  // Obtener Rol Principal para mostrar
+  // Lógica para mostrar el Rol 
   const userRoleDisplay = useMemo(() => {
     if (!user || !user.roles || user.roles.length === 0) return "Usuario";
-    // Tomamos el primer rol y lo mapeamos a un nombre bonito
-    const rawRole = typeof user.roles[0] === 'string' ? user.roles[0] : (user.roles[0].name || 'Usuario');
     
+    // Detectamos el primer rol 
+    const rawRole = typeof user.roles[0] === 'string' ? user.roles[0] : (user.roles[0].name || 'user');
+    
+    // Mapa de nombres "Brutales"
     const roleMap = {
       'admin': 'Administrador',
       'medico': 'Médico Especialista',
-      'recepcionista': 'Recepcionista',
+      'recepcionista': 'Gestión & Recepción',
       'doctor': 'Doctor',
     };
     
+    // Retorna el nombre mapeado o el original capitalizado
     return roleMap[rawRole] || toTitleCase(rawRole);
   }, [user]);
 
@@ -80,7 +83,7 @@ export default function Dashboard() {
     hour: "2-digit", 
     minute: "2-digit", 
     second: "2-digit", 
-    hour12: false // Formato 24h (Militar)
+    hour12: false // Formato Militar
   });
   
   const dateString = now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
@@ -142,7 +145,7 @@ export default function Dashboard() {
       {/* --- GRID PRINCIPAL (Bento Layout) --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* 1. HERO CARD PREMIUM (Bienvenida + Info) - Ocupa 2 columnas */}
+        {/* 1. HERO CARD (Bienvenida + Info) - Ocupa 2 columnas */}
         <div className="lg:col-span-2 relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#312e81] text-white shadow-2xl p-8 md:p-10 flex flex-col justify-between min-h-[320px] group border border-white/5">
           
           {/* Efectos de Fondo (Glows) */}
@@ -150,25 +153,29 @@ export default function Dashboard() {
           <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-purple-600 rounded-full mix-blend-screen filter blur-[80px] opacity-20"></div>
           
           {/* Contenido Superior */}
-          <div className="relative z-10 space-y-4">
+          <div className="relative z-10 space-y-5">
             {/* Badges de Estado */}
             <div className="flex flex-wrap items-center gap-3">
               <span className="px-3 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-xs font-bold tracking-wider uppercase flex items-center gap-2 text-indigo-200">
                 Panel Principal
               </span>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 text-xs font-bold tracking-wider uppercase flex items-center gap-2 text-emerald-300">
+              {/* Badge del Rol */}
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 backdrop-blur-md border border-emerald-500/20 text-xs font-bold tracking-wider uppercase flex items-center gap-2 text-emerald-400 shadow-sm">
                 <BadgeCheck className="w-3 h-3" />
                 {userRoleDisplay}
               </span>
             </div>
 
-            {/* Saludo Principal */}
+            {/* Saludo Principal con Animación de Texto */}
             <div>
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
-                Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300">{fullName.split(' ')[0]}</span>
+                Hola, 
+                <span className="ml-3 text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-slate-300 to-blue-300 bg-[length:200%_auto] animate-gradient">
+                  {fullName.split(' ')[0]}
+                </span>
               </h1>
-              {/* Mensaje */}
-              <p className="mt-4 text-indigo-100/90 text-lg md:text-xl max-w-xl leading-relaxed font-light border-l-4 border-indigo-500 pl-4">
+              {/* Mensaje BRUTAL */}
+              <p className="mt-5 text-indigo-100/80 text-lg md:text-xl max-w-xl leading-relaxed font-light border-l-4 border-indigo-500 pl-5">
                 Potencia tu gestión médica con precisión y elegancia. <br/>
                 <span className="font-semibold text-white">Sistema Médico Shaddai</span> está listo para la excelencia.
               </p>
@@ -182,7 +189,8 @@ export default function Dashboard() {
                 <Clock className="w-8 h-8 text-indigo-300" />
               </div>
               <div>
-                <p className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold mb-0.5">Tiempo Real</p>
+                <p className="text-[10px] text-indigo-300 uppercase tracking-widest font-bold mb-0.5">Hora Actual</p>
+                {/* Tabular-nums evita que los números bailen */}
                 <p className="text-4xl font-mono font-bold text-white tracking-tight tabular-nums shadow-black drop-shadow-lg">
                   {timeString}
                 </p>
@@ -196,7 +204,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 2. VERSE CARD (Estética Minimalista) - Ocupa 1 columna */}
+        {/* 2. VERSE CARD  - Ocupa 1 columna */}
         <div className="relative overflow-hidden rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-8 flex flex-col justify-center min-h-[320px]">
           {/* Decoración superior */}
           <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500"></div>
@@ -251,7 +259,7 @@ export default function Dashboard() {
             <Activity className="w-5 h-5" />
           </div>
           <h3 className="text-xl font-bold text-slate-800">
-            Centro de Comando
+            Accesos Rápidos
           </h3>
         </div>
         
