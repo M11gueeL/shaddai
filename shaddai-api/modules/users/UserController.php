@@ -158,4 +158,27 @@ class UsersController {
         }
     }
 
+    public function getMyActivityStats() {
+        try {
+            // En tu AuthMiddleware inyectas el payload en $_REQUEST
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+
+            if (!$jwtPayload || !isset($jwtPayload->sub)) {
+                http_response_code(401);
+                echo json_encode(["error" => "No autenticado"]);
+                return;
+            }
+
+            $userId = $jwtPayload->sub;
+
+            $stats = $this->model->getUserActivityStats($userId);
+
+            echo json_encode($stats);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Error en servidor: ' . $e->getMessage()]);
+        }
+    }
+
 }

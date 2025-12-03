@@ -40,5 +40,8 @@ export default {
   getSpecialties: (token) => axios.get(`${API_URL}/specialties`, getAuthHeaders(token)),
   
   // Obtener colegios médicos
-  getMedicalColleges: (token) => axios.get(`${API_URL}/medicalcolleges`, getAuthHeaders(token))
+  getMedicalColleges: (token) => axios.get(`${API_URL}/medicalcolleges`, getAuthHeaders(token)),
+
+  // Obtener estadísticas del usuario actual
+  getMyStats: (token) => axios.get(`${API_URL}/users/my-stats`, getAuthHeaders(token)).then(response => response.data)
 };

@@ -311,5 +311,48 @@ class UserModel {
             throw $e;
         }
     }
+
+    public function getUserActivityStats($userId) {
+        // 1. Resumen general
+        $sqlSummary = "SELECT 
+                        COUNT(*) as total,
+                        MAX(login_time) as last_login,
+                        MIN(login_time) as first_login
+                    FROM user_sessions 
+                    WHERE user_id = :uid";
+        
+        // Tu clase Database::query devuelve un array (fetchAll), accedemos al índice 0
+        $summaryResult = $this->db->query($sqlSummary, [':uid' => $userId]);
+        $summary = $summaryResult[0] ?? [];
+
+        // 2. Conteo del mes actual
+        $sqlMonth = "SELECT COUNT(*) as month_count 
+                    FROM user_sessions 
+                    WHERE user_id = :uid 
+                    AND MONTH(login_time) = MONTH(CURRENT_DATE())
+                    AND YEAR(login_time) = YEAR(CURRENT_DATE())";
+                    
+        $monthResult = $this->db->query($sqlMonth, [':uid' => $userId]);
+        $month = $monthResult[0] ?? [];
+
+        // 3. Historial reciente (Últimas 5 sesiones)
+        $sqlHistory = "SELECT ip_address, device_info, login_time, session_status 
+                    FROM user_sessions 
+                    WHERE user_id = :uid 
+                    ORDER BY login_time DESC 
+                    LIMIT 5";
+                    
+        $history = $this->db->query($sqlHistory, [':uid' => $userId]);
+
+        return [
+            "summary" => [
+                "total" => $summary['total'] ?? 0,
+                "last_login" => $summary['last_login'],
+                "first_login" => $summary['first_login'],
+                "month_count" => $month['month_count'] ?? 0
+            ],
+            "history" => $history
+        ];
+    }
         
 }
