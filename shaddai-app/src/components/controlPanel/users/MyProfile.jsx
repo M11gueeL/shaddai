@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   User, Shield, MapPin, Calendar, Activity, 
-  Fingerprint, Award, Stethoscope, 
+  Award, Stethoscope, 
   History, Smartphone, Globe, CheckCircle2, 
-  Copy, Monitor, Hash, Crown, Sparkles, Mail, Phone
+  Copy, Monitor, Hash, CreditCard, Mail, Phone
 } from "lucide-react";
 import userApi from "../../../api/userApi";
 
@@ -91,56 +91,56 @@ export default function MyProfile({ profile }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* --- COLUMNA IZQUIERDA: TARJETA BLACK VIP --- */}
+          {/* --- COLUMNA IZQUIERDA: TARJETA CENTRALIZADA --- */}
           <div className="lg:col-span-4 space-y-8 sticky top-8">
             
-            {/* TARJETA DE PERFIL MODERNA */}
-            <div className="bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden relative group transition-all duration-300 hover:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.15)]">
+            {/* TARJETA DE PERFIL (Target Style) */}
+            <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(79,70,229,0.15)] border border-indigo-50/50 overflow-hidden relative group transition-all duration-500 hover:shadow-[0_25px_60px_-12px_rgba(79,70,229,0.25)]">
+              
               {/* Header Background */}
-              <div className="h-32 bg-gradient-to-r from-indigo-600 to-violet-600 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-                  <div className="absolute -left-10 bottom-0 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
+              <div className="h-36 bg-[conic-gradient(at_top_right,_var(--tw-gradient-stops))] from-indigo-600 via-purple-600 to-violet-500 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+                  {/* Decoraciones sutiles de fondo */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-500"></div>
               </div>
               
-              <div className="px-6 pb-6 relative">
-                  {/* Avatar / Initials */}
-                  <div className="absolute -top-12 left-6">
-                      <div className="w-24 h-24 rounded-2xl bg-white p-1.5 shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300 ease-out">
-                          <div className="w-full h-full rounded-xl bg-slate-50 flex items-center justify-center text-indigo-600 text-3xl font-black border border-slate-100">
-                              {initials}
+              <div className="px-8 pb-8 relative">
+                  {/* Avatar Centrado (Estilo Target) */}
+                  <div className="absolute -top-16 left-1/2 -translate-x-1/2">
+                      <div className="w-32 h-32 rounded-full bg-white p-0.5 shadow-[0_10px_30px_rgba(79,70,229,0.3)] ring-4 ring-white relative z-10 group-hover:scale-[1.02] transition-transform duration-300">
+                          <div className="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 flex items-center justify-center text-white text-4xl font-semibold tracking-wider shadow-inner">
+                            {initials}
                           </div>
                       </div>
                   </div>
 
-                  {/* Top Actions */}
-                  <div className="flex justify-end pt-4 mb-2">
-                      <div className="p-2 bg-amber-50 text-amber-500 rounded-full border border-amber-100 shadow-sm">
-                          <Crown size={20} />
-                      </div>
-                  </div>
+                  {/* Spacer para respetar el espacio del avatar */}
+                  <div className="h-16"></div>
 
-                  {/* User Info */}
-                  <div className="mt-6 space-y-1">
-                      <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-tight">
-                          {profile.first_name} {profile.last_name}
+                  {/* Información del Usuario */}
+                  <div className="mt-4 flex flex-col items-center text-center space-y-2">
+                      <h2 className="text-3xl font-bold text-slate-800 tracking-tight leading-tight">
+                          {profile.first_name} <span className="text-slate-600">{profile.last_name}</span>
                       </h2>
-                      <div className="flex flex-wrap items-center gap-2">
-                          <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wide border border-indigo-100">
+                      
+                      <div className="flex flex-wrap justify-center gap-2 pt-1">
+                          <span className="px-4 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-extrabold uppercase tracking-wider border border-indigo-100 shadow-sm">
                               {roles.length > 0 ? (roles[0].name || roles[0]) : 'Usuario'}
                           </span>
                       </div>
                   </div>
 
-                  {/* Details Grid */}
-                  <div className="mt-6 pt-6 border-t border-slate-50 grid grid-cols-1 gap-4">
-                      <div className="flex items-center gap-3 group/item">
-                          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-indigo-500 group-hover/item:bg-indigo-50 transition-colors">
-                              <Fingerprint size={18} />
+                  {/* Sección de Cédula */}
+                  <div className="mt-8">
+                      <div className="flex items-center gap-5 p-5 bg-slate-50/80 rounded-2xl border border-slate-100/80 group/item hover:bg-indigo-50/50 hover:border-indigo-100/80 transition-all duration-300">
+                          <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center text-indigo-500 shadow-[0_4px_15px_-3px_rgba(79,70,229,0.15)] ring-1 ring-slate-100/50 group-hover/item:ring-indigo-200 group-hover/item:scale-105 transition-all shrink-0">
+                              <CreditCard size={26} strokeWidth={1.5} className="group-hover/item:text-indigo-600 transition-colors"/>
                           </div>
-                          <div>
-                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Documento de Identidad</p>
-                              <p className="font-mono text-sm font-semibold text-slate-700 tracking-wide">
+                          <div className="flex-1 text-left">
+                              <p className="text-[11px] uppercase tracking-widest text-slate-400 font-bold mb-1 flex items-center gap-1">
+                                Cédula de Identidad
+                              </p>
+                              <p className="font-mono text-xl font-black text-slate-800 tracking-wider leading-none">
                                   {profile.cedula || 'No registrado'}
                               </p>
                           </div>
@@ -189,12 +189,12 @@ export default function MyProfile({ profile }) {
 
           </div>
 
-          {/* --- COLUMNA DERECHA: CONTENIDO DETALLADO --- */}
+          {/* --- COLUMNA DERECHA --- */}
           <div className="lg:col-span-8">
             <div className="bg-white rounded-[2rem] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden min-h-[600px]">
                 
                 {/* Custom Tab Navigation */}
-                <div className="px-8 pt-8 pb-0 border-b border-slate-100/80 flex items-center gap-8 overflow-x-auto scrollbar-hide">
+                <div className="px-8 py-8 border-b border-slate-100/80 flex items-center gap-8 overflow-x-auto scrollbar-hide">
                     <TabButton active={activeTab === 1} onClick={() => setActiveTab(1)} label="Información Personal" icon={User} />
                     {isMedico && <TabButton active={activeTab === 2} onClick={() => setActiveTab(2)} label="Perfil Médico" icon={Award} />}
                     <TabButton active={activeTab === 3} onClick={() => setActiveTab(3)} label="Seguridad y Actividad" icon={Shield} />
@@ -369,8 +369,8 @@ const StatBox = ({ label, value, icon: Icon, color }) => {
     return (
         <div className={`p-5 rounded-2xl border ${colors[color]} flex flex-col items-center justify-center text-center gap-2 shadow-sm transition-transform hover:-translate-y-1`}>
             <Icon size={24} className="opacity-80" />
-            <span className="text-2xl font-black tracking-tight text-slate-800">{value}</span>
-            <span className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</span>
+            <span className="text-2xl font-semibold tracking-tight text-slate-800">{value}</span>
+            <span className="text-[12px] font-bold tracking-wide opacity-70">{label}</span>
         </div>
     );
 };

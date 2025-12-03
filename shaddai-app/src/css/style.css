@@ -39,3 +39,11 @@
   animation: gradient-x 3s ease infinite;
   background-size: 200% auto;
 }
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
