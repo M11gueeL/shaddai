@@ -3,11 +3,9 @@ import {
   User, Shield, MapPin, Calendar, Activity, 
   Fingerprint, Award, Stethoscope, 
   History, Smartphone, Globe, CheckCircle2, 
-  Copy, Monitor
+  Copy, Monitor, Hash, Crown, Sparkles, Mail, Phone
 } from "lucide-react";
-
-// CORRECCIÓN AQUÍ: Importamos el objeto por defecto 'userApi'
-import userApi from "../../../api/userApi"; 
+import userApi from "../../../api/userApi";
 
 export default function MyProfile({ profile }) {
   const [activeTab, setActiveTab] = useState(1);
@@ -18,8 +16,7 @@ export default function MyProfile({ profile }) {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // CORRECCIÓN AQUÍ: Llamamos a userApi.getMyStats()
-        // Pasamos null si tu api lee directo del localStorage, o pasamos el token si lo tienes en contexto
+        setLoadingStats(true);
         const token = localStorage.getItem('token'); 
         const data = await userApi.getMyStats(token);
         setStats(data);
@@ -30,16 +27,12 @@ export default function MyProfile({ profile }) {
       }
     };
     
-    // Solo cargar stats si hay un perfil
     if (profile?.id) {
         fetchStats();
     }
   }, [profile]);
 
-  // Lógica de Roles segura
   const roles = useMemo(() => Array.isArray(profile?.roles) ? profile.roles : [], [profile]);
-  
-  // Detectar si es médico (maneja string o objeto role)
   const isMedico = useMemo(() => {
       return roles.some(r => {
           const roleName = typeof r === 'string' ? r : r.name;
@@ -56,229 +49,370 @@ export default function MyProfile({ profile }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  if (!profile) return <div className="p-10 text-center text-gray-500 animate-pulse">Cargando perfil...</div>;
+  if (!profile) return <div className="min-h-screen flex items-center justify-center text-indigo-600 font-bold tracking-widest animate-pulse">CARGANDO PERFIL VIP...</div>;
 
   return (
-    <div className="min-h-screen p-4 md:p-8 font-sans text-slate-800">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="min-h-screen p-4 md:p-8 font-sans text-slate-800 relative overflow-hidden">
+      
+      <div className="relative z-10 max-w-7xl mx-auto">
         
-        {/* TARJETA IZQUIERDA (BLACK CARD) */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="relative group h-96 w-full rounded-3xl bg-slate-900 text-white shadow-2xl overflow-hidden transition-all hover:scale-[1.01] duration-500">
-            <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-600/30 rounded-full blur-3xl group-hover:bg-indigo-500/40 transition-all duration-700"></div>
-            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black via-slate-900 to-transparent"></div>
+        {/* HEADER: Título y Bienvenida */}
+        <div className="mb-12 relative">
+          {/* Decorative background elements */}
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-100/40 rounded-full blur-3xl -z-10 mix-blend-multiply animate-blob"></div>
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-100/40 rounded-full blur-3xl -z-10 mix-blend-multiply animate-blob animation-delay-2000"></div>
+
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white/80 backdrop-blur-xl p-8 rounded-[2rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600 ring-1 ring-indigo-100">
+                  <User size={17} strokeWidth={2.5} />
+                </div>
+                <span className="text-sm font-semibold text-indigo-900/50">Mi Perfil</span>
+              </div>
+              
+              <h1 className="text-4xl md:text-6xl font-semibold tracking-tight text-slate-800 mb-3 leading-tight">
+                Hola, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600">{profile.first_name.split(' ')[0]}</span>
+              </h1>
+              
+              <p className="text-slate-500 text-lg font-medium max-w-2xl leading-relaxed">
+                Bienvenido a tu panel de información personal.
+              </p>
+            </div>
             
-            <div className="absolute inset-0 p-8 flex flex-col justify-between z-10">
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-white/10 backdrop-blur-md rounded-xl border border-white/10">
-                  <Fingerprint className="text-indigo-400" size={24} />
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">Estado</p>
-                  <div className={`flex items-center gap-1.5 justify-end font-bold text-sm ${profile.active ? 'text-emerald-400' : 'text-red-400'}`}>
-                    <div className={`w-2 h-2 rounded-full animate-pulse ${profile.active ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                    {profile.active ? 'ACTIVO' : 'INACTIVO'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <div className="mx-auto w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-1 mb-4 shadow-lg shadow-indigo-500/20">
-                  <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-2xl font-bold tracking-widest uppercase border border-white/10">
-                    {initials}
-                  </div>
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight">{profile.first_name}</h2>
-                <p className="text-slate-400 font-light">{profile.last_name}</p>
-              </div>
-
-              <div className="flex justify-between items-end border-t border-white/10 pt-4">
-                <div>
-                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-0.5">Rol Principal</p>
-                  <p className="text-sm font-medium text-indigo-300 capitalize">
-                    {roles.length > 0 ? (roles[0].name || roles[0]) : 'Usuario'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold mb-0.5">ID Sistema</p>
-                  <p className="font-mono text-lg tracking-widest">#{String(profile.id).padStart(4, '0')}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Estadísticas Rápidas */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center text-center transition-colors">
-              <Activity className="text-indigo-500 mb-2" size={20} />
-              <span className="text-2xl font-bold text-slate-800">
-                {loadingStats ? "-" : stats?.summary?.total || 0}
-              </span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Sesiones Totales</span>
-            </div>
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center items-center text-center transition-colors">
-              <Calendar className="text-purple-500 mb-2" size={20} />
-              <span className="text-2xl font-bold text-slate-800">
-                {loadingStats ? "-" : stats?.summary?.month_count || 0}
-              </span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">Este Mes</span>
+            <div className="hidden md:flex flex-col items-end gap-3">
+               <div className="flex items-center gap-2 px-5 py-2.5 bg-white rounded-full border border-slate-100 shadow-sm text-slate-500 text-sm font-semibold hover:shadow-md transition-shadow cursor-default">
+                  <Calendar size={16} className="text-indigo-500"/>
+                  <span className="capitalize">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+               </div>
             </div>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: TABS */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="flex items-center gap-8 border-b border-slate-200 pb-1 overflow-x-auto scrollbar-hide">
-            <button 
-                onClick={() => setActiveTab(1)} 
-                className={`pb-3 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 1 ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Información Personal
-              {activeTab === 1 && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-full"></span>}
-            </button>
-            {isMedico && (
-              <button 
-                onClick={() => setActiveTab(2)} 
-                className={`pb-3 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 2 ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-              >
-                Credenciales Médicas
-                {activeTab === 2 && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-full"></span>}
-              </button>
-            )}
-            <button 
-                onClick={() => setActiveTab(3)} 
-                className={`pb-3 text-sm font-semibold transition-all relative whitespace-nowrap ${activeTab === 3 ? 'text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              Historial de Actividad
-              {activeTab === 3 && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 rounded-t-full"></span>}
-            </button>
-          </div>
-
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8 min-h-[400px] animate-in fade-in zoom-in-95 duration-300">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* --- COLUMNA IZQUIERDA: TARJETA BLACK VIP --- */}
+          <div className="lg:col-span-4 space-y-8 sticky top-8">
             
-            {/* TAB 1 */}
-            {activeTab === 1 && (
-              <div className="space-y-8">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <User className="text-indigo-500" size={20} /> Datos del Perfil
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                  <DataField label="Nombre Completo" value={`${profile.first_name} ${profile.last_name}`} />
-                  <DataField label="Cédula" value={profile.cedula} copyable onCopy={() => copyToClipboard(profile.cedula, 'ced')} isCopied={copied === 'ced'} />
-                  <DataField label="Email" value={profile.email} copyable onCopy={() => copyToClipboard(profile.email, 'mail')} isCopied={copied === 'mail'} />
-                  <DataField label="Teléfono" value={profile.phone} />
-                  <DataField label="Fecha Nacimiento" value={profile.birth_date} />
-                  <DataField label="Género" value={profile.gender} />
-                  <div className="md:col-span-2">
-                    <DataField label="Dirección" value={profile.address} />
+            {/* TARJETA DE PERFIL MODERNA */}
+            <div className="bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden relative group transition-all duration-300 hover:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.15)]">
+              {/* Header Background */}
+              <div className="h-32 bg-gradient-to-r from-indigo-600 to-violet-600 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                  <div className="absolute -left-10 bottom-0 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
+              </div>
+              
+              <div className="px-6 pb-6 relative">
+                  {/* Avatar / Initials */}
+                  <div className="absolute -top-12 left-6">
+                      <div className="w-24 h-24 rounded-2xl bg-white p-1.5 shadow-lg rotate-3 group-hover:rotate-0 transition-transform duration-300 ease-out">
+                          <div className="w-full h-full rounded-xl bg-slate-50 flex items-center justify-center text-indigo-600 text-3xl font-black border border-slate-100">
+                              {initials}
+                          </div>
+                      </div>
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* TAB 2 */}
-            {activeTab === 2 && isMedico && (
-              <div className="space-y-8">
-                <div className="flex items-center justify-between bg-gradient-to-r from-sky-50 to-indigo-50 p-6 rounded-2xl border border-sky-100">
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-sky-600 shadow-sm border border-sky-100">
-                       <Award size={24} />
-                     </div>
-                     <div>
-                       <h4 className="font-bold text-sky-900 text-lg">Información Profesional</h4>
-                       <p className="text-sky-700/80 text-sm">Datos verificados de colegiatura</p>
-                     </div>
-                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <DataField label="Código MPPS" value={profile.medical_info?.mpps_code} />
-                    <DataField label="Código Colegio" value={profile.medical_info?.college_code} />
-                    <div className="md:col-span-2">
-                        <DataField label="Colegio Médico" value={profile.medical_info?.college_full_name} />
+                  {/* Top Actions */}
+                  <div className="flex justify-end pt-4 mb-2">
+                      <div className="p-2 bg-amber-50 text-amber-500 rounded-full border border-amber-100 shadow-sm">
+                          <Crown size={20} />
+                      </div>
+                  </div>
+
+                  {/* User Info */}
+                  <div className="mt-6 space-y-1">
+                      <h2 className="text-2xl font-bold text-slate-800 tracking-tight leading-tight">
+                          {profile.first_name} {profile.last_name}
+                      </h2>
+                      <div className="flex flex-wrap items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wide border border-indigo-100">
+                              {roles.length > 0 ? (roles[0].name || roles[0]) : 'Usuario'}
+                          </span>
+                      </div>
+                  </div>
+
+                  {/* Details Grid */}
+                  <div className="mt-6 pt-6 border-t border-slate-50 grid grid-cols-1 gap-4">
+                      <div className="flex items-center gap-3 group/item">
+                          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover/item:text-indigo-500 group-hover/item:bg-indigo-50 transition-colors">
+                              <Fingerprint size={18} />
+                          </div>
+                          <div>
+                              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Documento de Identidad</p>
+                              <p className="font-mono text-sm font-semibold text-slate-700 tracking-wide">
+                                  {profile.cedula || 'No registrado'}
+                              </p>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+
+            {/* STATS MINI-GRID */}
+            <div className="grid grid-cols-2 gap-4">
+                <StatBox 
+                    label="Sesiones Totales" 
+                    value={loadingStats ? "-" : stats?.summary?.total} 
+                    icon={Activity} 
+                    color="indigo" 
+                />
+                <StatBox 
+                    label="Este Mes" 
+                    value={loadingStats ? "-" : stats?.summary?.month_count} 
+                    icon={Calendar} 
+                    color="purple" 
+                />
+            </div>
+            
+            {/* Quick Info Box */}
+             <div className="bg-white rounded-2xl p-6 shadow-[0_2px_20px_-5px_rgba(0,0,0,0.05)] border border-slate-100">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Contacto Rápido</h4>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
+                            <Mail size={14}/>
+                        </div>
+                        <span className="truncate">{profile.email}</span>
+                        <button onClick={() => copyToClipboard(profile.email, 'email_quick')} className="ml-auto text-indigo-500 hover:text-indigo-700">
+                             {copied === 'email_quick' ? <CheckCircle2 size={14}/> : <Copy size={14}/>}
+                        </button>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 shrink-0">
+                            <Phone size={14}/>
+                        </div>
+                        <span>{profile.phone}</span>
                     </div>
                 </div>
-                <div>
-                    <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                        <Stethoscope className="text-pink-500" size={20} /> Especialidades
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                        {profile.specialties?.map((s, i) => (
-                            <span key={i} className="px-4 py-2 bg-pink-50 text-pink-700 rounded-xl text-sm font-medium border border-pink-100">
-                                {s.name || s}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-              </div>
-            )}
+             </div>
 
-            {/* TAB 3 */}
-            {activeTab === 3 && (
-              <div className="space-y-6">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <History className="text-indigo-500" size={20} /> Últimos Accesos
-                </h3>
-                
-                {loadingStats ? (
-                   <div className="space-y-3">
-                     {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-xl animate-pulse"></div>)}
-                   </div>
-                ) : (
-                   <div className="space-y-3">
-                     {stats?.history?.map((session, idx) => (
-                       <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-slate-50 transition-all">
-                         <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                             {session.device_info?.toLowerCase().includes('mobile') ? <Smartphone size={18} /> : <Monitor size={18} />}
-                           </div>
-                           <div>
-                             <p className="text-sm font-bold text-slate-700 truncate max-w-[200px]" title={session.device_info}>
-                                {session.device_info || 'Dispositivo desconocido'}
-                             </p>
-                             <p className="text-xs text-slate-400 font-mono flex items-center gap-1">
-                                <Globe size={10} /> {session.ip_address}
-                             </p>
-                           </div>
-                         </div>
-                         <div className="text-right">
-                           <p className="text-sm font-medium text-slate-600">
-                             {new Date(session.login_time).toLocaleDateString()}
-                           </p>
-                           <div className="flex items-center justify-end gap-1.5">
-                             <span className={`w-1.5 h-1.5 rounded-full ${session.session_status === 'active' ? 'bg-green-500' : 'bg-slate-300'}`}></span>
-                             <p className="text-xs text-slate-400 capitalize">
-                               {new Date(session.login_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
-                             </p>
-                           </div>
-                         </div>
-                       </div>
-                     ))}
-                     {(!stats?.history || stats.history.length === 0) && (
-                       <div className="text-center py-12 text-slate-400 italic border-2 border-dashed border-slate-100 rounded-xl">
-                         No se encontró historial reciente.
-                       </div>
-                     )}
-                   </div>
-                )}
-              </div>
-            )}
           </div>
+
+          {/* --- COLUMNA DERECHA: CONTENIDO DETALLADO --- */}
+          <div className="lg:col-span-8">
+            <div className="bg-white rounded-[2rem] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden min-h-[600px]">
+                
+                {/* Custom Tab Navigation */}
+                <div className="px-8 pt-8 pb-0 border-b border-slate-100/80 flex items-center gap-8 overflow-x-auto scrollbar-hide">
+                    <TabButton active={activeTab === 1} onClick={() => setActiveTab(1)} label="Información Personal" icon={User} />
+                    {isMedico && <TabButton active={activeTab === 2} onClick={() => setActiveTab(2)} label="Perfil Médico" icon={Award} />}
+                    <TabButton active={activeTab === 3} onClick={() => setActiveTab(3)} label="Seguridad y Actividad" icon={Shield} />
+                </div>
+
+                {/* Content Area */}
+                <div className="p-8 bg-gradient-to-b from-white to-slate-50/50 min-h-[500px]">
+                    
+                    {/* TAB 1: PERSONAL */}
+                    {activeTab === 1 && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                            <SectionHeader title="Datos Biográficos" subtitle="Información personal registrada en el sistema" />
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                                <PremiumField label="Nombre Completo" value={`${profile.first_name} ${profile.last_name}`} />
+                                <PremiumField 
+                                    label="Cédula de Identidad" 
+                                    value={profile.cedula} 
+                                    icon={Hash}
+                                    onCopy={() => copyToClipboard(profile.cedula, 'ced')} 
+                                    isCopied={copied === 'ced'} 
+                                />
+                                <PremiumField label="Fecha de Nacimiento" value={profile.birth_date} icon={Calendar} />
+                                <PremiumField label="Género" value={profile.gender} />
+                                <PremiumField 
+                                    label="Correo Electrónico" 
+                                    value={profile.email} 
+                                    icon={Mail}
+                                    onCopy={() => copyToClipboard(profile.email, 'mail')} 
+                                    isCopied={copied === 'mail'} 
+                                />
+                                <PremiumField label="Teléfono" value={profile.phone} icon={Phone} />
+                                <div className="md:col-span-2">
+                                    <PremiumField label="Dirección de Habitación" value={profile.address} icon={MapPin} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 2: MEDICO */}
+                    {activeTab === 2 && isMedico && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-white shadow-lg mb-8">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <Stethoscope size={120} />
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-bold">Certificación Profesional</h3>
+                                    <p className="text-indigo-100 mt-1 text-sm">Sus credenciales han sido verificadas por la administración.</p>
+                                </div>
+                            </div>
+
+                            <SectionHeader title="Colegiatura y Registros" subtitle="Datos oficiales del ejercicio médico" />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition-colors">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Código MPPS</p>
+                                    <p className="text-xl font-mono text-slate-800">{profile.medical_info?.mpps_code || '---'}</p>
+                                </div>
+                                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-200 transition-colors">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">N° Colegio</p>
+                                    <p className="text-xl font-mono text-slate-800">{profile.medical_info?.college_code || '---'}</p>
+                                </div>
+                                <div className="md:col-span-2 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Colegio Médico</p>
+                                    <div className="flex items-center gap-3">
+                                        <Award className="text-indigo-500" size={20} />
+                                        <p className="font-semibold text-slate-700">{profile.medical_info?.college_full_name || 'No registrado'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-4">
+                                <SectionHeader title="Especialidades" subtitle="Áreas de práctica clínica" />
+                                <div className="flex flex-wrap gap-3 mt-4">
+                                    {profile.specialties?.map((s, i) => (
+                                        <div key={i} className="flex items-center gap-2 px-4 py-2 bg-white border border-indigo-100 rounded-lg shadow-sm text-indigo-700 font-medium text-sm">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
+                                            {s.name || s}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 3: ACTIVIDAD */}
+                    {activeTab === 3 && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <SectionHeader title="Historial de Accesos" subtitle="Monitoreo de seguridad de tu cuenta" />
+                            
+                            <div className="mt-6 space-y-4">
+                                {loadingStats ? (
+                                    [1,2,3].map(i => <SkeletonRow key={i} />)
+                                ) : (
+                                    stats?.history?.map((session, idx) => (
+                                        <div key={idx} className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-300">
+                                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${session.device_info?.toLowerCase().includes('mobile') ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'}`}>
+                                                    {session.device_info?.toLowerCase().includes('mobile') ? <Smartphone size={20} /> : <Monitor size={20} />}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-700 text-sm sm:text-base line-clamp-1" title={session.device_info}>
+                                                        {session.device_info || 'Dispositivo desconocido'}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded">
+                                                            <Globe size={10} /> {session.ip_address}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center justify-between sm:justify-end gap-6 border-t sm:border-t-0 border-slate-50 pt-3 sm:pt-0 pl-2">
+                                                <div className="text-right">
+                                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</p>
+                                                    <p className="text-sm font-medium text-slate-700">{new Date(session.login_time).toLocaleDateString()}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</p>
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <span className={`w-2 h-2 rounded-full ${session.session_status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-slate-300'}`}></span>
+                                                        <span className="text-sm text-slate-700 font-medium">
+                                                            {session.session_status === 'active' ? 'En línea' : new Date(session.login_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                                
+                                {(!loadingStats && (!stats?.history || stats.history.length === 0)) && (
+                                    <div className="flex flex-col items-center justify-center py-16 text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                                        <History size={48} className="opacity-20 mb-2" />
+                                        <p>No hay historial de sesiones reciente.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
   );
 }
 
-const DataField = ({ label, value, copyable, onCopy, isCopied }) => (
-  <div className="group">
-    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">{label}</label>
-    <div className="flex items-center justify-between border-b border-slate-200 pb-2 group-hover:border-indigo-300 transition-colors">
-      <span className="text-base font-medium text-slate-700 truncate pr-4">{value || 'N/A'}</span>
-      {copyable && value && (
-        <button onClick={onCopy} className="text-slate-300 hover:text-indigo-500 transition-colors" title="Copiar">
-          {isCopied ? <CheckCircle2 size={16} className="text-green-500" /> : <Copy size={16} />}
-        </button>
-      )}
+// --- SUBCOMPONENTES DE DISEÑO ---
+
+const TabButton = ({ active, onClick, label, icon: Icon }) => (
+    <button 
+        onClick={onClick}
+        className={`group flex items-center gap-2pb-4 transition-all duration-300 outline-none ${active ? 'opacity-100' : 'opacity-50 hover:opacity-75'}`}
+    >
+        <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${active ? 'bg-indigo-50 text-indigo-700 font-bold ring-1 ring-indigo-200' : 'text-slate-600 font-medium'}`}>
+            <Icon size={18} className={active ? 'text-indigo-600' : 'text-slate-400'} />
+            <span className="whitespace-nowrap">{label}</span>
+        </div>
+    </button>
+);
+
+const StatBox = ({ label, value, icon: Icon, color }) => {
+    const colors = {
+        indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+        purple: "bg-purple-50 text-purple-600 border-purple-100",
+    };
+    return (
+        <div className={`p-5 rounded-2xl border ${colors[color]} flex flex-col items-center justify-center text-center gap-2 shadow-sm transition-transform hover:-translate-y-1`}>
+            <Icon size={24} className="opacity-80" />
+            <span className="text-2xl font-black tracking-tight text-slate-800">{value}</span>
+            <span className="text-[10px] font-bold uppercase tracking-wide opacity-70">{label}</span>
+        </div>
+    );
+};
+
+const PremiumField = ({ label, value, icon: Icon, onCopy, isCopied }) => (
+    <div className="group relative p-4 rounded-xl bg-slate-50 hover:bg-white border border-transparent hover:border-slate-200 transition-all duration-300 hover:shadow-md">
+        <div className="flex items-center gap-2 mb-1">
+            {Icon && <Icon size={14} className="text-indigo-400" />}
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
+        </div>
+        <div className="flex items-center justify-between">
+            <span className="text-base font-semibold text-slate-700 truncate pr-4">{value || 'No registrado'}</span>
+            {onCopy && value && (
+                <button 
+                    onClick={onCopy} 
+                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-white text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-100 shadow-sm"
+                    title="Copiar"
+                >
+                    {isCopied ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                </button>
+            )}
+        </div>
     </div>
-  </div>
+);
+
+const SectionHeader = ({ title, subtitle }) => (
+    <div className="mb-6 pb-4 border-b border-slate-100">
+        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+            <div className="w-1 h-6 bg-indigo-500 rounded-full"></div>
+            {title}
+        </h2>
+        <p className="text-sm text-slate-500 mt-1 ml-3">{subtitle}</p>
+    </div>
+);
+
+const SkeletonRow = () => (
+    <div className="flex items-center p-4 bg-white rounded-xl border border-slate-100 gap-4">
+        <div className="w-12 h-12 bg-slate-100 rounded-full animate-pulse"></div>
+        <div className="flex-1 space-y-2">
+            <div className="h-4 bg-slate-100 rounded w-1/3 animate-pulse"></div>
+            <div className="h-3 bg-slate-50 rounded w-1/4 animate-pulse"></div>
+        </div>
+        <div className="w-20 h-8 bg-slate-100 rounded animate-pulse"></div>
+    </div>
 );

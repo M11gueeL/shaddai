@@ -321,7 +321,6 @@ class UserModel {
                     FROM user_sessions 
                     WHERE user_id = :uid";
         
-        // Tu clase Database::query devuelve un array (fetchAll), accedemos al índice 0
         $summaryResult = $this->db->query($sqlSummary, [':uid' => $userId]);
         $summary = $summaryResult[0] ?? [];
 

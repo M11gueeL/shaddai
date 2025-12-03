@@ -160,7 +160,6 @@ class UsersController {
 
     public function getMyActivityStats() {
         try {
-            // En tu AuthMiddleware inyectas el payload en $_REQUEST
             $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
 
             if (!$jwtPayload || !isset($jwtPayload->sub)) {
