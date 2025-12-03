@@ -25,6 +25,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
+import ScrollToTop  from "./utils/ScrollToTop";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
       <ToastProvider>
         <ConfirmProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<Login />} />
