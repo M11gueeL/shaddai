@@ -12,12 +12,28 @@ import {
   ChevronLeft, 
   ChevronRight,
   Activity,
-  X // Importamos el icono X
+  X 
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
-  const { hasRole, logout } = useAuth();
+  const { user, hasRole, logout } = useAuth();
+
+  // 1. MEJORA DE ROLES: Diccionario de traducción
+  const roleTranslations = {
+    admin: "Administrador",
+    medico: "Médico",
+    recepcionista: "Recepcionista",
+  };
+
+  // Obtener datos del usuario
+  const firstName = user?.first_name?.split(' ')[0] || 'Usuario';
+  const initial = firstName.charAt(0).toUpperCase();
+  
+  // Obtener el rol crudo y traducirlo (o capitalizarlo si no está en la lista)
+  const rawRole = user?.roles?.[0];
+  const roleName = roleTranslations[rawRole] || 
+                   (rawRole ? rawRole.charAt(0).toUpperCase() + rawRole.slice(1) : 'Miembro');
 
   const allMenuItems = [
     { 
@@ -68,7 +84,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
   return (
     <>
-      {/* Overlay para móviles (Cierra al hacer click fuera) */}
+      {/* Overlay para móviles */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm md:hidden transition-opacity duration-300"
@@ -81,12 +97,9 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           ${isOpen ? "w-72 translate-x-0" : "w-24 -translate-x-full md:translate-x-0"}
         `}
       >
-        {/* Contenedor Principal */}
         <div className="h-full flex flex-col bg-[#0f172a] border-r border-slate-800 shadow-2xl relative">
           
           {/* --- BOTONES DE CONTROL --- */}
-
-          {/* 1. Botón Cerrar (X) SOLO PARA MÓVIL */}
           <button
             onClick={toggleSidebar}
             className="md:hidden absolute top-5 right-4 p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-all duration-200 z-50"
@@ -95,7 +108,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             <X size={24} strokeWidth={2.5} />
           </button>
 
-          {/* 2. Botón Toggle Flotante (Chevron) SOLO PARA DESKTOP */}
           <button
             onClick={toggleSidebar}
             className="hidden md:flex absolute -right-3 top-9 bg-indigo-600 text-white p-2 rounded-full shadow-lg hover:bg-indigo-500 hover:scale-110 transition-all z-50 items-center justify-center"
@@ -104,7 +116,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           </button>
 
           {/* --- HEADER DEL SIDEBAR --- */}
-          <div className="h-20 flex items-center px-6 border-b border-slate-800/50 shrink-0">
+          <div className={`h-20 flex items-center border-b border-slate-800/50 shrink-0 transition-all duration-300 ${isOpen ? "px-6 justify-start" : "px-0 justify-center"}`}>
             <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
               <div className="bg-gradient-to-tr from-indigo-500 to-purple-600 p-2 rounded-xl shrink-0 shadow-lg shadow-indigo-500/20">
                 <Activity className="text-white w-6 h-6" />
@@ -116,7 +128,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             </div>
           </div>
 
-          {/* --- NAVEGACIÓN (Scroll oculto aplicado aquí) --- */}
+          {/* --- NAVEGACIÓN --- */}
           <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1 no-scrollbar">
             {menuItems.map((item) => (
               <NavLink
@@ -125,6 +137,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 onClick={() => window.innerWidth < 768 && toggleSidebar()}
                 className={({ isActive }) => `
                   group relative flex items-center px-3 py-3 rounded-xl transition-all duration-300
+                  ${!isOpen ? "justify-center" : ""} 
                   ${isActive 
                     ? "bg-gradient-to-r from-indigo-600/20 to-purple-600/10 text-white" 
                     : "text-slate-400 hover:text-indigo-100 hover:bg-white/5"
@@ -135,11 +148,13 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                   <>
                     {/* Indicador activo */}
                     {isActive && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                      <span className={`absolute bg-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all duration-300
+                        ${isOpen ? "left-0 top-1/2 -translate-y-1/2 w-1 h-8" : "left-1 top-1/2 -translate-y-1/2 w-1 h-6"} 
+                      `} />
                     )}
 
-                    {/* Icono */}
-                    <div className={`shrink-0 transition-colors duration-300 ${isActive ? "text-indigo-400" : "group-hover:text-indigo-300"}`}>
+                    {/* Icono (con efecto hover añadido) */}
+                    <div className={`shrink-0 transition-all duration-300 group-hover:-translate-x-1 ${isActive ? "text-indigo-400" : "group-hover:text-indigo-300"}`}>
                       <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                     </div>
 
@@ -151,7 +166,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                       {item.name}
                     </span>
 
-                    {/* Tooltip para Desktop Colapsado */}
+                    {/* Tooltip */}
                     {!isOpen && (
                       <div className="hidden md:block absolute left-full ml-4 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-xl border border-slate-700">
                         {item.name}
@@ -163,13 +178,35 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             ))}
           </nav>
 
-          {/* --- FOOTER (Logout) --- */}
-          <div className="p-4 shrink-0">
+          {/* --- FOOTER: PERFIL Y LOGOUT --- */}
+          <div className="p-4 shrink-0 border-t border-slate-800/50">
+            
+            {/* Tarjeta de Usuario */}
+            <div className={`flex items-center gap-3 mb-4 transition-all duration-300 ${!isOpen ? "justify-center" : ""}`}>
+               
+               {/* Avatar */}
+               <div className="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-slate-800 cursor-default" title={roleName}>
+                  {initial}
+               </div>
+
+               {/* Info Texto */}
+               <div className={`transition-all duration-300 overflow-hidden ${isOpen ? "opacity-100 w-auto" : "opacity-0 w-0 hidden"}`}>
+                  <p className="text-[14px] font-semibold text-slate-200 whitespace-nowrap">
+                    ¡Hola, {firstName}!
+                  </p>
+                  <p className="text-[12px] font-medium text-indigo-400 tracking-wider truncate max-w-[140px]">
+                    {roleName}
+                  </p>
+               </div>
+            </div>
+
+            {/* Botón Cerrar Sesión */}
             <button
               onClick={logout}
               className={`flex items-center w-full p-2 rounded-xl text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all group overflow-hidden
-                ${!isOpen && "md:justify-center"}
+                ${!isOpen ? "justify-center" : ""} 
               `}
+              title={!isOpen ? "Cerrar Sesión" : ""}
             >
               <LogOut size={20} className="shrink-0 transition-transform group-hover:-translate-x-1" />
               <span className={`ml-3 text-sm font-medium whitespace-nowrap transition-all duration-300 ${isOpen ? "opacity-100" : "opacity-0 w-0 hidden md:block"}`}>
