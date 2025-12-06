@@ -1,21 +1,22 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ElegantHeader from '../common/ElegantHeader';
+import { CreditCard } from 'lucide-react';
 
 export default function PaymentPanel() {
   const { hasRole } = useAuth();
 
   return (
-    <div className="flex flex-col w-full">
-      {/* Mini header compacto */}
+    <div className="flex flex-col w-full overflow-x-hidden">
       <div className="px-4 sm:px-6 pt-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-3 shadow-sm">
-          <span className="inline-block w-1.5 h-6 rounded-full bg-gradient-to-b from-indigo-500 via-sky-500 to-cyan-400" />
-          <div className="flex flex-col">
-            <span className="text-lg font-semibold leading-none text-gray-900">Caja y Pagos</span>
-            <span className="text-xs text-gray-600 mt-0.5">Gestiona sesiones de caja, cuentas, servicios, tasas y pagos.</span>
-          </div>
-        </div>
+        <ElegantHeader 
+            icon={CreditCard}
+            sectionName="Caja y Pagos"
+            title="Gestión"
+            highlightText="Financiera"
+            description="Gestiona sesiones de caja, cuentas, servicios, tasas y pagos de manera centralizada."
+        />
       </div>
 
       <div className="p-4 sm:px-6 mt-4">

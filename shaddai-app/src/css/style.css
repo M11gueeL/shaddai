@@ -47,3 +47,74 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
 }
+
+/* Estilos para el nuevo header profesional */
+.seccion-header-pro {
+    /* Degradado azul profesional, inspirado en el tono del perfil pero adaptado a un header */
+    background: linear-gradient(135deg, #1e4f8a 0%, #2a6db5 100%);
+    color: #ffffff; /* Texto blanco para contraste */
+    padding: 20px 30px;
+    border-radius: 8px; /* Bordes redondeados para modernidad */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Sombra suave para elevación */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px; /* Espacio antes del contenido principal */
+}
+
+/* Parte izquierda: Título y descripción */
+.header-info-container h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.header-info-container p {
+    margin: 8px 0 0 0;
+    font-size: 14px;
+    opacity: 0.9; /* Un poco más sutil que el título */
+    font-weight: 300;
+}
+
+/* Parte derecha: Fecha y Hora */
+.header-datetime-container {
+    text-align: right;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+/* Icono opcional para la fecha/hora (usando FontAwesome como ejemplo) */
+.header-datetime-container i {
+    font-size: 20px;
+    margin-right: 10px;
+    opacity: 0.8;
+}
+
+.datetime-box span {
+    display: block; /* Fecha y hora en líneas separadas */
+}
+
+.date-text {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.time-text {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Responsividad para pantallas pequeñas */
+@media (max-width: 768px) {
+    .seccion-header-pro {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+    .header-datetime-container {
+        margin-top: 15px;
+        text-align: left;
+    }
+}

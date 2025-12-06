@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Stethoscope } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import medicalRecordsApi from '../../api/medicalRecords';
@@ -16,6 +16,7 @@ import VitalsSection from './vitals/VitalsSection';
 import ReportsSection from './reports/ReportsSection';
 import AttachmentsSection from './attachments/AttachmentsSection';
 import PatientDetail from '../reception/patients/PatientDetail';
+import ElegantHeader from '../common/ElegantHeader';
 
 const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
 
@@ -165,8 +166,14 @@ export default function MedicalRecordsPanel() {
     const [activeTab, setActiveTab] = useState('summary');
 
     return (
-        <div className="p-4 sm:p-6 space-y-4">
-            <Header />
+        <div className="p-4 sm:p-6 space-y-4 overflow-x-hidden">
+            <ElegantHeader 
+                icon={Stethoscope}
+                sectionName="Historias Clínicas"
+                title="Gestión de"
+                highlightText="Pacientes"
+                description="Consulta, edita y gestiona las historias clínicas de tus pacientes de manera eficiente y segura."
+            />
 
             <SearchPatientBar onSearchByCedula={handleSearchByCedula} onSearchByPatientId={handleSearchByPatientId} loading={loading} />
 
@@ -318,61 +325,4 @@ export default function MedicalRecordsPanel() {
             )}
         </div>
     );
-}
-
-// Header Component
-function Header() {
-  // Estado para el reloj
-  const [time, setTime] = useState(new Date());
-
-  // Efecto para actualizar el reloj cada segundo
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const currentDate = new Date().toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  // Formato de hora con segundos (HH:MM:SS)
-  const formattedTime = time.toLocaleTimeString('es-ES', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  });
-
-  return (
-    <div className={cardBase}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between ">
-        {/* Lado Izquierdo: Título y Fecha */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Historias Clínicas
-          </h1>
-          <p className="text-gray-600 flex items-center">
-            <Calendar className="w-4 h-4 mr-2" />
-            {currentDate}
-          </p>
-        </div>
-
-        {/* Lado Derecho: Reloj Exacto */}
-        <div className="mt-4 md:mt-0 flex items-center bg-gray-50 px-5 py-3 rounded-xl border border-gray-200 shadow-sm">
-          <Clock className="w-5 h-5 text-blue-600 mr-3 animate-pulse" />
-          <div className="flex flex-col items-end">
-            <span className="text-2xl font-mono font-bold text-gray-800 tracking-widest leading-none">
-              {formattedTime}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 }

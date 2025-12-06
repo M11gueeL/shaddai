@@ -49,7 +49,7 @@ export default function MyProfile({ profile }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  if (!profile) return <div className="min-h-screen flex items-center justify-center text-indigo-600 font-bold tracking-widest animate-pulse">CARGANDO PERFIL VIP...</div>;
+  if (!profile) return <div className="min-h-screen flex items-center justify-center text-indigo-600 font-bold tracking-widest animate-pulse">Cargando Perfil...</div>;
 
   return (
     <div className="min-h-screen p-4 md:p-8 font-sans text-slate-800 relative overflow-hidden">

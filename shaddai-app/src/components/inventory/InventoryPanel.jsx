@@ -103,6 +103,7 @@ import Modal from './Modal';
 import ItemForm from './ItemForm';
 import RestockForm from './RestockForm';
 import MovementsDrawer from './MovementsDrawer';
+import ElegantHeader from '../common/ElegantHeader';
 
 export default function InventoryPanel() {
     const { token, hasRole } = useAuth();
@@ -227,25 +228,24 @@ export default function InventoryPanel() {
     const lowCount = useMemo(() => items.filter(i => i.stock_quantity <= i.reorder_level).length, [items]);
 
     return (
-        <div className="space-y-6 sm:space-y-8 p-4 sm:p-6">
+        <div className="space-y-6 sm:space-y-8 p-4 sm:p-6 overflow-x-hidden">
             {/* Header */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white p-6 sm:p-8 shadow-lg">
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent)]" />
-                <div className="relative">
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-3">
-                        <Package className="w-7 h-7 sm:w-8 sm:h-8" /> Inventario de Insumos Médicos
-                    </h1>
-                    <p className="text-sm mt-2 text-indigo-100/90 max-w-2xl">Gestiona insumos. Controla stock, abastece y consulta historial de movimientos fácilmente.</p>
-                    <div className="mt-5 flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
-                        <div className="flex items-center justify-between sm:flex-col sm:items-start sm:justify-start rounded-2xl bg-white/10 px-4 py-3">
-                            <span className="text-indigo-100">Insumos</span><span className="text-lg font-semibold">{totalItems}</span>
-                        </div>
-                        <div className="flex items-center justify-between sm:flex-col sm:items-start sm:justify-start rounded-2xl bg-white/10 px-4 py-3">
-                            <span className="text-indigo-100">Bajo stock</span><span className="text-lg font-semibold">{lowCount}</span>
-                        </div>
+            <ElegantHeader 
+                icon={Package}
+                sectionName="Inventario"
+                title="Control de"
+                highlightText="Insumos"
+                description="Gestiona insumos, controla stock, abastece y consulta historial de movimientos fácilmente."
+            >
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 text-sm">
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start sm:justify-start rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3 min-w-[120px]">
+                        <span className="text-indigo-600 font-semibold">Insumos</span><span className="text-2xl font-bold text-indigo-900">{totalItems}</span>
+                    </div>
+                    <div className="flex items-center justify-between sm:flex-col sm:items-start sm:justify-start rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3 min-w-[120px]">
+                        <span className="text-indigo-600 font-semibold">Bajo stock</span><span className="text-2xl font-bold text-indigo-900">{lowCount}</span>
                     </div>
                 </div>
-            </div>
+            </ElegantHeader>
 
             <InventoryActions
                 onSearch={setSearch}
