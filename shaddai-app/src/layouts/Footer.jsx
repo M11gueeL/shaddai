@@ -1,5 +1,6 @@
 import React from "react";
 import { Heart, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -48,8 +49,8 @@ const Footer = () => {
           <div className="md:col-span-4 lg:col-span-3">
             <h4 className="text-white font-semibold mb-4 text-sm">Legal</h4>
             <ul className="space-y-3">
-              <FooterLink text="Política de Privacidad" />
-              <FooterLink text="Términos de Servicio" />
+              <FooterLink to="/privacy" text="Política de Privacidad" />
+              <FooterLink to="/terms" text="Términos de Servicio" />
             </ul>
           </div>
         </div>
@@ -79,9 +80,9 @@ const Footer = () => {
 }
 
 // Subcomponente para Enlaces con efecto Hover elegante
-const FooterLink = ({ text, badge }) => (
+const FooterLink = ({ text, badge, to = "#" }) => (
   <li>
-    <a href="#" className="group flex items-center gap-2 text-slate-400 hover:text-indigo-300 transition-colors text-sm w-fit">
+    <Link to={to} className="group flex items-center gap-2 text-slate-400 hover:text-indigo-300 transition-colors text-sm w-fit">
       <span className="relative">
         {text}
         <span className="absolute -bottom-1 left-0 w-0 h-px bg-indigo-400 transition-all group-hover:w-full"></span>
@@ -91,7 +92,7 @@ const FooterLink = ({ text, badge }) => (
           {badge}
         </span>
       )}
-    </a>
+    </Link>
   </li>
 );
 

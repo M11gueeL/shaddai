@@ -26,6 +26,8 @@ import { ConfirmProvider } from "./context/ConfirmContext";
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import ScrollToTop  from "./utils/ScrollToTop";
+import AppPrivacy from "./components/legal/AppPrivacy";
+import AppTerms from "./components/legal/AppTerms";
 
 export default function App() {
   return (
@@ -46,6 +48,8 @@ export default function App() {
               {/* Rutas accesibles por todos los roles autenticados */}
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<ProfilePanel />} />
+              <Route path="/privacy" element={<AppPrivacy />} />
+              <Route path="/terms" element={<AppTerms />} />
               
               {/* Panel de Control - Solo Admin */}
               <Route path="/controlpanel" element={
