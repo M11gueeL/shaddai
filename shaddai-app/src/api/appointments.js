@@ -56,5 +56,11 @@ export default {
   getToday: (token) => axios.get(`${API_URL}/appointments/today`, getAuthHeaders(token)),
 
   // Obtener estadísticas de citas/pacientes
-  getStats: (token) => axios.get(`${API_URL}/appointments/stats`, getAuthHeaders(token))
+  getStats: (token) => axios.get(`${API_URL}/appointments/stats`, getAuthHeaders(token)),
+
+  exportReport: (filters, token) => axios.get(`${API_URL}/appointments/report/export`, {
+    ...getAuthHeaders(token),
+    params: filters, 
+    responseType: 'blob' 
+  }),
 };

@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/AppointmentsModel.php';
+require_once __DIR__ . '/../../services/ReportGeneratorService.php';
 
 class AppointmentsController {
     private $model;
+    private $reportService;
 
     public function __construct() {
         $this->model = new AppointmentsModel();
+        $this->reportService = new ReportGeneratorService();
     }
 
     public function getAllAppointments() {
@@ -312,6 +315,39 @@ class AppointmentsController {
         } catch (Exception $e) {
             http_response_code(500);
             header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function exportReport() {
+        try {
+            // 1. Recoger filtros
+            $startDate = $_GET['start_date'] ?? date('Y-m-01');
+            $endDate = $_GET['end_date'] ?? date('Y-m-t');
+            $status = $_GET['status'] ?? 'todos';
+            $format = $_GET['format'] ?? 'csv';
+
+            // 2. Obtener datos (El modelo hace el trabajo de SQL)
+            $appointments = $this->model->getAppointmentsForReport($startDate, $endDate, $status);
+            
+            // 3. Definir nombre de archivo base
+            $filename = "Reporte_Citas_" . date('Ymd_His');
+
+            // 4. Delegar la creación del archivo al Servicio
+            switch ($format) {
+                case 'pdf':
+                    $this->reportService->generatePdf($appointments, $startDate, $endDate, $filename);
+                    break;
+                case 'excel':
+                    $this->reportService->generateExcel($appointments, $startDate, $endDate, $filename);
+                    break;
+                default:
+                    $this->reportService->generateCsv($appointments, $filename);
+                    break;
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
             echo json_encode(['error' => $e->getMessage()]);
         }
     }

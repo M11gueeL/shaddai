@@ -9,6 +9,8 @@ class AppointmentsRoutes {
         
         $controller = new AppointmentsController();
 
+        $router->add('GET', 'appointments/report/export', [$controller, 'exportReport'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);
         
         $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/stats', [$controller, 'getStatistics'], ['auth', 'role:admin,recepcionista']);
@@ -28,6 +30,8 @@ class AppointmentsRoutes {
 
         $router->add('GET', 'appointments/availability', [$controller, 'checkAvailability'], ['auth', 'role:admin,recepcionista']);
         $router->add('POST', 'appointments/validate-slot', [$controller, 'validateSlot'], ['auth', 'role:admin,recepcionista']);
+
+        
         
         
     }

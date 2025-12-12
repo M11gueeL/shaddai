@@ -470,5 +470,47 @@ class AppointmentsModel {
         return $this->db->execute($query, $params);
     }
 
+    /**
+     * Obtener citas para reportes con filtros dinámicos
+     * @param string $startDate Fecha inicio (YYYY-MM-DD)
+     * @param string $endDate Fecha fin (YYYY-MM-DD)
+     * @param string|null $status Estado específico o null para 'todos'
+     */
+    public function getAppointmentsForReport($startDate, $endDate, $status = null) {
+        $query = "SELECT 
+            a.id,
+            a.appointment_date,
+            a.appointment_time,
+            a.status,
+            a.appointment_type,
+            a.duration,
+            p.full_name as patient_name, 
+            p.cedula as patient_cedula,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name,
+            ami.chief_complaint
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.appointment_date BETWEEN :start_date AND :end_date";
+
+        $params = [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ];
+
+        // Si el status no es 'todos' y no es nulo, agregamos el filtro
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date ASC, a.appointment_time ASC";
+
+        return $this->db->query($query, $params);
+    }
+
     
 }
