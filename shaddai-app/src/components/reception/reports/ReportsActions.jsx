@@ -1,15 +1,26 @@
 import { useState } from 'react';
-import { Download, FileText, X, Calendar, Filter, FileSpreadsheet } from 'lucide-react';
+import { Download, FileText, X, Calendar, Filter, FileSpreadsheet, ChevronDown, ClipboardList, CheckCircle, Clock, CheckCheck, XCircle, UserX } from 'lucide-react';
 import appointmentsApi from '../../../api/appointments';
 import { useAuth } from '../../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
 
+const statusOptions = [
+  { value: 'todos', label: 'Todas las citas', icon: ClipboardList, color: 'text-gray-600', bg: 'bg-gray-100' },
+  { value: 'programada', label: 'Programadas', icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { value: 'confirmada', label: 'Confirmadas', icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
+  { value: 'en_progreso', label: 'En Progreso', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+  { value: 'completada', label: 'Completadas', icon: CheckCheck, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  { value: 'cancelada', label: 'Canceladas', icon: XCircle, color: 'text-red-600', bg: 'bg-red-50' },
+  { value: 'no_se_presento', label: 'No se presentó', icon: UserX, color: 'text-gray-500', bg: 'bg-gray-100' },
+];
+
 export default function ReportsActions() {
   const { token } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [loadingFormat, setLoadingFormat] = useState(null);
   
   const [filters, setFilters] = useState({
     start_date: new Date().toISOString().split('T')[0], 
@@ -24,7 +35,7 @@ export default function ReportsActions() {
 
   const handleExport = async (format) => {
     try {
-      setLoading(true);
+      setLoadingFormat(format);
       // Incluimos el formato en la petición (csv, excel, pdf)
       const filtersWithFormat = { ...filters, format };
       
@@ -54,7 +65,7 @@ export default function ReportsActions() {
       console.error(error);
       toast.error('Error al generar el reporte');
     } finally {
-      setLoading(false);
+      setLoadingFormat(null);
     }
   };
 
@@ -85,10 +96,10 @@ export default function ReportsActions() {
       {/* Modal de Configuración Mejorado */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col">
             
             {/* Header del Modal */}
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl">
               <div className="text-white">
                 <h3 className="font-bold text-lg">Exportar Reporte de Citas</h3>
                 <p className="text-blue-100 text-xs opacity-90">Selecciona el rango y el formato deseado</p>
@@ -130,20 +141,51 @@ export default function ReportsActions() {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">Filtrar por Estado</label>
-                  <select
-                    name="status"
-                    value={filters.status}
-                    onChange={handleInputChange}
-                    className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 py-2.5"
-                  >
-                    <option value="todos">📋 Todas las citas</option>
-                    <option value="programada">📅 Programadas</option>
-                    <option value="confirmada">✅ Confirmadas</option>
-                    <option value="en_progreso">⏳ En Progreso</option>
-                    <option value="completada">🏁 Completadas</option>
-                    <option value="cancelada">❌ Canceladas</option>
-                    <option value="no_se_presento">👻 No se presentó</option>
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsStatusOpen(!isStatusOpen)}
+                      className="w-full flex items-center justify-between text-sm border border-gray-200 bg-gray-50 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:bg-gray-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const selected = statusOptions.find(opt => opt.value === filters.status);
+                          const Icon = selected?.icon || ClipboardList;
+                          return (
+                            <>
+                              <Icon className={`w-4 h-4 ${selected?.color}`} />
+                              <span className="text-gray-700 font-medium">{selected?.label}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isStatusOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {isStatusOpen && (
+                      <div className="absolute z-20 mt-1 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                        <div className="p-1 space-y-0.5">
+                          {statusOptions.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => {
+                                setFilters(prev => ({ ...prev, status: option.value }));
+                                setIsStatusOpen(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${filters.status === option.value ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'}`}
+                            >
+                              <div className={`p-1.5 rounded-md ${option.bg}`}>
+                                <option.icon className={`w-4 h-4 ${option.color}`} />
+                              </div>
+                              <span className="font-medium">{option.label}</span>
+                              {filters.status === option.value && <CheckCheck className="w-4 h-4 ml-auto text-blue-600" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -154,7 +196,7 @@ export default function ReportsActions() {
                 <div className="grid grid-cols-1 gap-3">
                   <button
                     onClick={() => handleExport('pdf')}
-                    disabled={loading}
+                    disabled={!!loadingFormat}
                     className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all group shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-center gap-3">
@@ -166,12 +208,12 @@ export default function ReportsActions() {
                         <span className="block text-xs text-gray-500">Ideal para imprimir y reportes oficiales</span>
                       </div>
                     </div>
-                    {loading ? <span className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-red-500" />}
+                    {loadingFormat === 'pdf' ? <span className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-red-500" />}
                   </button>
 
                   <button
                     onClick={() => handleExport('excel')}
-                    disabled={loading}
+                    disabled={!!loadingFormat}
                     className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl transition-all group shadow-sm hover:shadow-md"
                   >
                     <div className="flex items-center gap-3">
@@ -183,12 +225,12 @@ export default function ReportsActions() {
                         <span className="block text-xs text-gray-500">Con formato, filtros y encabezados</span>
                       </div>
                     </div>
-                    {loading ? <span className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-emerald-500" />}
+                    {loadingFormat === 'excel' ? <span className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-emerald-500" />}
                   </button>
 
                   <button
                     onClick={() => handleExport('csv')}
-                    disabled={loading}
+                    disabled={!!loadingFormat}
                     className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl transition-all group shadow-sm"
                   >
                      <div className="flex items-center gap-3">
@@ -200,7 +242,7 @@ export default function ReportsActions() {
                         <span className="block text-xs text-gray-500">Datos crudos para análisis rápido</span>
                       </div>
                     </div>
-                    <Download className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />
+                    {loadingFormat === 'csv' ? <span className="animate-spin h-4 w-4 border-2 border-gray-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-gray-500" />}
                   </button>
                 </div>
               </div>

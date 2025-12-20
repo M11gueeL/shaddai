@@ -59,7 +59,7 @@ class ReportGeneratorService {
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Encabezados
-        $headers = ['Fecha', 'Hora', 'Paciente', 'Cédula', 'Médico', 'Especialidad', 'Estado', 'Tipo', 'Notas'];
+        $headers = ['Fecha', 'Hora', 'Paciente', 'Cédula', 'Médico', 'Especialidad', 'Estado'];
         $col = 'A';
         foreach ($headers as $h) {
             $sheet->setCellValue($col . '4', $h);
@@ -73,24 +73,22 @@ class ReportGeneratorService {
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0056B3']],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
         ];
-        $sheet->getStyle('A4:I4')->applyFromArray($headerStyle);
+        $sheet->getStyle('A4:G4')->applyFromArray($headerStyle);
 
         // --- DATOS ---
         $rowNum = 5;
         foreach ($data as $row) {
             $sheet->setCellValue('A' . $rowNum, date('d/m/Y', strtotime($row['appointment_date'])));
-            $sheet->setCellValue('B' . $rowNum, date('H:i', strtotime($row['appointment_time'])));
+            $sheet->setCellValue('B' . $rowNum, date('h:i A', strtotime($row['appointment_time'])));
             $sheet->setCellValue('C' . $rowNum, $row['patient_name']);
             $sheet->setCellValue('D' . $rowNum, $row['patient_cedula']);
             $sheet->setCellValue('E' . $rowNum, $row['doctor_name']);
             $sheet->setCellValue('F' . $rowNum, $row['specialty_name']);
             $sheet->setCellValue('G' . $rowNum, ucfirst(str_replace('_', ' ', $row['status'])));
-            $sheet->setCellValue('H' . $rowNum, ucfirst(str_replace('_', ' ', $row['appointment_type'])));
-            $sheet->setCellValue('I' . $rowNum, $row['chief_complaint'] ?? '');
             
             // Alternar color de fondo para filas pares (Efecto Zebra)
             if ($rowNum % 2 == 0) {
-                $sheet->getStyle("A$rowNum:I$rowNum")->getFill()
+                $sheet->getStyle("A$rowNum:G$rowNum")->getFill()
                     ->setFillType(Fill::FILL_SOLID)
                     ->getStartColor()->setRGB('F9F9F9');
             }
@@ -99,7 +97,7 @@ class ReportGeneratorService {
 
         // Bordes a toda la tabla
         $lastRow = $rowNum - 1;
-        $sheet->getStyle("A4:I$lastRow")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle("A4:G$lastRow")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
         // Headers para forzar descarga correcta
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -123,20 +121,17 @@ class ReportGeneratorService {
         fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
 
         // Encabezados
-        fputcsv($output, ['ID', 'Fecha', 'Hora', 'Estado', 'Tipo', 'Paciente', 'Cedula', 'Medico', 'Especialidad', 'Motivo']);
+        fputcsv($output, ['Fecha', 'Hora', 'Paciente', 'Cedula', 'Medico', 'Especialidad', 'Estado']);
 
         foreach ($data as $row) {
             fputcsv($output, [
-                $row['id'],
-                $row['appointment_date'],
-                $row['appointment_time'],
-                ucfirst($row['status']),
-                ucfirst($row['appointment_type']),
+                date('d/m/Y', strtotime($row['appointment_date'])),
+                date('h:i A', strtotime($row['appointment_time'])),
                 $row['patient_name'],
                 $row['patient_cedula'],
                 $row['doctor_name'],
                 $row['specialty_name'],
-                $row['chief_complaint'] ?? ''
+                ucfirst(str_replace('_', ' ', $row['status']))
             ]);
         }
         fclose($output);
