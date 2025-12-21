@@ -171,22 +171,19 @@ export default function UserPanel() {
 
       {/* Formulario para crear usuario (modal) */}
       {showCreateForm && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-2 w-full max-w-3xl max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
             <UserForm 
               onSubmit={handleCreateSubmit} 
               onCancel={handleFormClose}
               specialties={specialties}
               medicalColleges={medicalColleges}
             />
-          </div>
         </div>
       )}
 
       {/* Formulario para editar usuario (modal) */}
       {showEditForm && editingUser && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-2 w-full max-w-3xl max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
             <UserEditForm 
               user={editingUser}
               onSubmit={handleEditSubmit} 
@@ -194,7 +191,6 @@ export default function UserPanel() {
               specialties={specialties}
               medicalColleges={medicalColleges}
             />
-          </div>
         </div>
       )}
     </div>
