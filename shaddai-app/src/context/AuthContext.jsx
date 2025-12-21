@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import * as authApi from "../api/authApi";
+import { useToast } from "./ToastContext";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const toast = useToast();
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
   const [token, setToken] = useState(() => localStorage.getItem("token") || null);
   const [sessionId, setSessionId] = useState(() => localStorage.getItem("session_id") || null);
@@ -60,9 +62,22 @@ export const AuthProvider = ({ children }) => {
           roles: Array.isArray(profile.roles) ? profile.roles : baseUser.roles,
         };
         setUser(merged);
+        
+        // Notificación de bienvenida
+        const hour = new Date().getHours();
+        let greeting = "Buenos días";
+        if (hour >= 12 && hour < 19) greeting = "Buenas tardes";
+        else if (hour >= 19 || hour < 6) greeting = "Buenas noches";
+        
+        const userName = merged.first_name || merged.name || merged.username || "Usuario";
+        toast.success(`${greeting}, bienvenido ${userName}!`);
+        
       } catch (e) {
         // Si falla, mantenemos el baseUser sin romper el flujo
         console.warn("No se pudo cargar el perfil completo:", e?.response?.data || e?.message);
+        
+        // Notificación básica si falla el perfil
+        toast.success("Bienvenido al sistema");
       }
 
       setLoading(false);
@@ -73,6 +88,7 @@ export const AuthProvider = ({ children }) => {
       if (error.response) {
         message = error.response.data?.error || error.response.data?.message || message;
       }
+      toast.error(message);
       return { success: false, message };
     }
   };
@@ -88,6 +104,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setToken(null);
     setSessionId(null);
+    toast.success("Hasta luego, sesión cerrada con éxito");
   };
 
   const isAuthenticated = !!token;

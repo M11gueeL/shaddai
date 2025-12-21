@@ -31,10 +31,10 @@ import AppTerms from "./components/legal/AppTerms";
 
 export default function App() {
   return (
-    <AuthProvider>
+    <BrowserRouter>
       <ToastProvider>
-        <ConfirmProvider>
-          <BrowserRouter>
+        <AuthProvider>
+          <ConfirmProvider>
             <ScrollToTop />
             <Routes>
           <Route element={<PublicRoute />}>
@@ -126,9 +126,9 @@ export default function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         
             </Routes>
-          </BrowserRouter>
-        </ConfirmProvider>
+          </ConfirmProvider>
+        </AuthProvider>
       </ToastProvider>
-    </AuthProvider>
+    </BrowserRouter>
   );
 }
