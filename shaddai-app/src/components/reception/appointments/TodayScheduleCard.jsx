@@ -15,7 +15,7 @@ export default function TodayScheduleCard({ items = [], loading, error, onItemCl
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
           <CalendarDays className="w-5 h-5 text-indigo-500" />
@@ -26,7 +26,7 @@ export default function TodayScheduleCard({ items = [], loading, error, onItemCl
         </span>
       </div>
 
-      <div className="space-y-3 flex-1 overflow-y-auto pr-1 custom-scrollbar">
+      <div className="space-y-3 overflow-y-auto pr-1 custom-scrollbar max-h-[560px]">
         {loading && list.length === 0 && (
           <div className="space-y-3">
              {[1,2,3].map(i => (
