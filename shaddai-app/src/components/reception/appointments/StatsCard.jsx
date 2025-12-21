@@ -16,7 +16,7 @@ export default function StatsCard() {
       const res = await appointmentsApi.getStats(token);
       const data = res?.data?.data || res?.data || {};
       setStats({
-        today_appointments: data.today_appointments ?? 0,
+        completed_appointments: data.completed_appointments ?? 0,
         total_patients: data.total_patients ?? 0,
         total_appointments: data.total_appointments ?? 0,
         confirmed_appointments: data.confirmed_appointments ?? 0,
@@ -38,40 +38,40 @@ export default function StatsCard() {
 
   const items = [
     {
-      key: 'today_appointments',
-      label: 'Citas Hoy',
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-      border: 'border-blue-100',
-      icon: Calendar,
-      value: stats?.today_appointments ?? '-'
-    },
-    {
-      key: 'total_patients',
-      label: 'Pacientes',
+      key: 'completed_appointments',
+      label: 'Completadas',
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
       border: 'border-emerald-100',
-      icon: Users,
-      value: stats?.total_patients ?? '-'
+      icon: CheckCircle,
+      value: stats?.completed_appointments ?? '-'
     },
     {
       key: 'confirmed_appointments',
       label: 'Confirmadas',
-      color: 'text-teal-600',
-      bg: 'bg-teal-50',
-      border: 'border-teal-100',
-      icon: CheckCircle,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+      border: 'border-blue-100',
+      icon: Calendar,
       value: stats?.confirmed_appointments ?? '-'
     },
     {
-      key: 'canceled_appointments',
-      label: 'Canceladas',
-      color: 'text-rose-600',
-      bg: 'bg-rose-50',
-      border: 'border-rose-100',
-      icon: XCircle,
-      value: stats?.canceled_appointments ?? '-'
+      key: 'total_appointments',
+      label: 'Agendadas',
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50',
+      border: 'border-indigo-100',
+      icon: CalendarPlus,
+      value: stats?.total_appointments ?? '-'
+    },
+    {
+      key: 'total_patients',
+      label: 'Pacientes',
+      color: 'text-violet-600',
+      bg: 'bg-violet-50',
+      border: 'border-violet-100',
+      icon: Users,
+      value: stats?.total_patients ?? '-'
     }
   ];
 

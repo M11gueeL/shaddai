@@ -532,10 +532,9 @@ class AppointmentsModel {
         // Conteo total de citas
         $appointments = $this->db->query("SELECT COUNT(*) AS c FROM appointments");
 
-        // Conteo de citas para hoy (todas sin importar estado)
-        $todayAppointments = $this->db->query(
-            "SELECT COUNT(*) AS c FROM appointments WHERE appointment_date = :today",
-            [':today' => $today]
+        // Conteo de citas completadas (general)
+        $completed = $this->db->query(
+            "SELECT COUNT(*) AS c FROM appointments WHERE status = 'completada'"
         );
 
         // Conteo de citas confirmadas (general)
@@ -551,7 +550,7 @@ class AppointmentsModel {
         return [
             'total_patients'     => (int)($patients[0]['c'] ?? 0),
             'total_appointments'         => (int)($appointments[0]['c'] ?? 0),
-            'today_appointments'           => (int)($todayAppointments[0]['c'] ?? 0),
+            'completed_appointments'       => (int)($completed[0]['c'] ?? 0),
             'confirmed_appointments'   => (int)($confirmed[0]['c'] ?? 0),
             'canceled_appointments'    => (int)($canceled[0]['c'] ?? 0),
         ];
