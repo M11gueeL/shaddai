@@ -11,6 +11,38 @@ class AppointmentsController {
         $this->reportService = new ReportGeneratorService();
     }
 
+    public function exportPatientReport() {
+        try {
+            $patientId = $_GET['patient_id'] ?? null;
+            $startDate = $_GET['start_date'] ?? date('Y-m-d');
+            $endDate = $_GET['end_date'] ?? date('Y-m-d');
+            $status = $_GET['status'] ?? 'todos';
+            $format = $_GET['format'] ?? 'pdf';
+
+            if (!$patientId) {
+                throw new Exception('Patient ID is required');
+            }
+
+            $data = $this->model->getAppointmentsByPatientAndDateRange($patientId, $startDate, $endDate, $status);
+            
+            // Obtener nombre del paciente para el archivo
+            $patientName = !empty($data) ? $data[0]['patient_name'] : 'Paciente';
+            $filename = 'reporte_citas_' . str_replace(' ', '_', strtolower($patientName)) . '_' . $startDate;
+
+            if ($format === 'excel') {
+                $this->reportService->generateExcel($data, $startDate, $endDate, $filename);
+            } elseif ($format === 'csv') {
+                $this->reportService->generateCsv($data, $filename);
+            } else {
+                $this->reportService->generatePdf($data, $startDate, $endDate, $filename);
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function getAllAppointments() {
         try {
             $appointments = $this->model->getAllAppointments();

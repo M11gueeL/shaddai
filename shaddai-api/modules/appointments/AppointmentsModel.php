@@ -80,6 +80,37 @@ class AppointmentsModel {
         $this->db->execute($sql, $params);
     }
 
+    public function getAppointmentsByPatientAndDateRange($patientId, $startDate, $endDate, $status = null) {
+        $query = "SELECT 
+            a.*,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.patient_id = :patient_id 
+        AND a.appointment_date BETWEEN :start_date AND :end_date";
+
+        $params = [
+            ':patient_id' => $patientId,
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ];
+
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+
+        return $this->db->query($query, $params);
+    }
+
     public function getAllAppointments() {
         $query = "SELECT 
             a.*,

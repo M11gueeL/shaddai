@@ -63,4 +63,11 @@ export default {
     params: filters, 
     responseType: 'blob' 
   }),
+
+  // Exportar reporte de paciente
+  exportPatientReport: (params, token) => axios.get(`${API_URL}/appointments/report/patient-export`, {
+    ...getAuthHeaders(token),
+    params,
+    responseType: 'blob'
+  }),
 };

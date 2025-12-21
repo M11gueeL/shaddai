@@ -10,6 +10,7 @@ class AppointmentsRoutes {
         $controller = new AppointmentsController();
 
         $router->add('GET', 'appointments/report/export', [$controller, 'exportReport'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'appointments/report/patient-export', [$controller, 'exportPatientReport'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);
         
         $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);

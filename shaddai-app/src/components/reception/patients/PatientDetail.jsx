@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
 import { useToast } from '../../../context/ToastContext';
+import PatientReportModal from './PatientReportModal';
+import { FileText } from 'lucide-react';
 
 export default function PatientDetail({ patient, onClose, onPatientUpdated, initialEditing = false }) {
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(initialEditing);
   const [formData, setFormData] = useState(patient);
   const [loading, setLoading] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     setIsEditing(initialEditing);
@@ -242,6 +245,13 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
         {!isEditing && (
           <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
             <button
+              onClick={() => setIsReportModalOpen(true)}
+              className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-300 font-medium flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Historial de Citas
+            </button>
+            <button
               onClick={() => setIsEditing(true)}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 font-medium"
             >
@@ -250,6 +260,13 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
           </div>
         )}
       </div>
+      
+      <PatientReportModal 
+        isOpen={isReportModalOpen} 
+        onClose={() => setIsReportModalOpen(false)} 
+        patientId={patient.id}
+        patientName={patient.full_name}
+      />
     </div>
   );
 }
