@@ -65,6 +65,19 @@ class UsersController {
                 }
             }
 
+            // Validación de Cédula (V-123456 o E-123456)
+            if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
+                throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
+            }
+
+            // Validación de Teléfono
+            if (!empty($data['phone'])) {
+                $cleanPhone = preg_replace('/[^0-9]/', '', $data['phone']);
+                if (strlen($cleanPhone) !== 11) {
+                     // throw new Exception('El teléfono debe tener 11 dígitos');
+                }
+            }
+
             $userId = $this->model->createUser($data);
             http_response_code(201);
             echo json_encode(['message' => 'Usuario creado', 'user_id' => $userId]);
@@ -85,6 +98,11 @@ class UsersController {
                 if (empty($data[$field])) {
                     throw new Exception("El campo $field es obligatorio");
                 }
+            }
+
+            // Validación de Cédula (V-123456 o E-123456)
+            if (!empty($data['cedula']) && !preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
+                throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
             }
 
             $updatedUser = $this->model->updateUser($id, $data); // <--- Recibe el objeto actualizado

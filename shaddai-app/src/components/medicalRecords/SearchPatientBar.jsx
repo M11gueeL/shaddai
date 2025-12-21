@@ -75,8 +75,8 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
   const onSubmitQuery = () => {
     const q = query.trim();
     if (!q) return;
-    // Si parece una cédula (solo dígitos y longitud >=5), usar la búsqueda directa existente
-    if (/^\d{5,}$/.test(q)) {
+    // Si parece una cédula (solo dígitos y espacios, longitud >=5), usar la búsqueda directa existente
+    if (/^[\d ]{5,}$/.test(q)) {
       onSearchByCedula?.(q);
     } else {
       // Si hay resultados visibles, seleccionar el destacado

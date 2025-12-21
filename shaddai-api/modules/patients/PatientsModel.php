@@ -34,13 +34,13 @@ class PatientsModel {
 
         $params = [
             ':full_name' => $data['full_name'],
-            ':cedula' => $data['cedula'],
-            ':birth_date' => $data['birth_date'],
-            ':gender' => $data['gender'],
-            ':marital_status' => $data['marital_status'],
-            ':address' => $data['address'],
-            ':phone' => $data['phone'],
-            ':email' => $data['email'],
+            ':cedula' => $data['cedula'] ?? null,
+            ':birth_date' => $data['birth_date'] ?? null,
+            ':gender' => $data['gender'] ?? null,
+            ':marital_status' => $data['marital_status'] ?? null,
+            ':address' => $data['address'] ?? null,
+            ':phone' => $data['phone'] ?? null,
+            ':email' => $data['email'] ?? null,
             ':created_by' => $data['created_by']
         ];
 
@@ -80,13 +80,13 @@ class PatientsModel {
 
         $params = [
             ':full_name' => $data['full_name'],
-            ':cedula' => $data['cedula'],
-            ':birth_date' => $data['birth_date'],
-            ':gender' => $data['gender'],
-            ':marital_status' => $data['marital_status'],
-            ':address' => $data['address'],
-            ':phone' => $data['phone'],
-            ':email' => $data['email'],
+            ':cedula' => $data['cedula'] ?? null,
+            ':birth_date' => $data['birth_date'] ?? null,
+            ':gender' => $data['gender'] ?? null,
+            ':marital_status' => $data['marital_status'] ?? null,
+            ':address' => $data['address'] ?? null,
+            ':phone' => $data['phone'] ?? null,
+            ':email' => $data['email'] ?? null,
             ':id' => $id
         ];
 

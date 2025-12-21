@@ -4,7 +4,8 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    cedula: '',
+    cedula_type: 'V',
+    cedula_number: '',
     birth_date: '',
     gender: '',
     address: '',
@@ -25,10 +26,23 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
   // Inicializar datos del usuario
   useEffect(() => {
     if (user) {
+      let cType = 'V';
+      let cNum = '';
+      if (user.cedula) {
+        const parts = user.cedula.split('-');
+        if (parts.length === 2) {
+          cType = parts[0];
+          cNum = parts[1];
+        } else {
+          cNum = user.cedula;
+        }
+      }
+
       setFormData({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
-        cedula: user.cedula || '',
+        cedula_type: cType,
+        cedula_number: cNum,
         birth_date: user.birth_date === '0000-00-00' || !user.birth_date ? '' : user.birth_date,
         gender: user.gender || '',
         address: user.address || '',
@@ -72,7 +86,7 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
     
     if (!formData.first_name) newErrors.first_name = 'El nombre es obligatorio';
     if (!formData.last_name) newErrors.last_name = 'El apellido es obligatorio';
-    if (!formData.cedula) newErrors.cedula = 'La cédula es obligatoria';
+    if (!formData.cedula_number) newErrors.cedula = 'La cédula es obligatoria';
     if (!formData.email) newErrors.email = 'El email es obligatorio';
     if (formData.roles.length === 0) newErrors.roles = 'Debe asignar al menos un rol';
     
@@ -90,7 +104,14 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      const payload = {
+        ...formData,
+        cedula: `${formData.cedula_type}-${formData.cedula_number}`
+      };
+      delete payload.cedula_type;
+      delete payload.cedula_number;
+      
+      onSubmit(payload);
     }
   };
 
@@ -170,19 +191,34 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
                     <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
                       Cédula *
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                    <div className="relative flex">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-0 z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
+                      <select
+                        name="cedula_type"
+                        value={formData.cedula_type}
+                        onChange={handleChange}
+                        className="pl-10 pr-2 py-3 border border-r-0 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition w-20"
+                      >
+                        <option value="V">V</option>
+                        <option value="E">E</option>
+                      </select>
                       <input
                         type="text"
-                        name="cedula"
-                        value={formData.cedula}
-                        onChange={handleChange}
+                        name="cedula_number"
+                        value={formData.cedula_number}
+                        onChange={(e) => {
+                            // Allow digits and spaces, max length 12
+                            const val = e.target.value.replace(/[^\d ]/g, '').slice(0, 12);
+                            handleChange({ target: { name: 'cedula_number', value: val } });
+                        }}
                         required
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                        minLength={6}
+                        maxLength={12}
+                        className={`w-full px-4 py-3 border rounded-r-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
                           errors.cedula ? 'border-red-500' : 'border-gray-300'
                         }`}
                       />

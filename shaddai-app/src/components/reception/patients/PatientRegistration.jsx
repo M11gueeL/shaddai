@@ -7,12 +7,14 @@ export default function PatientRegistration({ onClose }) {
   const toast = useToast();
   const [formData, setFormData] = useState({
     full_name: '',
-    cedula: '',
+    cedula_type: 'V',
+    cedula_number: '',
     birth_date: '',
     gender: '',
     marital_status: '',
     address: '',
-    phone: '',
+    phone_code: '0412',
+    phone_number: '',
     email: ''
   });
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,21 @@ export default function PatientRegistration({ onClose }) {
     
     try {
       const token = localStorage.getItem('token');
-      await PatientsApi.create(formData, token);
+      
+      // Combinar campos
+      const payload = {
+        ...formData,
+        cedula: `${formData.cedula_type}-${formData.cedula_number}`,
+        phone: formData.phone_number ? `${formData.phone_code}${formData.phone_number}` : ''
+      };
+
+      // Eliminar campos temporales
+      delete payload.cedula_type;
+      delete payload.cedula_number;
+      delete payload.phone_code;
+      delete payload.phone_number;
+
+      await PatientsApi.create(payload, token);
       toast.success('Paciente registrado con éxito');
       onClose(); // Cerrar modal inmediatamente tras éxito
       
@@ -101,25 +117,40 @@ export default function PatientRegistration({ onClose }) {
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
                     Cédula <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="relative flex">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                         <CreditCard className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                     </div>
+                    <select
+                        name="cedula_type"
+                        value={formData.cedula_type}
+                        onChange={handleChange}
+                        className="pl-10 pr-2 py-2.5 bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer w-20"
+                    >
+                        <option value="V">V</option>
+                        <option value="E">E</option>
+                    </select>
                     <input
                         type="text"
-                        name="cedula"
-                        value={formData.cedula}
-                        onChange={handleChange}
+                        name="cedula_number"
+                        value={formData.cedula_number}
+                        onChange={(e) => {
+                            // Allow digits and spaces, max length 12 (e.g. 100 000 000)
+                            const val = e.target.value.replace(/[^\d ]/g, '').slice(0, 12);
+                            handleChange({ target: { name: 'cedula_number', value: val } });
+                        }}
                         required
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
-                        placeholder="Ej: V-12345678"
+                        minLength={6}
+                        maxLength={12}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-r-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                        placeholder="12 345 678"
                     />
                 </div>
                 </div>
 
                 <div className="group">
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                    Fecha de Nacimiento <span className="text-red-500">*</span>
+                    Fecha de Nacimiento
                 </label>
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -130,7 +161,6 @@ export default function PatientRegistration({ onClose }) {
                         name="birth_date"
                         value={formData.birth_date}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800"
                     />
                 </div>
@@ -138,7 +168,7 @@ export default function PatientRegistration({ onClose }) {
 
                 <div className="group">
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                    Género <span className="text-red-500">*</span>
+                    Género
                 </label>
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -148,7 +178,6 @@ export default function PatientRegistration({ onClose }) {
                         name="gender"
                         value={formData.gender}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
                     >
                         <option value="">Seleccione...</option>
@@ -160,7 +189,7 @@ export default function PatientRegistration({ onClose }) {
 
                 <div className="group">
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                    Estado Civil <span className="text-red-500">*</span>
+                    Estado Civil
                 </label>
                 <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -170,7 +199,6 @@ export default function PatientRegistration({ onClose }) {
                         name="marital_status"
                         value={formData.marital_status}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
                     >
                         <option value="">Seleccione...</option>
@@ -195,18 +223,33 @@ export default function PatientRegistration({ onClose }) {
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
                     Teléfono <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="relative flex">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                         <Phone className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                     </div>
+                    <select
+                        name="phone_code"
+                        value={formData.phone_code}
+                        onChange={handleChange}
+                        className="pl-10 pr-2 py-2.5 bg-gray-50 border border-r-0 border-gray-200 rounded-l-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer w-24"
+                    >
+                        <option value="0412">0412</option>
+                        <option value="0422">0422</option>
+                        <option value="0416">0416</option>
+                        <option value="0426">0426</option>
+                        <option value="0414">0414</option>
+                        <option value="0424">0424</option>
+                    </select>
                     <input
                         type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        required
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
-                        placeholder="Ej: 04121234567"
+                        name="phone_number"
+                        value={formData.phone_number}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 7);
+                            handleChange({ target: { name: 'phone_number', value: val } });
+                        }}
+                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-r-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                        placeholder="1234567"
                     />
                 </div>
                 </div>
@@ -224,7 +267,6 @@ export default function PatientRegistration({ onClose }) {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
                         placeholder="ejemplo@correo.com"
                     />
@@ -233,7 +275,7 @@ export default function PatientRegistration({ onClose }) {
 
                 <div className="md:col-span-2 group">
                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                    Dirección <span className="text-red-500">*</span>
+                    Dirección
                 </label>
                 <div className="relative">
                     <div className="absolute top-3 left-3 flex items-start pointer-events-none">
@@ -243,7 +285,6 @@ export default function PatientRegistration({ onClose }) {
                         name="address"
                         value={formData.address}
                         onChange={handleChange}
-                        required
                         rows="2"
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 resize-none"
                         placeholder="Ingrese la dirección completa"

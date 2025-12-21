@@ -36,7 +36,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient }) => {
 
   // Buscar por cédula específica - CORREGIDO: agregar token
   const searchByCedula = async (cedula) => {
-    if (cedula.length < 7) return;
+    if (cedula.length < 5) return;
     
     setIsLoading(true);
     try {
@@ -59,8 +59,8 @@ const PatientSearch = ({ onSelect, error, selectedPatient }) => {
     setSearchTerm(value);
     setShowDropdown(true);
 
-    // Si parece una cédula (solo números), buscar por cédula
-    if (/^\d+$/.test(value)) {
+    // Si parece una cédula (solo números y espacios), buscar por cédula
+    if (/^[\d ]+$/.test(value)) {
       searchByCedula(value);
     } else {
       searchPatients(value);

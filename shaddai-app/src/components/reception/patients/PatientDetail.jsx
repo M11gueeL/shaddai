@@ -12,7 +12,41 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
   const toast = useToast();
   const { confirm } = useConfirm();
   const [isEditing, setIsEditing] = useState(initialEditing);
-  const [formData, setFormData] = useState(patient);
+  const [formData, setFormData] = useState(() => {
+    let cedulaType = 'V';
+    let cedulaNumber = '';
+    
+    if (patient.cedula) {
+        if (patient.cedula.includes('-')) {
+            const parts = patient.cedula.split('-');
+            cedulaType = parts[0];
+            cedulaNumber = parts[1];
+        } else {
+            // Try to guess or just put everything in number if no separator
+            // Assuming legacy data might be just numbers
+            cedulaNumber = patient.cedula;
+        }
+    }
+
+    const phone = patient.phone || '';
+    // Simple heuristic for phone code: first 4 digits
+    const phoneCode = phone.length >= 4 ? phone.substring(0, 4) : '0412';
+    const phoneNumber = phone.length > 4 ? phone.substring(4) : '';
+
+    return {
+      ...patient, // Preserve all original fields (id, created_at, etc.)
+      full_name: patient.full_name || '',
+      birth_date: patient.birth_date || '',
+      gender: patient.gender || '',
+      marital_status: patient.marital_status || '',
+      address: patient.address || '',
+      email: patient.email || '',
+      cedula_type: cedulaType,
+      cedula_number: cedulaNumber,
+      phone_code: phoneCode,
+      phone_number: phoneNumber
+    };
+  });
   const [loading, setLoading] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
@@ -34,12 +68,23 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
     
     try {
       const token = localStorage.getItem('token');
-      await PatientsApi.update(patient.id, formData, token);
+      
+      const payload = {
+        ...formData,
+        cedula: `${formData.cedula_type}-${formData.cedula_number}`,
+        phone: `${formData.phone_code}${formData.phone_number}`
+      };
+      delete payload.cedula_type;
+      delete payload.cedula_number;
+      delete payload.phone_code;
+      delete payload.phone_number;
+
+      await PatientsApi.update(patient.id, payload, token);
       toast.success('Paciente actualizado con éxito');
       setIsEditing(false);
       onPatientUpdated();
     } catch (error) {
-      const errMsg = 'Error al actualizar el paciente: ' + (error.response?.data?.message || error.message);
+      const errMsg = 'Error al actualizar el paciente: ' + (error.response?.data?.error || error.response?.data?.message || error.message);
       toast.error(errMsg);
     } finally {
       setLoading(false);
@@ -116,7 +161,9 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Full Name */}
                     <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Nombre Completo</label>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                            Nombre Completo <span className="text-red-500">*</span>
+                        </label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input
@@ -132,16 +179,34 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
 
                     {/* Cedula */}
                     <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Cédula</label>
-                        <div className="relative">
-                            <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="text"
-                                name="cedula"
-                                value={formData.cedula}
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                            Cédula <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative flex">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                                <CreditCard className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <select
+                                name="cedula_type"
+                                value={formData.cedula_type}
                                 onChange={handleChange}
                                 disabled={!isEditing}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800"
+                                className="pl-10 pr-2 py-2.5 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 w-20 appearance-none"
+                            >
+                                <option value="V">V</option>
+                                <option value="E">E</option>
+                            </select>
+                            <input
+                                type="text"
+                                name="cedula_number"
+                                value={formData.cedula_number}
+                                onChange={(e) => {
+                                    // Allow digits and spaces, max length 12
+                                    const val = e.target.value.replace(/[^\d ]/g, '').slice(0, 12);
+                                    handleChange({ target: { name: 'cedula_number', value: val } });
+                                }}
+                                disabled={!isEditing}
+                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-r-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800"
                             />
                         </div>
                     </div>
@@ -174,6 +239,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                                 disabled={!isEditing}
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 appearance-none"
                             >
+                                <option value="">Seleccione...</option>
                                 <option value="Masculino">Masculino</option>
                                 <option value="Femenino">Femenino</option>
                             </select>
@@ -192,6 +258,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                                 disabled={!isEditing}
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 appearance-none"
                             >
+                                <option value="">Seleccione...</option>
                                 <option value="Soltero">Soltero</option>
                                 <option value="Casado">Casado</option>
                                 <option value="Divorciado">Divorciado</option>
@@ -213,23 +280,46 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Phone */}
                     <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Teléfono</label>
-                        <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                            Teléfono <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative flex">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                                <Phone className="w-4 h-4 text-gray-400" />
+                            </div>
+                            <select
+                                name="phone_code"
+                                value={formData.phone_code}
                                 onChange={handleChange}
                                 disabled={!isEditing}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800"
+                                className="pl-10 pr-2 py-2.5 bg-gray-50 border border-r-0 border-gray-200 rounded-l-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 w-24 appearance-none"
+                            >
+                                <option value="0412">0412</option>
+                                <option value="0422">0422</option>
+                                <option value="0416">0416</option>
+                                <option value="0426">0426</option>
+                                <option value="0414">0414</option>
+                                <option value="0424">0424</option>
+                            </select>
+                            <input
+                                type="text"
+                                name="phone_number"
+                                value={formData.phone_number}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 7);
+                                    handleChange({ target: { name: 'phone_number', value: val } });
+                                }}
+                                disabled={!isEditing}
+                                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-r-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800"
                             />
                         </div>
                     </div>
 
                     {/* Email */}
                     <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Email</label>
+                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
+                            Email <span className="text-red-500">*</span>
+                        </label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input

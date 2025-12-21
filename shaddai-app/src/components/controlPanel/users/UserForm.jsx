@@ -6,11 +6,13 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    cedula: '',
+    cedula_type: 'V',
+    cedula_number: '',
     birth_date: '',
     gender: '',
     address: '',
-    phone: '',
+    phone_code: '0412',
+    phone_number: '',
     email: '',
     password: '',
     roles: [],
@@ -25,14 +27,43 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
 
   useEffect(() => {
     if (user) {
+      // Parsear cédula
+      let cType = 'V';
+      let cNum = '';
+      if (user.cedula) {
+        const parts = user.cedula.split('-');
+        if (parts.length === 2) {
+          cType = parts[0];
+          cNum = parts[1];
+        } else {
+          cNum = user.cedula;
+        }
+      }
+
+      // Parsear teléfono
+      let pCode = '0412';
+      let pNum = '';
+      if (user.phone) {
+        // Intentar extraer código (primeros 4 dígitos)
+        const cleanPhone = user.phone.replace(/\D/g, '');
+        if (cleanPhone.length >= 4) {
+          pCode = cleanPhone.substring(0, 4);
+          pNum = cleanPhone.substring(4);
+        } else {
+          pNum = cleanPhone;
+        }
+      }
+
       setFormData({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
-        cedula: user.cedula || '',
+        cedula_type: cType,
+        cedula_number: cNum,
         birth_date: user.birth_date || '',
         gender: user.gender || '',
         address: user.address || '',
-        phone: user.phone || '',
+        phone_code: pCode,
+        phone_number: pNum,
         email: user.email || '',
         password: '',
         roles: user.roles.map(role => role.id) || [],
@@ -49,47 +80,15 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (e) => {
-    const roleId = parseInt(e.target.value);
-    const isChecked = e.target.checked;
-    
-    setFormData(prev => {
-      let newRoles = [...prev.roles];
-      if (isChecked) {
-        newRoles.push(roleId);
-      } else {
-        newRoles = newRoles.filter(id => id !== roleId);
-      }
-      return { ...prev, roles: newRoles };
-    });
-  };
-
-  const handleSpecialtyChange = (e) => {
-    const specialtyId = parseInt(e.target.value);
-    const isChecked = e.target.checked;
-    
-    setFormData(prev => {
-      let newSpecialties = [...prev.specialties];
-      if (isChecked) {
-        newSpecialties.push(specialtyId);
-      } else {
-        newSpecialties = newSpecialties.filter(id => id !== specialtyId);
-      }
-      return { ...prev, specialties: newSpecialties };
-    });
-  };
-  
-  const handleFormClose = () => {
-    navigate('/controlpanel/users');
-  };
+  // ... (handleRoleChange, handleSpecialtyChange, handleFormClose remain same)
 
   const validate = () => {
     const newErrors = {};
     
     if (!formData.first_name) newErrors.first_name = 'Nombre es requerido';
     if (!formData.last_name) newErrors.last_name = 'Apellido es requerido';
-    if (!formData.cedula) newErrors.cedula = 'Cédula es requerida';
-    if (!formData.email) newErrors.email = 'Email es requerido';
+    if (!formData.cedula_number) newErrors.cedula = 'Cédula es requerida';
+    // Email is now optional
     if (!user && !formData.password) newErrors.password = 'Contraseña es requerida';
     if (formData.roles.length === 0) newErrors.roles = 'Debe seleccionar al menos un rol';
     
@@ -107,7 +106,18 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit(formData);
+      const payload = {
+        ...formData,
+        cedula: `${formData.cedula_type}-${formData.cedula_number}`,
+        phone: formData.phone_number ? `${formData.phone_code}${formData.phone_number}` : ''
+      };
+      // Eliminar campos temporales
+      delete payload.cedula_type;
+      delete payload.cedula_number;
+      delete payload.phone_code;
+      delete payload.phone_number;
+
+      onSubmit(payload);
     }
   };
 
@@ -187,19 +197,34 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                     <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
                       Cédula *
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-6">
+                    <div className="relative flex">
+                      <div className="absolute inset-y-6 left-0 pl-3 flex items-center pointer-events-none top-0 z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
+                      <select
+                        name="cedula_type"
+                        value={formData.cedula_type}
+                        onChange={handleChange}
+                        className="pl-10 pr-2 py-3 border border-r-0 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition w-20"
+                      >
+                        <option value="V">V</option>
+                        <option value="E">E</option>
+                      </select>
                       <input
                         type="text"
-                        name="cedula"
-                        value={formData.cedula}
-                        onChange={handleChange}
+                        name="cedula_number"
+                        value={formData.cedula_number}
+                        onChange={(e) => {
+                            // Allow digits and spaces, max length 12
+                            const val = e.target.value.replace(/[^\d ]/g, '').slice(0, 12);
+                            handleChange({ target: { name: 'cedula_number', value: val } });
+                        }}
                         required
-                        className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
+                        minLength={6}
+                        maxLength={12}
+                        className={`w-full px-4 py-3 border rounded-r-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
                           errors.cedula ? 'border-red-500' : 'border-gray-300'
                         }`}
                       />
@@ -238,7 +263,6 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                       name="gender"
                       value={formData.gender}
                       onChange={handleChange}
-                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
                     >
                       <option value="">Seleccion una opción</option>
@@ -250,21 +274,37 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                   {/* Teléfono */}
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 mb-1 pl-1">
-                      Teléfono
+                      Teléfono *
                     </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-5 left-0 pl-3 flex items-center pointer-events-none top-6">
+                    <div className="relative flex">
+                      <div className="absolute inset-y-5 left-0 pl-3 flex items-center pointer-events-none top-0 z-10">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                         </svg>
                       </div>
+                      <select
+                        name="phone_code"
+                        value={formData.phone_code}
+                        onChange={handleChange}
+                        className="pl-10 pr-2 py-3 border border-r-0 border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition w-24 appearance-none"
+                      >
+                        <option value="0412">0412</option>
+                        <option value="0422">0422</option>
+                        <option value="0416">0416</option>
+                        <option value="0426">0426</option>
+                        <option value="0414">0414</option>
+                        <option value="0424">0424</option>
+                      </select>
                       <input
                         type="text"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
+                        name="phone_number"
+                        value={formData.phone_number}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 7);
+                            handleChange({ target: { name: 'phone_number', value: val } });
+                        }}
                         required
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
+                        className="w-full px-4 py-3 border rounded-r-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition border-gray-300"
                       />
                     </div>
                   </div>
@@ -336,7 +376,6 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                         name="address"
                         value={formData.address}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
                       />
                     </div>

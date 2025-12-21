@@ -46,10 +46,10 @@ export default function ReceptionPanel() {
     let isMounted = true;
     let intervalId;
 
-    const fetchToday = async () => {
+    const fetchToday = async (isRefresh = false) => {
       if (!token) return; // requiere autenticación
       try {
-        if (isMounted) setLoadingToday(true);
+        if (isMounted && !isRefresh) setLoadingToday(true);
         const res = await appointmentsApi.getToday(token);
         if (isMounted) {
           const data = res?.data;
@@ -66,13 +66,13 @@ export default function ReceptionPanel() {
       } catch (err) {
         if (isMounted) setTodayError(err.response?.data?.message || 'No se pudo cargar la agenda de hoy');
       } finally {
-        if (isMounted) setLoadingToday(false);
+        if (isMounted && !isRefresh) setLoadingToday(false);
       }
     };
 
     fetchToday();
     // refrescar cada 15s
-    intervalId = setInterval(fetchToday, 15000);
+    intervalId = setInterval(() => fetchToday(true), 15000);
 
     return () => {
       isMounted = false;
@@ -108,8 +108,8 @@ export default function ReceptionPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 md:p-8 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/50 p-4 md:p-8 overflow-x-hidden">
+      <div className="max-w-[1600px] mx-auto space-y-8">
         <ElegantHeader 
             icon={Users}
             sectionName="Recepción"
@@ -118,12 +118,16 @@ export default function ReceptionPanel() {
             description="Gestiona citas, pacientes y la agenda del día desde un solo lugar."
         />
 
-        {/* Quick Actions as horizontal bar */}
-        <QuickActionsCard onAction={openModal} horizontal />
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+          {/* Left Column: Actions & Tools */}
+          <div className="xl:col-span-1 space-y-6">
+            <QuickActionsCard onAction={openModal} />
+            <ReportsActions />
+          </div>
 
-        {/* Two-column content: today schedule and recent activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          <div className="lg:col-span-7 h-full">
+          {/* Center Column: Main Workspace */}
+          <div className="xl:col-span-2 space-y-6">
+            <StatsCard />
             <TodayScheduleCard 
               items={todayAppointments}
               loading={loadingToday}
@@ -132,58 +136,50 @@ export default function ReceptionPanel() {
               onViewAll={() => setActiveModal('consult')}
             />
           </div>
-          <div className="lg:col-span-5 h-full">
-            <RecentActivityCard />
-          </div>
-        </div>
 
-        {/* Footer-like section: stats (left) + reports actions (right) */}
-        <div className="pt-2 grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          <div className="lg:col-span-6 h-full">
-            <StatsCard />
-          </div>
-          <div className="lg:col-span-6 h-full">
-            <ReportsActions />
+          {/* Right Column: Insights & Activity */}
+          <div className="xl:col-span-1 space-y-6">
+            <RecentActivityCard />
           </div>
         </div>
       </div>
 
       {/* Modals */}
       {activeModal === 'register' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] transform transition-all duration-300">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] transform transition-all duration-300 animate-in fade-in zoom-in-95">
             <PatientRegistration onClose={closeModal} />
           </div>
         </div>
       )}
 
       {activeModal === 'list' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-all duration-300">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-in fade-in zoom-in-95">
             <PatientList onClose={closeModal} />
           </div>
         </div>
       )}
 
       {activeModal === 'schedule' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95">
             <AppointmentForm onClose={closeModal} />
           </div>
         </div>
       )}
 
       {activeModal === 'consult' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95">
             <AppointmentsList onClose={closeModal} />
           </div>
         </div>
       )}
 
       {activeModal === 'medicalSchedules' && (
-        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-xs bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300">
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all duration-300 animate-in fade-in zoom-in-95">
             <MedicalSchedulesPanel onClose={closeModal} />
           </div>
         </div>

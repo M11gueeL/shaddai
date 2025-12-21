@@ -710,7 +710,7 @@ CREATE TABLE `password_resets` (
 CREATE TABLE `patients` (
   `id` int(11) NOT NULL,
   `full_name` varchar(128) NOT NULL,
-  `cedula` varchar(8) NOT NULL,
+  `cedula` varchar(20) NOT NULL,
   `birth_date` date DEFAULT NULL,
   `gender` varchar(16) DEFAULT NULL,
   `marital_status` varchar(32) DEFAULT NULL,
@@ -964,7 +964,7 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `first_name` varchar(128) NOT NULL,
   `last_name` varchar(128) NOT NULL,
-  `cedula` varchar(8) NOT NULL,
+  `cedula` varchar(20) NOT NULL,
   `birth_date` date DEFAULT NULL,
   `gender` varchar(16) DEFAULT NULL,
   `address` text DEFAULT NULL,

@@ -1,23 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, CheckCircle, UserPlus, XCircle, AlertCircle, Clock } from 'lucide-react';
+import { CalendarPlus, CheckCircle, UserPlus, XCircle, AlertCircle, Clock, Activity, RefreshCw } from 'lucide-react';
 import activityApi from '../../api/activity';
 import { useAuth } from '../../context/AuthContext';
 
-const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
-
 const getIconAndColor = (item) => {
-  if (item.type === 'patient_registered') return { Icon: UserPlus, color: 'text-blue-600' };
-  if (item.type === 'appointment_created') return { Icon: CalendarPlus, color: 'text-green-600' };
+  if (item.type === 'patient_registered') return { Icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-100' };
+  if (item.type === 'appointment_created') return { Icon: CalendarPlus, color: 'text-violet-600', bg: 'bg-violet-100' };
   if (item.type === 'appointment_status') {
     const ns = item?.meta?.new_status;
-    if (ns === 'confirmada') return { Icon: CheckCircle, color: 'text-emerald-600' };
-    if (ns === 'cancelada') return { Icon: XCircle, color: 'text-red-600' };
-    if (ns === 'en_progreso') return { Icon: Clock, color: 'text-indigo-600' };
-    if (ns === 'completada') return { Icon: CheckCircle, color: 'text-green-600' };
-    if (ns === 'no_se_presento') return { Icon: AlertCircle, color: 'text-yellow-600' };
-    return { Icon: CalendarPlus, color: 'text-gray-600' };
+    if (ns === 'confirmada') return { Icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-100' };
+    if (ns === 'cancelada') return { Icon: XCircle, color: 'text-rose-600', bg: 'bg-rose-100' };
+    if (ns === 'en_progreso') return { Icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100' };
+    if (ns === 'completada') return { Icon: CheckCircle, color: 'text-teal-600', bg: 'bg-teal-100' };
+    if (ns === 'no_se_presento') return { Icon: AlertCircle, color: 'text-orange-600', bg: 'bg-orange-100' };
+    return { Icon: CalendarPlus, color: 'text-gray-600', bg: 'bg-gray-100' };
   }
-  return { Icon: CalendarPlus, color: 'text-gray-600' };
+  return { Icon: Activity, color: 'text-gray-600', bg: 'bg-gray-100' };
 };
 
 const timeAgoEs = (ts) => {
@@ -42,39 +40,43 @@ export default function RecentActivityCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const load = async (isRefresh = false) => {
     if (!token) return;
-    let alive = true;
-    let timer;
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await activityApi.getRecent(token, 5);
-        const data = res?.data?.data || [];
-        if (alive) setItems(Array.isArray(data) ? data : []);
-        setError(null);
-      } catch (err) {
-        if (alive) setError(err.response?.data?.error || 'No se pudo cargar la actividad');
-      } finally {
-        if (alive) setLoading(false);
-      }
-    };
+    try {
+      if (!isRefresh) setLoading(true);
+      const res = await activityApi.getRecent(token, 5);
+      const data = res?.data?.data || [];
+      setItems(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo cargar la actividad');
+    } finally {
+      if (!isRefresh) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     load();
-    // refresh every 20s
-    timer = setInterval(load, 20000);
-    return () => { alive = false; if (timer) clearInterval(timer); };
+    const timer = setInterval(() => load(true), 20000);
+    return () => clearInterval(timer);
   }, [token]);
 
   const content = useMemo(() => {
     if (loading) return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="animate-pulse h-14 bg-gray-100 rounded-lg" />
+          <div key={i} className="flex items-center gap-4 animate-pulse">
+            <div className="w-10 h-10 bg-gray-100 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-100 rounded w-3/4" />
+              <div className="h-3 bg-gray-100 rounded w-1/2" />
+            </div>
+          </div>
         ))}
       </div>
     );
-    if (error) return <div className="text-sm text-red-600">{error}</div>;
-    if (!items?.length) return <div className="text-sm text-gray-500">Sin actividad hoy</div>;
+    if (error) return <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg">{error}</div>;
+    if (!items?.length) return <div className="text-sm text-gray-500 text-center py-8">Sin actividad reciente</div>;
 
     // Helper: intenta obtener el nombre del médico desde meta con varias claves posibles
     const getDoctorName = (meta) => {
@@ -108,9 +110,9 @@ export default function RecentActivityCard() {
     };
 
     return (
-      <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
+      <div className="space-y-4">
         {items.map((activity, idx) => {
-          const { Icon, color } = getIconAndColor(activity);
+          const { Icon, color, bg } = getIconAndColor(activity);
           const isAppointmentEvent = activity?.type === 'appointment_created' || activity?.type === 'appointment_status';
           const doctorName = isAppointmentEvent ? getDoctorName(activity?.meta) : '';
           const actionText = isAppointmentEvent ? prefixDoctorInText(activity?.action || '', doctorName) : (activity?.action || '');
@@ -129,12 +131,21 @@ export default function RecentActivityCard() {
             }
           }
           return (
-            <div key={idx} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-              <Icon className={`w-5 h-5 ${color} mt-0.5`} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900">{actionText}</div>
-                <div className="text-sm text-gray-600 truncate">{detailsText}</div>
-                <div className="text-xs text-gray-500">{timeAgoEs(activity.timestamp)}</div>
+            <div key={idx} className="group flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all duration-300 border border-transparent hover:border-gray-100">
+              <div className={`p-2.5 rounded-full ${bg} ${color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                <Icon size={18} strokeWidth={2.5} />
+              </div>
+              <div className="flex-1 min-w-0 pt-0.5">
+                <div className="font-semibold text-gray-900 text-sm leading-tight mb-1 group-hover:text-blue-600 transition-colors">
+                    {actionText}
+                </div>
+                <div className="text-xs text-gray-500 truncate mb-1.5 font-medium">
+                    {detailsText}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    <Clock size={10} />
+                    {timeAgoEs(activity.timestamp)}
+                </div>
               </div>
             </div>
           );
@@ -144,9 +155,21 @@ export default function RecentActivityCard() {
   }, [items, loading, error]);
 
   return (
-    <div className={`${cardBase} h-full flex flex-col`}>
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente</h3>
-      <div className="flex-1 overflow-y-auto pr-1">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <Activity className="w-5 h-5 text-indigo-500" />
+          Actividad Reciente
+        </h3>
+        <button 
+            onClick={() => load(false)} 
+            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all active:scale-90"
+            title="Actualizar"
+        >
+            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
         {content}
       </div>
     </div>

@@ -39,99 +39,72 @@ export default function StatsCard() {
   const items = [
     {
       key: 'today_appointments',
-      label: 'Citas para Hoy',
+      label: 'Citas Hoy',
       color: 'text-blue-600',
       bg: 'bg-blue-50',
+      border: 'border-blue-100',
       icon: Calendar,
       value: stats?.today_appointments ?? '-'
     },
     {
       key: 'total_patients',
-      label: 'Pacientes registrados',
+      label: 'Pacientes',
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
+      border: 'border-emerald-100',
       icon: Users,
       value: stats?.total_patients ?? '-'
     },
     {
-      key: 'total_appointments',
-      label: 'Total de citas agendadas',
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
-      icon: CalendarPlus,
-      value: stats?.total_appointments ?? '-'
-    },
-    {
       key: 'confirmed_appointments',
-      label: 'Citas Confirmadas',
+      label: 'Confirmadas',
       color: 'text-teal-600',
       bg: 'bg-teal-50',
+      border: 'border-teal-100',
       icon: CheckCircle,
       value: stats?.confirmed_appointments ?? '-'
     },
     {
       key: 'canceled_appointments',
-      label: 'Citas Canceladas',
+      label: 'Canceladas',
       color: 'text-rose-600',
       bg: 'bg-rose-50',
+      border: 'border-rose-100',
       icon: XCircle,
       value: stats?.canceled_appointments ?? '-'
     }
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-gray-500" />
-          Resumen de Actividad
-        </h3>
-        <button 
-            onClick={load}
-            disabled={loading}
-            className={`p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-all active:scale-90 ${loading ? 'animate-spin text-blue-600' : ''}`}
-            title="Actualizar"
-        >
-            <RefreshCw className="w-5 h-5" />
-        </button>
-      </div>
-
-      {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3 mb-4 text-center">
-          {error}
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 h-full">
-        {/* Main Stat - Citas Hoy */}
-        <div className="col-span-2 bg-blue-50/50 rounded-xl p-4 border border-blue-100 flex items-center justify-between group hover:shadow-md transition-all duration-300 cursor-default">
-            <div className="flex items-center gap-4">
-                <div className="p-3 bg-white rounded-xl shadow-sm text-blue-600 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                    <Calendar className="w-8 h-8" />
-                </div>
-                <div>
-                    <p className="text-sm font-semibold text-blue-600 uppercase tracking-wide mb-1">Citas para Hoy</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats?.today_appointments ?? '-'}</p>
-                </div>
-            </div>
-        </div>
-
-        {/* Secondary Stats Grid */}
-        {items.slice(1).map((stat) => {
-          const Icon = stat.icon;
+    <div className="w-full">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {items.map((item) => {
+          const Icon = item.icon;
           return (
-            <div key={stat.key} className="bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col justify-center hover:border-blue-200 hover:bg-white hover:shadow-md transition-all duration-300 group cursor-default">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-500">{stat.label}</span>
-                <div className={`p-1.5 rounded-lg bg-white shadow-sm group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className={`w-5 h-5 ${stat.color}`} />
+            <div key={item.key} className={`bg-white rounded-2xl p-4 border ${item.border} shadow-sm hover:shadow-md transition-all duration-300 group`}>
+              <div className="flex items-start justify-between mb-2">
+                <div className={`p-2 rounded-xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
+                  <Icon size={20} />
+                </div>
+                {item.key === 'today_appointments' && (
+                   <button onClick={load} className={`text-gray-300 hover:text-blue-500 transition-colors ${loading ? 'animate-spin' : ''}`}>
+                      <RefreshCw size={14} />
+                   </button>
+                )}
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-gray-800 mb-0.5">
+                  {loading ? '...' : item.value}
+                </div>
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  {item.label}
                 </div>
               </div>
-              <span className="text-2xl font-bold text-gray-800">{stat.value}</span>
             </div>
           );
         })}
       </div>
+      {error && <div className="text-xs text-red-500 mt-2 text-center">{error}</div>}
     </div>
   );
 }
