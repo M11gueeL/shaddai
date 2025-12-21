@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileText, X, Calendar, FileSpreadsheet, ChevronDown, ClipboardList, CheckCircle, Clock, CheckCheck, XCircle, UserX } from 'lucide-react';
+import { Download, FileText, X, Calendar, ChevronDown, ClipboardList, CheckCircle, Clock, CheckCheck, XCircle, UserX } from 'lucide-react';
 import appointmentsApi from '../../../api/appointments';
 import { useAuth } from '../../../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -194,7 +194,7 @@ export default function PatientReportModal({ isOpen, onClose, patientId, patient
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg group-hover:bg-emerald-200 transition-colors">
-                    <FileSpreadsheet className="w-5 h-5" />
+                    <FileText className="w-5 h-5" />
                   </div>
                   <div className="text-left">
                     <span className="block text-sm font-bold text-gray-800 group-hover:text-emerald-700">Excel (.xlsx)</span>
@@ -211,7 +211,7 @@ export default function PatientReportModal({ isOpen, onClose, patientId, patient
               >
                  <div className="flex items-center gap-3">
                   <div className="p-2 bg-gray-100 text-gray-600 rounded-lg group-hover:bg-gray-200 transition-colors">
-                    <FileSpreadsheet className="w-5 h-5" />
+                    <FileText className="w-5 h-5" />
                   </div>
                   <div className="text-left">
                     <span className="block text-sm font-bold text-gray-800">Archivo CSV</span>

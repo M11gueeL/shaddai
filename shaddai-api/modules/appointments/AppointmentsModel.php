@@ -111,6 +111,68 @@ class AppointmentsModel {
         return $this->db->query($query, $params);
     }
 
+    public function getAppointmentsByDoctorAndDateRange($doctorId, $startDate, $endDate, $status = null) {
+        $query = "SELECT 
+            a.*,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.doctor_id = :doctor_id 
+        AND a.appointment_date BETWEEN :start_date AND :end_date";
+
+        $params = [
+            ':doctor_id' => $doctorId,
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ];
+
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+
+        return $this->db->query($query, $params);
+    }
+
+    public function getAppointmentsBySpecialtyAndDateRange($specialtyId, $startDate, $endDate, $status = null) {
+        $query = "SELECT 
+            a.*,
+            ami.chief_complaint, ami.symptoms, ami.notes,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.specialty_id = :specialty_id 
+        AND a.appointment_date BETWEEN :start_date AND :end_date";
+
+        $params = [
+            ':specialty_id' => $specialtyId,
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ];
+
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+
+        return $this->db->query($query, $params);
+    }
+
     public function getAllAppointments() {
         $query = "SELECT 
             a.*,
@@ -533,6 +595,117 @@ class AppointmentsModel {
         ];
 
         // Si el status no es 'todos' y no es nulo, agregamos el filtro
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date ASC, a.appointment_time ASC";
+
+        return $this->db->query($query, $params);
+    }
+
+    public function getAppointmentsForDoctorReport($startDate, $endDate, $status = null, $doctorId) {
+        $query = "SELECT 
+            a.id,
+            a.appointment_date,
+            a.appointment_time,
+            a.status,
+            a.appointment_type,
+            a.duration,
+            p.full_name as patient_name, 
+            p.cedula as patient_cedula,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name,
+            ami.chief_complaint
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.appointment_date BETWEEN :start_date AND :end_date
+        AND a.doctor_id = :doctor_id";
+
+        $params = [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate,
+            ':doctor_id' => $doctorId
+        ];
+
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date ASC, a.appointment_time ASC";
+
+        return $this->db->query($query, $params);
+    }
+
+    public function getAppointmentsForSpecialtyReport($startDate, $endDate, $status = null, $specialtyId) {
+        $query = "SELECT 
+            a.id,
+            a.appointment_date,
+            a.appointment_time,
+            a.status,
+            a.appointment_type,
+            a.duration,
+            p.full_name as patient_name, 
+            p.cedula as patient_cedula,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name,
+            ami.chief_complaint
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.appointment_date BETWEEN :start_date AND :end_date
+        AND a.specialty_id = :specialty_id";
+
+        $params = [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate,
+            ':specialty_id' => $specialtyId
+        ];
+
+        if ($status && $status !== 'todos') {
+            $query .= " AND a.status = :status";
+            $params[':status'] = $status;
+        }
+
+        $query .= " ORDER BY a.appointment_date ASC, a.appointment_time ASC";
+
+        return $this->db->query($query, $params);
+    }
+
+    public function getAppointmentsForPatientReport($startDate, $endDate, $status = null, $patientId) {
+        $query = "SELECT 
+            a.id,
+            a.appointment_date,
+            a.appointment_time,
+            a.status,
+            a.appointment_type,
+            a.duration,
+            p.full_name as patient_name, 
+            p.cedula as patient_cedula,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+            ms.name as specialty_name,
+            ami.chief_complaint
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        INNER JOIN users u ON a.doctor_id = u.id
+        INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.appointment_date BETWEEN :start_date AND :end_date
+        AND a.patient_id = :patient_id";
+
+        $params = [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate,
+            ':patient_id' => $patientId
+        ];
+
         if ($status && $status !== 'todos') {
             $query .= " AND a.status = :status";
             $params[':status'] = $status;

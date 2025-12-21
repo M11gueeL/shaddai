@@ -70,4 +70,18 @@ export default {
     params,
     responseType: 'blob'
   }),
+
+  // Exportar reporte de médico
+  exportDoctorReport: (params, token) => axios.get(`${API_URL}/appointments/report/doctor-export`, {
+    ...getAuthHeaders(token),
+    params,
+    responseType: 'blob'
+  }),
+
+  // Exportar reporte de especialidad
+  exportSpecialtyReport: (params, token) => axios.get(`${API_URL}/appointments/report/specialty-export`, {
+    ...getAuthHeaders(token),
+    params,
+    responseType: 'blob'
+  }),
 };

@@ -43,6 +43,68 @@ class AppointmentsController {
         }
     }
 
+    public function exportDoctorReport() {
+        try {
+            $doctorId = $_GET['doctor_id'] ?? null;
+            $startDate = $_GET['start_date'] ?? date('Y-m-d');
+            $endDate = $_GET['end_date'] ?? date('Y-m-d');
+            $status = $_GET['status'] ?? 'todos';
+            $format = $_GET['format'] ?? 'pdf';
+
+            if (!$doctorId) {
+                throw new Exception('Doctor ID is required');
+            }
+
+            $data = $this->model->getAppointmentsByDoctorAndDateRange($doctorId, $startDate, $endDate, $status);
+            
+            $doctorName = !empty($data) ? $data[0]['doctor_name'] : 'Medico';
+            $filename = 'reporte_citas_' . str_replace(' ', '_', strtolower($doctorName)) . '_' . $startDate;
+
+            if ($format === 'excel') {
+                $this->reportService->generateExcel($data, $startDate, $endDate, $filename);
+            } elseif ($format === 'csv') {
+                $this->reportService->generateCsv($data, $filename);
+            } else {
+                $this->reportService->generatePdf($data, $startDate, $endDate, $filename);
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function exportSpecialtyReport() {
+        try {
+            $specialtyId = $_GET['specialty_id'] ?? null;
+            $startDate = $_GET['start_date'] ?? date('Y-m-d');
+            $endDate = $_GET['end_date'] ?? date('Y-m-d');
+            $status = $_GET['status'] ?? 'todos';
+            $format = $_GET['format'] ?? 'pdf';
+
+            if (!$specialtyId) {
+                throw new Exception('Specialty ID is required');
+            }
+
+            $data = $this->model->getAppointmentsBySpecialtyAndDateRange($specialtyId, $startDate, $endDate, $status);
+            
+            $specialtyName = !empty($data) ? $data[0]['specialty_name'] : 'Especialidad';
+            $filename = 'reporte_citas_' . str_replace(' ', '_', strtolower($specialtyName)) . '_' . $startDate;
+
+            if ($format === 'excel') {
+                $this->reportService->generateExcel($data, $startDate, $endDate, $filename);
+            } elseif ($format === 'csv') {
+                $this->reportService->generateCsv($data, $filename);
+            } else {
+                $this->reportService->generatePdf($data, $startDate, $endDate, $filename);
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function getAllAppointments() {
         try {
             $appointments = $this->model->getAllAppointments();
