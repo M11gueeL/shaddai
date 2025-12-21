@@ -457,7 +457,6 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
                         name="appointment_date"
                         value={formData.appointment_date}
                         onChange={handleInputChange}
-                        min={getMinDate()}
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                           errors.appointment_date ? 'border-red-500' : 'border-gray-300'
                         } ${formData.appointment_date !== originalData.appointment_date ? 'bg-yellow-50 border-yellow-300' : ''}`}
@@ -480,7 +479,6 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
                         name="appointment_time"
                         value={formData.appointment_time}
                         onChange={handleInputChange}
-                        min={getMinTime()}
                         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                           errors.appointment_time ? 'border-red-500' : 'border-gray-300'
                         } ${formData.appointment_time !== originalData.appointment_time ? 'bg-yellow-50 border-yellow-300' : ''}`}

@@ -122,7 +122,7 @@ class AppointmentsController {
                 echo json_encode($appointment);
             } else {
                 http_response_code(404);
-                echo json_encode(['error' => 'Appointment not found']);
+                echo json_encode(['error' => 'Cita no encontrada']);
             }
         } catch (Exception $e) {
             http_response_code(500);
@@ -186,9 +186,9 @@ class AppointmentsController {
             $result = $this->model->createAppointment($data);
             if ($result) {
                 http_response_code(201);
-                echo json_encode(['message' => 'Appointment created successfully', 'id' => $result]);
+                echo json_encode(['message' => 'Cita creada exitosamente', 'id' => $result]);
             } else {
-                throw new Exception('Failed to create appointment');
+                throw new Exception('Error al crear la cita');
             }
         } catch (Exception $e) {
             http_response_code(400);
@@ -208,13 +208,13 @@ class AppointmentsController {
                 $data = $_POST;
             }
             
-            $this->validateAppointmentData($data);
+            $this->validateAppointmentData($data, true);
             
             $result = $this->model->updateAppointment($id, $data);
             if ($result) {
-                echo json_encode(['message' => 'Appointment updated successfully']);
+                echo json_encode(['message' => 'Cita actualizada exitosamente']);
             } else {
-                throw new Exception('Failed to update appointment');
+                throw new Exception('Error al actualizar la cita');
             }
         } catch (Exception $e) {
             http_response_code(400);
@@ -227,7 +227,7 @@ class AppointmentsController {
             $data = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 
             if (empty($data['status'])) {
-                throw new Exception('Status is required');
+                throw new Exception('El estado es requerido');
             }
 
             // Obtener usuario autenticado desde JWT
@@ -241,9 +241,9 @@ class AppointmentsController {
 
             $result = $this->model->updateAppointmentStatus($id, $data['status'], $changedBy, $changeReason);
             if ($result) {
-                echo json_encode(['message' => 'Appointment status updated successfully']);
+                echo json_encode(['message' => 'Estado de la cita actualizado exitosamente']);
             } else {
-                throw new Exception('Failed to update appointment status');
+                throw new Exception('Error al actualizar el estado de la cita');
             }
         } catch (Exception $e) {
             http_response_code(400);
@@ -311,9 +311,9 @@ class AppointmentsController {
         try {
             $result = $this->model->deleteAppointment($id);
             if ($result) {
-                echo json_encode(['message' => 'Appointment deleted successfully']);
+                echo json_encode(['message' => 'Cita eliminada exitosamente']);
             } else {
-                throw new Exception('Failed to delete appointment');
+                throw new Exception('Error al eliminar la cita');
             }
         } catch (Exception $e) {
             http_response_code(500);
@@ -321,48 +321,49 @@ class AppointmentsController {
         }
     }
 
-    private function validateAppointmentData($data) {
+    private function validateAppointmentData($data, $isUpdate = false) {
         if (empty($data['patient_id'])) {
-            throw new Exception('Patient ID is required');
+            throw new Exception('El ID del paciente es requerido');
         }
         
         if (empty($data['doctor_id'])) {
-            throw new Exception('Doctor ID is required');
+            throw new Exception('El ID del médico es requerido');
         }
         
         if (empty($data['appointment_date'])) {
-            throw new Exception('Appointment date is required');
+            throw new Exception('La fecha de la cita es requerida');
         }
         
         if (empty($data['appointment_time'])) {
-            throw new Exception('Appointment time is required');
+            throw new Exception('La hora de la cita es requerida');
         }
         
         if (empty($data['office_number']) || !in_array($data['office_number'], [1, 2, 3])) {
-            throw new Exception('Valid office number (1, 2, or 3) is required');
+            throw new Exception('El número de consultorio debe ser válido (1, 2 o 3)');
         }
         
         if (empty($data['specialty_id'])) {
-            throw new Exception('Specialty ID is required');
+            throw new Exception('El ID de la especialidad es requerido');
         }
 
         // Validar fecha no sea en el pasado (usando timezone actual del servidor)
         $today = (new DateTime('now'))->format('Y-m-d');
         // Permitir el mismo día; solo fechas estrictamente menores se consideran pasado
-        if (!empty($data['appointment_date']) && $data['appointment_date'] < $today) {
-            throw new Exception('Cannot schedule appointments in the past');
+        // Si es una actualización, permitimos fechas pasadas (para corregir citas viejas)
+        if (!$isUpdate && !empty($data['appointment_date']) && $data['appointment_date'] < $today) {
+            throw new Exception('No se pueden agendar citas en fechas pasadas');
         }
 
         // Validar tipos de cita
         $validTypes = ['primera_vez', 'control', 'emergencia', 'urgencia'];
         if (!empty($data['appointment_type']) && !in_array($data['appointment_type'], $validTypes)) {
-            throw new Exception('Invalid appointment type');
+            throw new Exception('Tipo de cita inválido');
         }
 
         // Validar estados
         $validStatuses = ['programada', 'confirmada', 'en_progreso', 'completada', 'cancelada', 'no_se_presento'];
         if (!empty($data['status']) && !in_array($data['status'], $validStatuses)) {
-            throw new Exception('Invalid appointment status');
+            throw new Exception('Estado de cita inválido');
         }
     }
 
