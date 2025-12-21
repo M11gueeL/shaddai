@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
 import PatientDetail from './PatientDetail';
-import { FiFilter, FiSearch } from 'react-icons/fi';
+import { Search, Filter, X, Users, Eye, ChevronRight, UserPlus, FileText } from 'lucide-react';
 
 export default function PatientList({ onClose }) {
   const [patients, setPatients] = useState([]);
@@ -124,173 +124,184 @@ export default function PatientList({ onClose }) {
   }
 
   return (
-    <div className="bg-white h-full flex flex-col">
+    <div className="bg-white h-full flex flex-col animate-in fade-in duration-300">
       {/* Header del Modal */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800">Lista de Pacientes</h2>
+      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+                <Users className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+                <h2 className="text-xl font-bold text-gray-900">Directorio de Pacientes</h2>
+                <p className="text-sm text-gray-500">Gestiona y consulta la información de tus pacientes</p>
+            </div>
+        </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition duration-300 text-2xl"
+          className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-all duration-200"
         >
-          ✕
+          <X className="w-6 h-6" />
         </button>
       </div>
 
       {/* Controles de búsqueda y filtros */}
-      <div className="bg-gray-50 p-4 border-b border-gray-200">
-        <div className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
-          <div className="flex-1 flex">
+      <div className="bg-white p-6 border-b border-gray-100 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex-1 flex shadow-sm rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
             <div className="relative flex-grow">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="text-gray-400" />
+                <Search className="w-5 h-5 text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="Buscar pacientes..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
+                placeholder="Buscar por nombre, cédula, email..."
+                className="w-full pl-10 pr-4 py-2.5 border-none focus:ring-0 text-sm text-gray-700 placeholder-gray-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="relative">
+            <div className="relative border-l border-gray-200 bg-gray-50">
               <select
-                className="appearance-none w-full border border-l-0 border-gray-300 rounded-r-lg pl-3 pr-8 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+                className="appearance-none h-full pl-4 pr-10 py-2 bg-transparent text-sm font-medium text-gray-600 focus:ring-0 border-none cursor-pointer hover:text-gray-900"
                 value={searchField}
                 onChange={(e) => setSearchField(e.target.value)}
               >
-                <option value="all">Todos los campos</option>
+                <option value="all">Todos</option>
                 <option value="id">ID</option>
                 <option value="name">Nombre</option>
                 <option value="cedula">Cédula</option>
                 <option value="email">Email</option>
                 <option value="phone">Teléfono</option>
               </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                </svg>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                <ChevronRight className="w-4 h-4 rotate-90" />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+              className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-all ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'}`}
             >
-              <FiFilter className="text-gray-500" />
+              <Filter className="w-4 h-4" />
               Filtros
             </button>
             {(filters.hasPhone || filters.hasEmail) && (
               <button
                 onClick={() => setFilters({ hasPhone: false, hasEmail: false })}
-                className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm"
+                className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-100 rounded-xl text-red-600 hover:bg-red-100 transition-all text-sm font-medium"
               >
-                Limpiar filtros
+                <X className="w-4 h-4" />
+                Limpiar
               </button>
             )}
           </div>
         </div>
 
         {showFilters && (
-          <div className="mt-4 bg-white p-4 rounded-lg border border-gray-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-end">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                    checked={filters.hasPhone}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, hasPhone: e.target.checked }))}
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Solo con teléfono</span>
-                </label>
-              </div>
-              <div className="flex items-end">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                    checked={filters.hasEmail}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, hasEmail: e.target.checked }))}
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Solo con email</span>
-                </label>
-              </div>
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex flex-wrap gap-6">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center">
+                    <input
+                        type="checkbox"
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-300 transition-all checked:border-blue-500 checked:bg-blue-500"
+                        checked={filters.hasPhone}
+                        onChange={(e) => setFilters((prev) => ({ ...prev, hasPhone: e.target.checked }))}
+                    />
+                    <div className="pointer-events-none absolute top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4 text-white opacity-0 transition-opacity peer-checked:opacity-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    </div>
+                </div>
+                <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">Solo con teléfono</span>
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center">
+                    <input
+                        type="checkbox"
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-gray-300 transition-all checked:border-blue-500 checked:bg-blue-500"
+                        checked={filters.hasEmail}
+                        onChange={(e) => setFilters((prev) => ({ ...prev, hasEmail: e.target.checked }))}
+                    />
+                    <div className="pointer-events-none absolute top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4 text-white opacity-0 transition-opacity peer-checked:opacity-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                    </div>
+                </div>
+                <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">Solo con email</span>
+              </label>
             </div>
           </div>
         )}
       </div>
 
       {/* Contenido del Modal */}
-      <div className="flex-1 p-6 overflow-y-auto">
+      <div className="flex-1 p-6 overflow-y-auto bg-gray-50/50">
         {error && (
-          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg border border-red-200">
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl border border-red-100 flex items-center gap-3">
+            <div className="p-2 bg-red-100 rounded-full">
+                <X className="w-4 h-4" />
+            </div>
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Cargando pacientes...</p>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent mb-4"></div>
+            <p className="text-gray-500 font-medium">Cargando pacientes...</p>
           </div>
         ) : filteredPatients.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📋</div>
-            <p className="text-gray-600 text-lg">No hay pacientes registrados.</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="p-6 bg-gray-100 rounded-full mb-4">
+                <Users className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">No se encontraron pacientes</h3>
+            <p className="text-gray-500 max-w-xs mx-auto">Intenta ajustar los filtros o realiza una nueva búsqueda.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-100">
+              <thead className="bg-gray-50/80">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nombres
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cédula
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Teléfono
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Correo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Paciente</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cédula</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contacto</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-100">
                 {filteredPatients.map((patient) => (
-                  <tr key={patient.id} className="hover:bg-gray-50 transition duration-300">
+                  <tr key={patient.id} className="hover:bg-blue-50/30 transition-colors duration-200 group">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{patient.id}</div>
+                      <span className="text-sm font-mono text-gray-500">#{patient.id}</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {patient.full_name}
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                            {patient.full_name?.charAt(0) || 'P'}
+                        </div>
+                        <div className="text-sm font-semibold text-gray-900">{patient.full_name}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{patient.cedula}</div>
+                      <div className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded-md inline-block">{patient.cedula}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{patient.phone}</div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm text-gray-900">{patient.phone || '-'}</span>
+                        <span className="text-xs text-gray-500">{patient.email}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{patient.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button
                         onClick={() => handleViewPatient(patient.id)}
-                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg transition duration-300 flex items-center space-x-2 font-medium"
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all shadow-sm text-sm font-medium group/btn"
                       >
-                        <span>Más Información</span>
+                        <Eye className="w-4 h-4 text-gray-400 group-hover/btn:text-blue-600 transition-colors" />
+                        Detalles
                       </button>
                     </td>
                   </tr>

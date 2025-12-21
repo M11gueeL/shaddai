@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
 import { useToast } from '../../../context/ToastContext';
+import { UserPlus, X, User, CreditCard, Calendar, Phone, MapPin, Mail, Heart, Users } from 'lucide-react';
 
 export default function PatientRegistration({ onClose }) {
   const toast = useToast();
@@ -44,169 +45,237 @@ export default function PatientRegistration({ onClose }) {
   };
 
   return (
-    <div className="bg-white bordered rounded-2xl shadow-lg w-full max-w-4xl mx-auto flex flex-col">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
       {/* Header del Modal */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800">Registrar Nuevo Paciente</h2>
+      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                <UserPlus className="w-6 h-6 text-white" />
+            </div>
+            <div>
+                <h2 className="text-xl font-bold">Registrar Nuevo Paciente</h2>
+                <p className="text-blue-100 text-sm">Complete la información para dar de alta un nuevo paciente</p>
+            </div>
+        </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 transition duration-300 text-2xl"
+          className="p-2 hover:bg-white/20 rounded-full text-blue-100 hover:text-white transition-all duration-200"
         >
-          ✕
+          <X className="w-6 h-6" />
         </button>
       </div>
 
       {/* Contenido del Modal */}
-      <div className="p-6 max-h-[calc(90vh-80px)]">
+      <div className="p-8 max-h-[calc(90vh-100px)] overflow-y-auto bg-gray-50/50">
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nombre Completo *
-              </label>
-              <input
-                type="text"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-                placeholder="Ingrese el nombre completo"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* Sección: Información Personal */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <User className="w-4 h-4 text-blue-500" />
+                Información Personal
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Nombre Completo <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <input
+                        type="text"
+                        name="full_name"
+                        value={formData.full_name}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                        placeholder="Ej: Juan Pérez"
+                    />
+                </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cédula *
-              </label>
-              <input
-                type="text"
-                name="cedula"
-                value={formData.cedula}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-                placeholder="Ingrese la cédula"
-              />
-            </div>
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Cédula <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <CreditCard className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <input
+                        type="text"
+                        name="cedula"
+                        value={formData.cedula}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                        placeholder="Ej: V-12345678"
+                    />
+                </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha de Nacimiento *
-              </label>
-              <input
-                type="date"
-                name="birth_date"
-                value={formData.birth_date}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-              />
-            </div>
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Fecha de Nacimiento <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Calendar className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <input
+                        type="date"
+                        name="birth_date"
+                        value={formData.birth_date}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800"
+                    />
+                </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Género *
-              </label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-              >
-                <option value="">Seleccione...</option>
-                <option value="Masculino">Masculino</option>
-                <option value="Femenino">Femenino</option>
-              </select>
-            </div>
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Género <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Users className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
+                    >
+                        <option value="">Seleccione...</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
+                </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado Civil *
-              </label>
-              <select
-                name="marital_status"
-                value={formData.marital_status}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-              >
-                <option value="">Seleccione...</option>
-                <option value="Soltero">Soltero</option>
-                <option value="Casado">Casado</option>
-                <option value="Divorciado">Divorciado</option>
-                <option value="Viudo">Viudo</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Teléfono *
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-                placeholder="Ej: 04121234567"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Dirección *
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-                placeholder="Ingrese la dirección completa"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
-                placeholder="Ingrese el correo electrónico"
-              />
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Estado Civil <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Heart className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <select
+                        name="marital_status"
+                        value={formData.marital_status}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
+                    >
+                        <option value="">Seleccione...</option>
+                        <option value="Soltero">Soltero</option>
+                        <option value="Casado">Casado</option>
+                        <option value="Divorciado">Divorciado</option>
+                        <option value="Viudo">Viudo</option>
+                    </select>
+                </div>
+                </div>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+          {/* Sección: Información de Contacto */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                <Phone className="w-4 h-4 text-blue-500" />
+                Información de Contacto
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Teléfono <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Phone className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                        placeholder="Ej: 04121234567"
+                    />
+                </div>
+                </div>
+
+                <div className="group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Email <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Mail className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
+                        placeholder="ejemplo@correo.com"
+                    />
+                </div>
+                </div>
+
+                <div className="md:col-span-2 group">
+                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                    Dirección <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                    <div className="absolute top-3 left-3 flex items-start pointer-events-none">
+                        <MapPin className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    </div>
+                    <textarea
+                        name="address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        required
+                        rows="2"
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 resize-none"
+                        placeholder="Ingrese la dirección completa"
+                    />
+                </div>
+                </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-300 font-medium"
+              className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 font-medium text-sm"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition duration-300 font-medium"
+              className="px-8 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-200 font-bold text-sm shadow-lg shadow-blue-500/30 flex items-center gap-2"
             >
               {loading ? (
-                <span className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                   Registrando...
-                </span>
+                </>
               ) : (
-                'Registrar Paciente'
+                <>
+                    <UserPlus className="w-4 h-4" />
+                    Registrar Paciente
+                </>
               )}
             </button>
           </div>
