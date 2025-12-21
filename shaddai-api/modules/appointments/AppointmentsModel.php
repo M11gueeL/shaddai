@@ -206,7 +206,7 @@ class AppointmentsModel {
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
             p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
-            CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
+            CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula, u.email as doctor_email,
             ms.name as specialty_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id

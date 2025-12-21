@@ -10,11 +10,15 @@ require_once __DIR__ . '/AuthModel.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
+require_once __DIR__ . '/../../services/EmailServive.php';
+
 class AuthController {
     private $model;
+    private $emailService;
 
     public function __construct() {
         $this->model = new AuthModel();
+        $this->emailService = new EmailService();
     }
 
     // LOGIN
@@ -262,40 +266,18 @@ class AuthController {
             // Usamos el nuevo método del modelo
             $this->model->savePasswordResetToken($user['id'], $hashed_token, $expires_at);
 
-            // Configuración de PHPMailer
-            $mail = new PHPMailer(true);
-            
-            $mail->isSMTP();
-            $mail->Host       = $_ENV['SMTP_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['SMTP_USER'];
-            $mail->Password   = $_ENV['SMTP_PASS'];
-            $mail->SMTPSecure = ($_ENV['SMTP_SECURE'] == 'tls') 
-                                ? PHPMailer::ENCRYPTION_STARTTLS 
-                                : PHPMailer::ENCRYPTION_SMTPS;
-                                
-            $mail->Port       = (int)($_ENV['SMTP_PORT']); // Convertimos a entero
-            $mail->CharSet    = 'UTF-8';
-
-            $mail->setFrom('no-reply@shaddai.com', 'Sistema Shaddai');
-            $mail->addAddress($user['email'], $user['first_name'] . ' ' . $user['last_name']);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Restablecimiento de Contraseña - Shaddai';
-            
             $resetLink = ($_ENV['FRONTEND_URL'] ?? 'http://localhost:5173') . "/reset-password/" . $token;
+            $userName = $user['first_name'] . ' ' . $user['last_name'];
 
-            $mail->Body    = "Hola " . htmlspecialchars($user['first_name']) . ",<br><br>" .
-                             "Solicitaste restablecer tu contraseña.<br>" .
-                             "Haz clic en el siguiente enlace para crear una nueva:<br><br>" .
-                             "<a href='" . $resetLink . "' style='padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>Restablecer Contraseña</a><br><br>" .
-                             "Este enlace expirará en 1 hora.<br><br>" .
-                             "Si no solicitaste esto, ignora este mensaje.";
+            // Usar EmailService para enviar el correo con la plantilla profesional
+            $sent = $this->emailService->sendPasswordReset($user['email'], $userName, $resetLink);
 
-            $mail->send();
-
-            http_response_code(200);
-            echo json_encode(['message' => 'Se ha enviado un correo con instrucciones para restablecer la contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).']);
+            if ($sent) {
+                http_response_code(200);
+                echo json_encode(['message' => 'Se ha enviado un correo con instrucciones para restablecer la contraseña. Revisa tu bandeja de entrada (y la carpeta de spam).']);
+            } else {
+                throw new Exception('No se pudo enviar el correo.');
+            }
 
         } catch (Exception $e) {
             // Si falla el email, logueamos el error y devolvemos el mismo mensaje para el usuario

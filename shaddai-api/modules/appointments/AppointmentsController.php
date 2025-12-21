@@ -1,14 +1,16 @@
 <?php
 require_once __DIR__ . '/AppointmentsModel.php';
 require_once __DIR__ . '/../../services/ReportGeneratorService.php';
+require_once __DIR__ . '/../../services/EmailServive.php';
 
 class AppointmentsController {
     private $model;
     private $reportService;
-
+    private $emailService;
     public function __construct() {
         $this->model = new AppointmentsModel();
         $this->reportService = new ReportGeneratorService();
+        $this->emailService = new EmailService();
     }
 
     public function exportPatientReport() {
@@ -205,7 +207,34 @@ class AppointmentsController {
             $this->validateAppointmentData($data);
 
             $result = $this->model->createAppointment($data);
+            
             if ($result) {
+                // Obtener detalles completos para el correo
+                $apptDetails = $this->model->getAppointmentById($result);
+                
+                // Enviar al Paciente (si tiene email)
+                if (!empty($apptDetails['patient_email'])) {
+                    $this->emailService->sendPatientConfirmation(
+                        $apptDetails['patient_email'],
+                        $apptDetails['patient_name'],
+                        $apptDetails['doctor_name'],
+                        $apptDetails['appointment_date'],
+                        $apptDetails['appointment_time'],
+                        $apptDetails['specialty_name'] ?? 'Consulta General'
+                    );
+                }
+
+                // Enviar al Médico (si tiene email)
+                if (!empty($apptDetails['doctor_email'])) {
+                     $this->emailService->sendDoctorNotification(
+                        $apptDetails['doctor_email'],
+                        $apptDetails['doctor_name'],
+                        $apptDetails['patient_name'],
+                        $apptDetails['appointment_date'],
+                        $apptDetails['appointment_time'],
+                        $apptDetails['specialty_name'] ?? 'Consulta General'
+                    );
+                }
                 http_response_code(201);
                 echo json_encode(['message' => 'Cita creada exitosamente', 'id' => $result]);
             } else {
