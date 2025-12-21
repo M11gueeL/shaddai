@@ -78,7 +78,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-auto flex flex-col h-[90vh] animate-in zoom-in-95 duration-200 overflow-hidden">
+    <div className="bg-white h-full w-full flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
       {/* Header */}
       <div className={`flex items-center justify-between p-6 border-b border-gray-100 text-white transition-colors duration-300 ${isEditing ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}>
         <div className="flex items-center gap-4">
