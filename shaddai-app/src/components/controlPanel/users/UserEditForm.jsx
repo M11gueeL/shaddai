@@ -87,7 +87,7 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
     if (!formData.first_name) newErrors.first_name = 'El nombre es obligatorio';
     if (!formData.last_name) newErrors.last_name = 'El apellido es obligatorio';
     if (!formData.cedula_number) newErrors.cedula = 'La cédula es obligatoria';
-    if (!formData.email) newErrors.email = 'El email es obligatorio';
+    // Email is optional now
     if (formData.roles.length === 0) newErrors.roles = 'Debe asignar al menos un rol';
     
     if (isMedico) {
@@ -242,7 +242,6 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
                         name="birth_date"
                         value={formData.birth_date}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
                       />
                     </div>
@@ -257,7 +256,6 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
                       name="gender"
                       value={formData.gender}
                       onChange={handleChange}
-                      required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
                     >
                       <option value="">Seleccion una opción</option>
@@ -282,7 +280,6 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
                       />
                     </div>
@@ -304,7 +301,6 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        required
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
                           errors.email ? 'border-red-500' : 'border-gray-300'
                         }`}
@@ -330,7 +326,6 @@ export default function UserEditForm({ user, onSubmit, onCancel, specialties, me
                         name="address"
                         value={formData.address}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition"
                       />
                     </div>

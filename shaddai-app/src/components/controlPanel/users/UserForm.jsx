@@ -80,7 +80,23 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ... (handleRoleChange, handleSpecialtyChange, handleFormClose remain same)
+  const handleRoleChange = (e) => {
+    const roleId = parseInt(e.target.value);
+    const newRoles = e.target.checked
+      ? [...formData.roles, roleId]
+      : formData.roles.filter(id => id !== roleId);
+    
+    setFormData(prev => ({ ...prev, roles: newRoles }));
+  };
+
+  const handleSpecialtyChange = (e) => {
+    const specialtyId = parseInt(e.target.value);
+    const newSpecialties = e.target.checked
+      ? [...formData.specialties, specialtyId]
+      : formData.specialties.filter(id => id !== specialtyId);
+    
+    setFormData(prev => ({ ...prev, specialties: newSpecialties }));
+  };
 
   const validate = () => {
     const newErrors = {};
@@ -303,7 +319,6 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                             const val = e.target.value.replace(/\D/g, '').slice(0, 7);
                             handleChange({ target: { name: 'phone_number', value: val } });
                         }}
-                        required
                         className="w-full px-4 py-3 border rounded-r-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition border-gray-300"
                       />
                     </div>
@@ -325,7 +340,6 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        required
                         className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition ${
                           errors.email ? 'border-red-500' : 'border-gray-300'
                         }`}
