@@ -715,5 +715,49 @@ class AppointmentsModel {
         return $this->db->query($query, $params);
     }
 
+    public function getAdvancedStatistics($startDate, $endDate, $type) {
+        $groupBy = '';
+        $selectName = '';
+        $join = '';
+
+        switch ($type) {
+            case 'specialty':
+                $selectName = 'ms.name as name';
+                $groupBy = 'a.specialty_id';
+                $join = 'INNER JOIN medical_specialties ms ON a.specialty_id = ms.id';
+                break;
+            case 'doctor':
+                $selectName = "CONCAT(u.first_name, ' ', u.last_name) as name";
+                $groupBy = 'a.doctor_id';
+                $join = 'INNER JOIN users u ON a.doctor_id = u.id';
+                break;
+            case 'patient':
+                $selectName = 'p.full_name as name';
+                $groupBy = 'a.patient_id';
+                $join = 'INNER JOIN patients p ON a.patient_id = p.id';
+                break;
+            default:
+                throw new Exception("Invalid statistics type");
+        }
+
+        $query = "SELECT 
+            $selectName,
+            COUNT(*) as total_appointments,
+            SUM(CASE WHEN a.status = 'completada' THEN 1 ELSE 0 END) as completed_appointments,
+            SUM(CASE WHEN a.status = 'cancelada' THEN 1 ELSE 0 END) as canceled_appointments
+        FROM appointments a
+        $join
+        WHERE a.appointment_date BETWEEN :start_date AND :end_date
+        GROUP BY $groupBy
+        ORDER BY total_appointments DESC";
+
+        $params = [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ];
+
+        return $this->db->query($query, $params);
+    }
+
     
 }

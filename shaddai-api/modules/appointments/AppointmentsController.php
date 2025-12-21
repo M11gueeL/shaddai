@@ -414,6 +414,69 @@ class AppointmentsController {
         }
     }
 
+    public function getAdvancedStatistics() {
+        try {
+            $startDate = $_GET['start_date'] ?? null;
+            $endDate = $_GET['end_date'] ?? null;
+            $type = $_GET['type'] ?? null;
+
+            if (!$startDate || !$endDate || !$type) {
+                throw new Exception('Fecha de inicio, fecha de fin y tipo son requeridos');
+            }
+
+            // Validar rango mínimo de 7 días
+            $start = new DateTime($startDate);
+            $end = new DateTime($endDate);
+            $interval = $start->diff($end);
+
+            if ($interval->days < 6) { // 6 porque la diferencia entre el mismo día es 0, pero queremos al menos 7 días inclusivos
+                throw new Exception('El rango de fechas debe ser de al menos 7 días');
+            }
+
+            $stats = $this->model->getAdvancedStatistics($startDate, $endDate, $type);
+            
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($stats);
+
+        } catch (Exception $e) {
+            http_response_code(400);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function exportPerformanceReport() {
+        try {
+            $startDate = $_GET['start_date'] ?? null;
+            $endDate = $_GET['end_date'] ?? null;
+            $type = $_GET['type'] ?? null;
+
+            if (!$startDate || !$endDate || !$type) {
+                throw new Exception('Fecha de inicio, fecha de fin y tipo son requeridos');
+            }
+
+            // Validar rango mínimo de 7 días
+            $start = new DateTime($startDate);
+            $end = new DateTime($endDate);
+            $interval = $start->diff($end);
+
+            if ($interval->days < 6) {
+                throw new Exception('El rango de fechas debe ser de al menos 7 días');
+            }
+
+            $data = $this->model->getAdvancedStatistics($startDate, $endDate, $type);
+            
+            $filename = 'reporte_rendimiento_' . $type . '_' . $startDate . '_' . $endDate;
+            
+            $this->reportService->generatePerformancePdf($data, $startDate, $endDate, $type, $filename);
+
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function exportReport() {
         try {
             // 1. Recoger filtros

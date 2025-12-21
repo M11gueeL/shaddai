@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, FileText, X, Calendar, ChevronDown, ClipboardList, CheckCircle, Clock, CheckCheck, XCircle, UserX, Stethoscope, Activity, Users } from 'lucide-react';
+import { Download, FileText, X, Calendar, ChevronDown, ClipboardList, CheckCircle, Clock, CheckCheck, XCircle, UserX, Stethoscope, Activity, Users, TrendingUp } from 'lucide-react';
 import appointmentsApi from '../../../api/appointments';
 import userApi from '../../../api/userApi';
 import PatientsApi from '../../../api/PatientsApi';
@@ -36,6 +36,10 @@ export default function ReportsHubModal({ isOpen, onClose }) {
     patient_id: ''
   });
 
+  const [advancedStats, setAdvancedStats] = useState(null);
+  const [advancedLoading, setAdvancedLoading] = useState(false);
+  const [advancedType, setAdvancedType] = useState('specialty');
+
   useEffect(() => {
     if (isOpen) {
       loadData();
@@ -54,6 +58,53 @@ export default function ReportsHubModal({ isOpen, onClose }) {
       setPatients(patsRes.data || []);
     } catch (error) {
       console.error("Error loading report data", error);
+    }
+  };
+
+  const loadAdvancedStats = async () => {
+    setAdvancedLoading(true);
+    try {
+        const params = {
+            start_date: filters.start_date,
+            end_date: filters.end_date,
+            type: advancedType
+        };
+        const res = await appointmentsApi.getAdvancedStats(params, token);
+        setAdvancedStats(res.data);
+    } catch (error) {
+        console.error(error);
+        toast.error(error.response?.data?.error || 'Error al cargar indicadores');
+    } finally {
+        setAdvancedLoading(false);
+    }
+  };
+
+  const handleExportPerformance = async () => {
+    setAdvancedLoading(true);
+    try {
+        const params = {
+            start_date: filters.start_date,
+            end_date: filters.end_date,
+            type: advancedType
+        };
+        
+        const response = await appointmentsApi.exportPerformanceReport(params, token);
+        
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `reporte_rendimiento_${advancedType}_${filters.start_date}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        
+        toast.success('Reporte PDF generado correctamente');
+    } catch (error) {
+        console.error(error);
+        toast.error('Error al generar el reporte PDF');
+    } finally {
+        setAdvancedLoading(false);
     }
   };
 
@@ -151,7 +202,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                     <div className={`p-2 rounded-lg ${activeTab === 'general' ? 'bg-blue-50' : 'bg-gray-100'}`}>
                         <ClipboardList className="w-4 h-4" />
                     </div>
-                    General
+                    Por Citas
                 </button>
                 <button 
                     onClick={() => setActiveTab('doctor')}
@@ -180,6 +231,15 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                     </div>
                     Por Paciente
                 </button>
+                <button 
+                    onClick={() => setActiveTab('advanced')}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'advanced' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                >
+                    <div className={`p-2 rounded-lg ${activeTab === 'advanced' ? 'bg-blue-50' : 'bg-gray-100'}`}>
+                        <TrendingUp className="w-4 h-4" />
+                    </div>
+                    Indicadores de Rendimiento
+                </button>
             </div>
 
             {/* Content */}
@@ -193,12 +253,14 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                             {activeTab === 'doctor' && 'Reporte por Médico'}
                             {activeTab === 'specialty' && 'Reporte por Especialidad'}
                             {activeTab === 'patient' && 'Reporte por Paciente'}
+                            {activeTab === 'advanced' && 'Indicadores de Rendimiento'}
                         </h4>
                         <p className="text-sm text-gray-500 mt-1">
                             {activeTab === 'general' && 'Exporta un listado completo de todas las citas en el sistema.'}
                             {activeTab === 'doctor' && 'Analiza el rendimiento y citas asignadas a un médico específico.'}
                             {activeTab === 'specialty' && 'Estadísticas y listados detallados por área médica.'}
                             {activeTab === 'patient' && 'Historial completo de citas de un paciente específico.'}
+                            {activeTab === 'advanced' && 'Análisis detallado de métricas y productividad por dimensión.'}
                         </p>
                     </div>
 
@@ -256,6 +318,34 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                         </div>
                     )}
 
+                    {activeTab === 'advanced' && (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1.5">Dimensión de Análisis</label>
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={() => setAdvancedType('specialty')}
+                                        className={`flex-1 py-2 text-sm rounded-lg border ${advancedType === 'specialty' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        Especialidad
+                                    </button>
+                                    <button
+                                        onClick={() => setAdvancedType('doctor')}
+                                        className={`flex-1 py-2 text-sm rounded-lg border ${advancedType === 'doctor' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        Médico
+                                    </button>
+                                    <button
+                                        onClick={() => setAdvancedType('patient')}
+                                        className={`flex-1 py-2 text-sm rounded-lg border ${advancedType === 'patient' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                    >
+                                        Paciente
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Common Filters */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -284,6 +374,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                         </div>
                     </div>
 
+                    {activeTab !== 'advanced' && (
                     <div>
                         <label className="block text-xs font-bold text-gray-700 mb-1.5">Filtrar por Estado</label>
                         <div className="relative">
@@ -332,8 +423,32 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                             )}
                         </div>
                     </div>
+                    )}
+
+                    {activeTab === 'advanced' && (
+                        <div className="space-y-4">
+                            <button
+                                onClick={handleExportPerformance}
+                                disabled={advancedLoading}
+                                className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                            >
+                                {advancedLoading ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"/> : <FileText className="w-5 h-5" />}
+                                Generar Reporte PDF
+                            </button>
+
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
+                                <p className="flex items-start gap-2">
+                                    <TrendingUp className="w-5 h-5 shrink-0" />
+                                    <span>
+                                        Este reporte generará un documento PDF detallado con métricas de rendimiento, tasas de éxito y cancelación para la dimensión seleccionada ({advancedType === 'specialty' ? 'Especialidad' : (advancedType === 'doctor' ? 'Médico' : 'Paciente')}) en el rango de fechas especificado.
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Buttons */}
+                    {activeTab !== 'advanced' && (
                     <div className="pt-4 border-t border-gray-100 space-y-3">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Descargar como</p>
                         <div className="grid grid-cols-3 gap-3">
@@ -371,6 +486,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                             </button>
                         </div>
                     </div>
+                    )}
 
                 </div>
             </div>

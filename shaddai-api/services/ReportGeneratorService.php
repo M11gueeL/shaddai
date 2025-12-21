@@ -39,6 +39,26 @@ class ReportGeneratorService {
         exit;
     }
 
+    public function generatePerformancePdf($data, $startDate, $endDate, $type, $filename) {
+        ob_start();
+        require __DIR__ . '/../templates/reports/appointments/performance_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        if (ob_get_length()) ob_end_clean();
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+        echo $dompdf->output();
+        exit;
+    }
+
     public function generateExcel($data, $startDate, $endDate, $filename) {
         // Limpiar cualquier basura en el buffer para evitar "Archivo Dañado"
         if (ob_get_length()) ob_end_clean();

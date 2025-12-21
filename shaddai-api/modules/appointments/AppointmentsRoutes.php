@@ -17,6 +17,8 @@ class AppointmentsRoutes {
         
         $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/stats', [$controller, 'getStatistics'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'appointments/advanced-stats', [$controller, 'getAdvancedStatistics'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'appointments/report/performance-export', [$controller, 'exportPerformanceReport'], ['auth', 'role:admin,recepcionista']);
 
         $router->add('GET', 'appointments', [$controller, 'getAllAppointments'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/{id}', [$controller, 'getAppointment'], ['auth', 'role:admin,recepcionista']);

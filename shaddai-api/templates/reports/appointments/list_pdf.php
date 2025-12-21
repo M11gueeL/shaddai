@@ -22,7 +22,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Reporte de Citas - Clínica Shaddai</h1>
+        <h1>Reporte de Citas - Centro de Especialidades Médicas Shaddai Rafa</h1>
         <div class="meta">
             <strong>Rango:</strong> <?php echo $startDate; ?> al <?php echo $endDate; ?> <br>
             <strong>Generado el:</strong> <?php echo date('d/m/Y H:i A'); ?>
@@ -65,7 +65,7 @@
     </table>
 
     <div class="footer">
-        Documento generado automáticamente por Sistema Shaddai.
+        Documento generado automáticamente por Sistema Médico Shaddai.
     </div>
 </body>
 </html>

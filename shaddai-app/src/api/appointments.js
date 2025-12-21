@@ -84,4 +84,17 @@ export default {
     params,
     responseType: 'blob'
   }),
+
+  // Obtener estadísticas avanzadas
+  getAdvancedStats: (params, token) => axios.get(`${API_URL}/appointments/advanced-stats`, {
+    ...getAuthHeaders(token),
+    params
+  }),
+
+  // Exportar reporte de rendimiento (PDF)
+  exportPerformanceReport: (params, token) => axios.get(`${API_URL}/appointments/report/performance-export`, {
+    ...getAuthHeaders(token),
+    params,
+    responseType: 'blob'
+  }),
 };
