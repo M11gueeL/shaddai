@@ -52,7 +52,7 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={api}>
       {children}
       {/* Toast viewport */}
-      <div className={`fixed ${positionClass} right-4 z-[100] space-y-4 w-full max-w-sm pointer-events-none transition-all duration-500 ease-in-out`}>
+      <div className={`fixed ${positionClass} right-4 z-[100] space-y-4 w-full max-w-sm pointer-events-none`}>
         {toasts.map((t) => (
           <ToastItem key={t.id} toast={t} onClose={() => removeToast(t.id)} />
         ))}
