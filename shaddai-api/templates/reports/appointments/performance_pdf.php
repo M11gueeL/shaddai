@@ -43,7 +43,7 @@
             </tr>
             <tr>
                 <td><strong>Fecha de Generación:</strong> <?php echo date('d/m/Y H:i'); ?></td>
-                <td style="text-align: right;"><strong>Generado por:</strong> Sistema Administrativo</td>
+                <td style="text-align: right;"><strong>Generado por:</strong> <?php echo htmlspecialchars($generatedBy); ?></td>
             </tr>
         </table>
     </div>
@@ -53,32 +53,40 @@
     $totalAppointments = 0;
     $totalCompleted = 0;
     $totalCanceled = 0;
+    $totalOther = 0;
     foreach ($data as $row) {
         $totalAppointments += $row['total_appointments'];
         $totalCompleted += $row['completed_appointments'];
         $totalCanceled += $row['canceled_appointments'];
+        $totalOther += $row['other_appointments'];
     }
     ?>
 
     <div class="summary-cards">
         <table style="width: 100%;">
             <tr>
-                <td style="width: 33%; padding: 10px;">
-                    <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 15px; text-align: center; border-radius: 8px;">
-                        <h3 style="color: #4f46e5; margin: 0; font-size: 24px;"><?php echo $totalAppointments; ?></h3>
-                        <span style="color: #4338ca; font-size: 11px; font-weight: bold;">TOTAL AGENDADAS</span>
+                <td style="width: 25%; padding: 5px;">
+                    <div style="background: #eef2ff; border: 1px solid #c7d2fe; padding: 10px; text-align: center; border-radius: 8px;">
+                        <h3 style="color: #4f46e5; margin: 0; font-size: 20px;"><?php echo $totalAppointments; ?></h3>
+                        <span style="color: #4338ca; font-size: 9px; font-weight: bold;">TOTAL AGENDADAS</span>
                     </div>
                 </td>
-                <td style="width: 33%; padding: 10px;">
-                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; text-align: center; border-radius: 8px;">
-                        <h3 style="color: #059669; margin: 0; font-size: 24px;"><?php echo $totalCompleted; ?></h3>
-                        <span style="color: #047857; font-size: 11px; font-weight: bold;">COMPLETADAS</span>
+                <td style="width: 25%; padding: 5px;">
+                    <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 10px; text-align: center; border-radius: 8px;">
+                        <h3 style="color: #059669; margin: 0; font-size: 20px;"><?php echo $totalCompleted; ?></h3>
+                        <span style="color: #047857; font-size: 9px; font-weight: bold;">COMPLETADAS</span>
                     </div>
                 </td>
-                <td style="width: 33%; padding: 10px;">
-                    <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; text-align: center; border-radius: 8px;">
-                        <h3 style="color: #dc2626; margin: 0; font-size: 24px;"><?php echo $totalCanceled; ?></h3>
-                        <span style="color: #b91c1c; font-size: 11px; font-weight: bold;">CANCELADAS</span>
+                <td style="width: 25%; padding: 5px;">
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px; text-align: center; border-radius: 8px;">
+                        <h3 style="color: #dc2626; margin: 0; font-size: 20px;"><?php echo $totalCanceled; ?></h3>
+                        <span style="color: #b91c1c; font-size: 9px; font-weight: bold;">CANCELADAS</span>
+                    </div>
+                </td>
+                <td style="width: 25%; padding: 5px;">
+                    <div style="background: #f3f4f6; border: 1px solid #d1d5db; padding: 10px; text-align: center; border-radius: 8px;">
+                        <h3 style="color: #4b5563; margin: 0; font-size: 20px;"><?php echo $totalOther; ?></h3>
+                        <span style="color: #374151; font-size: 9px; font-weight: bold;">OTROS / PENDIENTES</span>
                     </div>
                 </td>
             </tr>
@@ -94,6 +102,7 @@
                 <th style="text-align: center;">% Éxito</th>
                 <th style="text-align: center;">Canceladas</th>
                 <th style="text-align: center;">% Cancelación</th>
+                <th style="text-align: center;">Otros</th>
             </tr>
         </thead>
         <tbody>
@@ -112,6 +121,7 @@
                 <td style="text-align: center;">
                     <?php echo $cancelRate; ?>%
                 </td>
+                <td style="text-align: center; color: #6b7280;"><?php echo $row['other_appointments']; ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>

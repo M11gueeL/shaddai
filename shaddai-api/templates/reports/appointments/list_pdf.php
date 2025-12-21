@@ -25,6 +25,7 @@
         <h1>Reporte de Citas - Centro de Especialidades Médicas Shaddai Rafa</h1>
         <div class="meta">
             <strong>Rango:</strong> <?php echo $startDate; ?> al <?php echo $endDate; ?> <br>
+            <strong>Generado por:</strong> <?php echo htmlspecialchars($generatedBy); ?> <br>
             <strong>Generado el:</strong> <?php echo date('d/m/Y H:i A'); ?>
         </div>
     </div>

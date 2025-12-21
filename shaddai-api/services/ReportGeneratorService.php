@@ -11,7 +11,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 
 class ReportGeneratorService {
 
-    public function generatePdf($data, $startDate, $endDate, $filename) {
+    public function generatePdf($data, $startDate, $endDate, $filename, $generatedBy = '') {
         // 1. Iniciar buffer para capturar el HTML
         ob_start();
         
@@ -39,7 +39,7 @@ class ReportGeneratorService {
         exit;
     }
 
-    public function generatePerformancePdf($data, $startDate, $endDate, $type, $filename) {
+    public function generatePerformancePdf($data, $startDate, $endDate, $type, $filename, $generatedBy = '') {
         ob_start();
         require __DIR__ . '/../templates/reports/appointments/performance_pdf.php';
         $html = ob_get_clean();
@@ -59,7 +59,7 @@ class ReportGeneratorService {
         exit;
     }
 
-    public function generateExcel($data, $startDate, $endDate, $filename) {
+    public function generateExcel($data, $startDate, $endDate, $filename, $generatedBy = '') {
         // Limpiar cualquier basura en el buffer para evitar "Archivo Dañado"
         if (ob_get_length()) ob_end_clean();
 
@@ -78,11 +78,16 @@ class ReportGeneratorService {
         $sheet->setCellValue('A2', "Del $startDate al $endDate");
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
+        // Generado por
+        $sheet->mergeCells('A3:F3');
+        $sheet->setCellValue('A3', "Generado por: $generatedBy");
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
         // Encabezados
         $headers = ['Fecha', 'Hora', 'Paciente', 'Cédula', 'Médico', 'Especialidad', 'Estado'];
         $col = 'A';
         foreach ($headers as $h) {
-            $sheet->setCellValue($col . '4', $h);
+            $sheet->setCellValue($col . '5', $h);
             $sheet->getColumnDimension($col)->setAutoSize(true);
             $col++;
         }
@@ -93,10 +98,10 @@ class ReportGeneratorService {
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0056B3']],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
         ];
-        $sheet->getStyle('A4:G4')->applyFromArray($headerStyle);
+        $sheet->getStyle('A5:G5')->applyFromArray($headerStyle);
 
         // --- DATOS ---
-        $rowNum = 5;
+        $rowNum = 6;
         foreach ($data as $row) {
             $sheet->setCellValue('A' . $rowNum, date('d/m/Y', strtotime($row['appointment_date'])));
             $sheet->setCellValue('B' . $rowNum, date('h:i A', strtotime($row['appointment_time'])));

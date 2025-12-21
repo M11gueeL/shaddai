@@ -106,12 +106,12 @@ export default function QuickActionsCard({ onAction, horizontal = false }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-indigo-500" />
         Acciones Rápidas
       </h3>
-      <div className="space-y-3">
+      <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
         {actions.map((action) => {
           const Icon = action.icon;
           return (

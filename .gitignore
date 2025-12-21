@@ -7,3 +7,5 @@ shaddai-app/node_modules
 
 shaddai-app/dist/
 
+shaddai-api/public/uploads/payments/
+shaddai-api/public/uploads/receipts/

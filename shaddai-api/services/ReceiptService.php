@@ -23,16 +23,21 @@ class ReceiptService {
     }
 
     public function generatePdfForAccountReceipt($receiptId) {
-        $sql = 'SELECT r.*, ba.patient_id, ba.payer_patient_id, ba.total_usd, ba.total_bs, ba.exchange_rate_id, ba.created_at as account_created_at, p.full_name as patient_name, payer.full_name as payer_name, der.rate_bcv
+        $sql = 'SELECT r.*, ba.patient_id, ba.payer_patient_id, ba.total_usd, ba.total_bs, ba.exchange_rate_id, ba.created_at as account_created_at, p.full_name as patient_name, payer.full_name as payer_name, der.rate_bcv,
+                u.first_name as issuer_first_name, u.last_name as issuer_last_name
                 FROM payment_receipts r
                 INNER JOIN billing_accounts ba ON ba.id = r.account_id
                 INNER JOIN patients p ON p.id = ba.patient_id
                 INNER JOIN patients payer ON payer.id = ba.payer_patient_id
                 INNER JOIN daily_exchange_rates der ON der.id = ba.exchange_rate_id
+                LEFT JOIN users u ON u.id = r.issued_by
                 WHERE r.id = :id';
         $rows = $this->db->query($sql, [':id'=>$receiptId]);
         if(!$rows) throw new Exception('Receipt not found');
         $receipt = $rows[0];
+
+        $issuerName = ($receipt['issuer_first_name'] ?? '') . ' ' . ($receipt['issuer_last_name'] ?? '');
+        if (trim($issuerName) === '') $issuerName = 'Sistema';
 
         $services = $this->db->query('SELECT d.*, s.name as service_name FROM billing_account_details d INNER JOIN services s ON s.id = d.service_id WHERE d.account_id = :acc ORDER BY d.id ASC', [':acc'=>$receipt['account_id']]);
         $supplies = $this->db->query('SELECT s.*, ii.name as item_name, ii.unit_of_measure FROM billing_account_supplies s INNER JOIN inventory_items ii ON ii.id = s.item_id WHERE s.account_id = :acc ORDER BY s.id ASC', [':acc'=>$receipt['account_id']]);
@@ -75,7 +80,8 @@ class ReceiptService {
         $html = '<html><head>'.$style.'</head><body>' .
             '<table style="width:100%"><tr><td>'.$logoHtml.'</td><td style="text-align:right">'.
             '<span class="badge">RECIBO</span><br/><span class="small">No: '.htmlspecialchars($receipt['receipt_number']).'</span><br/>' .
-            '<span class="small">Fecha emisión: '.htmlspecialchars($receipt['issued_at']).'</span></td></tr></table>' .
+            '<span class="small">Fecha emisión: '.htmlspecialchars($receipt['issued_at']).'</span><br/>' .
+            '<span class="small">Generado por: '.htmlspecialchars($issuerName).'</span></td></tr></table>' .
             '<div class="section-title">Datos del Paciente / Pagador</div>' .
             '<table class="table"><tr><th>Paciente</th><th>Pagador</th><th>Total USD</th><th>Total Bs</th></tr>' .
             '<tr><td>'.htmlspecialchars($receipt['patient_name']).'</td><td>'.htmlspecialchars($receipt['payer_name']).'</td><td style="text-align:right">'. number_format((float)$receipt['total_usd'],2) .'</td><td style="text-align:right">'. number_format((float)$receipt['total_bs'],2) .'</td></tr></table>' .

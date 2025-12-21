@@ -23,6 +23,13 @@ class AppointmentsController {
                 throw new Exception('Patient ID is required');
             }
 
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            $generatedBy = 'Sistema';
+            if ($jwtPayload && isset($jwtPayload->sub)) {
+                $generatedBy = $this->model->getUserName($jwtPayload->sub);
+            }
+
             $data = $this->model->getAppointmentsByPatientAndDateRange($patientId, $startDate, $endDate, $status);
             
             // Obtener nombre del paciente para el archivo
@@ -30,11 +37,11 @@ class AppointmentsController {
             $filename = 'reporte_citas_' . str_replace(' ', '_', strtolower($patientName)) . '_' . $startDate;
 
             if ($format === 'excel') {
-                $this->reportService->generateExcel($data, $startDate, $endDate, $filename);
+                $this->reportService->generateExcel($data, $startDate, $endDate, $filename, $generatedBy);
             } elseif ($format === 'csv') {
                 $this->reportService->generateCsv($data, $filename);
             } else {
-                $this->reportService->generatePdf($data, $startDate, $endDate, $filename);
+                $this->reportService->generatePdf($data, $startDate, $endDate, $filename, $generatedBy);
             }
 
         } catch (Exception $e) {
@@ -55,17 +62,24 @@ class AppointmentsController {
                 throw new Exception('Doctor ID is required');
             }
 
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            $generatedBy = 'Sistema';
+            if ($jwtPayload && isset($jwtPayload->sub)) {
+                $generatedBy = $this->model->getUserName($jwtPayload->sub);
+            }
+
             $data = $this->model->getAppointmentsByDoctorAndDateRange($doctorId, $startDate, $endDate, $status);
             
             $doctorName = !empty($data) ? $data[0]['doctor_name'] : 'Medico';
             $filename = 'reporte_citas_' . str_replace(' ', '_', strtolower($doctorName)) . '_' . $startDate;
 
             if ($format === 'excel') {
-                $this->reportService->generateExcel($data, $startDate, $endDate, $filename);
+                $this->reportService->generateExcel($data, $startDate, $endDate, $filename, $generatedBy);
             } elseif ($format === 'csv') {
                 $this->reportService->generateCsv($data, $filename);
             } else {
-                $this->reportService->generatePdf($data, $startDate, $endDate, $filename);
+                $this->reportService->generatePdf($data, $startDate, $endDate, $filename, $generatedBy);
             }
 
         } catch (Exception $e) {
@@ -86,17 +100,24 @@ class AppointmentsController {
                 throw new Exception('Specialty ID is required');
             }
 
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            $generatedBy = 'Sistema';
+            if ($jwtPayload && isset($jwtPayload->sub)) {
+                $generatedBy = $this->model->getUserName($jwtPayload->sub);
+            }
+
             $data = $this->model->getAppointmentsBySpecialtyAndDateRange($specialtyId, $startDate, $endDate, $status);
             
             $specialtyName = !empty($data) ? $data[0]['specialty_name'] : 'Especialidad';
             $filename = 'reporte_citas_' . str_replace(' ', '_', strtolower($specialtyName)) . '_' . $startDate;
 
             if ($format === 'excel') {
-                $this->reportService->generateExcel($data, $startDate, $endDate, $filename);
+                $this->reportService->generateExcel($data, $startDate, $endDate, $filename, $generatedBy);
             } elseif ($format === 'csv') {
                 $this->reportService->generateCsv($data, $filename);
             } else {
-                $this->reportService->generatePdf($data, $startDate, $endDate, $filename);
+                $this->reportService->generatePdf($data, $startDate, $endDate, $filename, $generatedBy);
             }
 
         } catch (Exception $e) {
@@ -465,11 +486,18 @@ class AppointmentsController {
                 throw new Exception('El rango de fechas debe ser de al menos 7 días');
             }
 
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            $generatedBy = 'Sistema';
+            if ($jwtPayload && isset($jwtPayload->sub)) {
+                $generatedBy = $this->model->getUserName($jwtPayload->sub);
+            }
+
             $data = $this->model->getAdvancedStatistics($startDate, $endDate, $type);
             
             $filename = 'reporte_rendimiento_' . $type . '_' . $startDate . '_' . $endDate;
             
-            $this->reportService->generatePerformancePdf($data, $startDate, $endDate, $type, $filename);
+            $this->reportService->generatePerformancePdf($data, $startDate, $endDate, $type, $filename, $generatedBy);
 
         } catch (Exception $e) {
             http_response_code(400);
@@ -491,13 +519,20 @@ class AppointmentsController {
             // 3. Definir nombre de archivo base
             $filename = "Reporte_Citas_" . date('Ymd_His');
 
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            $generatedBy = 'Sistema';
+            if ($jwtPayload && isset($jwtPayload->sub)) {
+                $generatedBy = $this->model->getUserName($jwtPayload->sub);
+            }
+
             // 4. Delegar la creación del archivo al Servicio
             switch ($format) {
                 case 'pdf':
-                    $this->reportService->generatePdf($appointments, $startDate, $endDate, $filename);
+                    $this->reportService->generatePdf($appointments, $startDate, $endDate, $filename, $generatedBy);
                     break;
                 case 'excel':
-                    $this->reportService->generateExcel($appointments, $startDate, $endDate, $filename);
+                    $this->reportService->generateExcel($appointments, $startDate, $endDate, $filename, $generatedBy);
                     break;
                 default:
                     $this->reportService->generateCsv($appointments, $filename);

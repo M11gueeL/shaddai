@@ -10,6 +10,7 @@ import appointmentsApi from '../../api/appointments';
 import { useAuth } from '../../context/AuthContext';
 import StatsCard from './appointments/StatsCard';
 import RecentActivityCard from './RecentActivityCard';
+import ReminderConfigCard from './ReminderConfigCard';
 import QuickActionsCard from './QuickActionsCard';
 import MedicalSchedulesPanel from './medicalSchedules/MedicalSchedulesPanel';
 import ReportsActions from './reports/ReportsActions';
@@ -120,9 +121,13 @@ export default function ReceptionPanel() {
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
           {/* Left Column: Actions & Tools */}
-          <div className="xl:col-span-1 space-y-6">
-            <QuickActionsCard onAction={openModal} />
-            <ReportsActions />
+          <div className="xl:col-span-1 flex flex-col gap-6">
+            <div className="h-[520px]">
+              <QuickActionsCard onAction={openModal} />
+            </div>
+            <div className="h-[340px]">
+              <ReportsActions />
+            </div>
           </div>
 
           {/* Center Column: Main Workspace */}
@@ -138,8 +143,13 @@ export default function ReceptionPanel() {
           </div>
 
           {/* Right Column: Insights & Activity */}
-          <div className="xl:col-span-1 space-y-6">
-            <RecentActivityCard />
+          <div className="xl:col-span-1 flex flex-col gap-6">
+            <div className="h-[520px]">
+              <RecentActivityCard />
+            </div>
+            <div className="h-[340px]">
+              <ReminderConfigCard />
+            </div>
           </div>
         </div>
       </div>

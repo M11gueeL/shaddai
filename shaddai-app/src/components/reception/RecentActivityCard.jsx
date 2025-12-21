@@ -110,7 +110,7 @@ export default function RecentActivityCard() {
     };
 
     return (
-      <div className="space-y-4">
+      <div className="flex flex-col gap-1">
         {items.map((activity, idx) => {
           const { Icon, color, bg } = getIconAndColor(activity);
           const isAppointmentEvent = activity?.type === 'appointment_created' || activity?.type === 'appointment_status';
@@ -131,9 +131,9 @@ export default function RecentActivityCard() {
             }
           }
           return (
-            <div key={idx} className="group flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all duration-300 border border-transparent hover:border-gray-100">
-              <div className={`p-2.5 rounded-full ${bg} ${color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-                <Icon size={18} strokeWidth={2.5} />
+            <div key={idx} className="group flex items-start gap-3 p-2 rounded-xl hover:bg-gray-50 transition-all duration-300 border border-transparent hover:border-gray-100">
+              <div className={`p-2 rounded-full ${bg} ${color} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+                <Icon size={16} strokeWidth={2.5} />
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
                 <div className="font-semibold text-gray-900 text-sm leading-tight mb-1 group-hover:text-blue-600 transition-colors">
@@ -169,7 +169,7 @@ export default function RecentActivityCard() {
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+      <div className="flex-1 overflow-hidden mt-2">
         {content}
       </div>
     </div>

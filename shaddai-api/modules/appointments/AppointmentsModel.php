@@ -9,6 +9,15 @@ class AppointmentsModel {
         $this->db = Database::getInstance();
     }
 
+    public function getUserName($userId) {
+        $query = "SELECT first_name, last_name FROM users WHERE id = :id";
+        $result = $this->db->query($query, [':id' => $userId]);
+        if ($result && count($result) > 0) {
+            return $result[0]['first_name'] . ' ' . $result[0]['last_name'];
+        }
+        return 'Usuario Desconocido';
+    }
+
     public function createAppointment($data) {
 
         // Validar disponibilidad ANTES de iniciar transacción
@@ -744,7 +753,8 @@ class AppointmentsModel {
             $selectName,
             COUNT(*) as total_appointments,
             SUM(CASE WHEN a.status = 'completada' THEN 1 ELSE 0 END) as completed_appointments,
-            SUM(CASE WHEN a.status = 'cancelada' THEN 1 ELSE 0 END) as canceled_appointments
+            SUM(CASE WHEN a.status = 'cancelada' THEN 1 ELSE 0 END) as canceled_appointments,
+            SUM(CASE WHEN a.status NOT IN ('completada', 'cancelada') THEN 1 ELSE 0 END) as other_appointments
         FROM appointments a
         $join
         WHERE a.appointment_date BETWEEN :start_date AND :end_date
