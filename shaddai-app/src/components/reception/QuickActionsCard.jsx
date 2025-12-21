@@ -111,7 +111,7 @@ export default function QuickActionsCard({ onAction, horizontal = false }) {
         <Sparkles className="w-4 h-4 text-indigo-500" />
         Acciones Rápidas
       </h3>
-      <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
+      <div className="flex flex-col gap-3 flex-1">
         {actions.map((action) => {
           const Icon = action.icon;
           return (
@@ -119,21 +119,22 @@ export default function QuickActionsCard({ onAction, horizontal = false }) {
               key={action.id}
               onClick={() => onAction(action.id)}
               className={`
-                w-full group relative overflow-hidden rounded-xl p-4 transition-all duration-300
+                w-full group relative overflow-hidden rounded-xl transition-all duration-300
                 bg-gradient-to-r ${action.gradient}
-                hover:shadow-lg hover:scale-[1.02]
+                hover:shadow-lg hover:scale-[1.02] hover:z-10
+                flex-1 flex items-center px-4
               `}
             >
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="rounded-lg bg-white/20 p-2 backdrop-blur-sm">
+              <div className="relative z-10 flex items-center gap-3 w-full">
+                <div className="rounded-lg bg-white/20 p-2 backdrop-blur-sm shrink-0">
                   <Icon className="h-5 w-5 text-white" />
                 </div>
-                <div className="text-left">
-                  <div className="font-bold text-white">{action.title}</div>
-                  <div className="text-xs text-white/80">{action.description}</div>
+                <div className="text-left min-w-0">
+                  <div className="font-bold text-white text-sm truncate">{action.title}</div>
+                  <div className="text-xs text-white/80 truncate">{action.description}</div>
                 </div>
-                <div className="ml-auto opacity-0 transition-opacity group-hover:opacity-100">
-                  <ArrowRight className="h-5 w-5 text-white" />
+                <div className="ml-auto opacity-0 transition-opacity group-hover:opacity-100 shrink-0">
+                  <ArrowRight className="h-4 w-4 text-white" />
                 </div>
               </div>
             </button>
