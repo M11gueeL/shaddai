@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Filter, BarChart3, ArrowRight, PieChart } from 'lucide-react';
+import { FileText, Filter, BarChart3, ArrowRight, PieChart, PanelBottomOpen } from 'lucide-react';
 import ReportsHubModal from './ReportsHubModal';
 
 export default function ReportsActions() {
@@ -24,7 +24,7 @@ export default function ReportsActions() {
           onClick={() => setIsModalOpen(true)}
           className="w-full py-3.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-gray-200 flex items-center justify-center gap-2 active:scale-95 group/btn"
         >
-          <Filter className="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
+          <PanelBottomOpen className="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
           Abrir Panel
         </button>
       </div>
