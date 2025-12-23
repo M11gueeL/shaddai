@@ -5,7 +5,7 @@ import Footer from "./Footer.jsx";
 import Sidebar from "./Sidebar.jsx";
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
   return (
     <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-200">
