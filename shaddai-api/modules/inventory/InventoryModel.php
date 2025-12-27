@@ -102,8 +102,8 @@ class InventoryModel {
     }
 
     private function syncItemStats($itemId) {
-        // Calcula total
-        $resSum = $this->db->query("SELECT SUM(quantity) as total FROM inventory_batches WHERE item_id = :id", [':id' => $itemId]);
+        // Calcula total solo de lotes ACTIVOS (excluye suspendidos, disposed, etc)
+        $resSum = $this->db->query("SELECT SUM(quantity) as total FROM inventory_batches WHERE item_id = :id AND status = 'active'", [':id' => $itemId]);
         $total = $resSum[0]['total'] ?? 0;
 
         // Ya no actualizamos expiration_date en inventory_items porque se eliminó la columna
@@ -339,10 +339,15 @@ class InventoryModel {
             throw new Exception("No se puede cambiar el estado de un lote vacío o agotado.");
         }
 
-        return $this->db->execute("UPDATE inventory_batches SET status = :status WHERE id = :id", [
+        $this->db->execute("UPDATE inventory_batches SET status = :status WHERE id = :id", [
             ':status' => $status,
             ':id' => $batchId
         ]);
+
+        // Recalcular stock total del item (para que reste/sume si se suspende/activa)
+        $this->syncItemStats($batch['item_id']);
+        
+        return true;
     }
 
     // Helper actualizado para recibir batch_id
