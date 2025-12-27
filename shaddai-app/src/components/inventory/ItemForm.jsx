@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { getBrands } from '../../api/inventoryApi';
+import { useAuth } from '../../context/AuthContext';
 
 export default function ItemForm({ initial, onSubmit, loading }) {
+  const { token } = useAuth();
+  const [brands, setBrands] = useState([]);
+  
   const [form, setForm] = useState(() => ({
     code: initial?.code || '',
     name: initial?.name || '',
@@ -9,9 +14,15 @@ export default function ItemForm({ initial, onSubmit, loading }) {
     price_usd: initial?.price_usd || '',
     unit_of_measure: initial?.unit_of_measure || 'unidad',
     reorder_level: initial?.reorder_level || 5,
-    // Eliminado: stock_quantity y expiration_date
+    brand_id: initial?.brand_id || '',
     is_active: initial?.is_active ?? 1
   }));
+
+  useEffect(() => {
+    if (token) {
+        getBrands({ active: true }, token).then(res => setBrands(res.data || [])).catch(console.error);
+    }
+  }, [token]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -30,8 +41,21 @@ export default function ItemForm({ initial, onSubmit, loading }) {
           <input name="code" value={form.code} onChange={handleChange} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
         </div>
 
-        {/* Campos de fecha y stock eliminados para evitar confusión. Se usan en Abastecer */}
-        
+        <div>
+          <label className="text-xs font-semibold text-gray-600">Marca / Laboratorio</label>
+          <select 
+            name="brand_id" 
+            value={form.brand_id} 
+            onChange={handleChange} 
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+          >
+            <option value="">Seleccionar...</option>
+            {brands.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-600">Precio USD *</label>
           <input name="price_usd" type="number" step="0.01" value={form.price_usd} onChange={handleChange} required className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Plus, Search, RefreshCcw, Loader2, Layers, Download, Bell } from 'lucide-react';
+import { Plus, Search, RefreshCcw, Loader2, Layers, Download, Bell, Tag } from 'lucide-react';
 
-export default function InventoryActions({ onSearch, search, onToggleLowStock, lowStockOnly, onCreateClick, onRefresh, canEdit, exporting, onExport, onShowAlerts }) {
+export default function InventoryActions({ onSearch, search, onToggleLowStock, lowStockOnly, onCreateClick, onRefresh, canEdit, exporting, onExport, onShowAlerts, onManageBrands }) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full md:w-auto">
@@ -26,6 +26,14 @@ export default function InventoryActions({ onSearch, search, onToggleLowStock, l
         >
           <Bell className="w-4 h-4" /> Alertas
         </button>
+        {canEdit && (
+          <button
+            onClick={onManageBrands}
+            className="w-full sm:w-auto px-4 py-2.5 text-sm rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 shadow-sm flex items-center justify-center gap-2"
+          >
+            <Tag className="w-4 h-4" /> Marcas
+          </button>
+        )}
         <button
           onClick={onRefresh}
           className="w-full sm:w-auto px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm flex items-center justify-center gap-2"

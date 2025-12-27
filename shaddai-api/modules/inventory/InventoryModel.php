@@ -10,9 +10,11 @@ class InventoryModel {
     }
 
     public function getAll($filters = []) {
-        $sql = 'SELECT i.id, i.code, i.name, i.description, i.stock_quantity, i.unit_of_measure, i.reorder_level, i.price_usd, i.is_active, i.created_at, i.updated_at,
+        $sql = 'SELECT i.id, i.code, i.name, i.description, i.stock_quantity, i.unit_of_measure, i.reorder_level, i.price_usd, i.is_active, i.created_at, i.updated_at, i.brand_id,
+                b.name as brand_name,
                 (SELECT MIN(expiration_date) FROM inventory_batches WHERE item_id = i.id AND quantity > 0) as next_expiration
-                FROM inventory_items i';
+                FROM inventory_items i
+                LEFT JOIN inventory_brands b ON i.brand_id = b.id';
         $where = [];
         $params = [];
         if (!empty($filters['onlyActive'])) {
@@ -33,13 +35,13 @@ class InventoryModel {
     }
 
     public function getById($id) {
-        $res = $this->db->query('SELECT * FROM inventory_items WHERE id = :id', [':id' => $id]);
+        $res = $this->db->query('SELECT i.*, b.name as brand_name FROM inventory_items i LEFT JOIN inventory_brands b ON i.brand_id = b.id WHERE i.id = :id', [':id' => $id]);
         return $res[0] ?? null;
     }
 
     public function create($data, $userId = null) {
-        $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active) 
-                VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :price_usd, :is_active)';
+        $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active, brand_id) 
+                VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :price_usd, :is_active, :brand_id)';
         
         $params = [
             ':code' => $data['code'] ?? null,
@@ -50,6 +52,7 @@ class InventoryModel {
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
+            ':brand_id' => !empty($data['brand_id']) ? (int)$data['brand_id'] : null,
         ];
 
         try {
@@ -65,7 +68,7 @@ class InventoryModel {
     }
 
     public function update($id, $data, $userId = null) {
-        $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, price_usd = :price_usd, is_active = :is_active WHERE id = :id';
+        $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, price_usd = :price_usd, is_active = :is_active, brand_id = :brand_id WHERE id = :id';
         
         $params = [
             ':code' => $data['code'] ?? null,
@@ -75,6 +78,7 @@ class InventoryModel {
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
+            ':brand_id' => !empty($data['brand_id']) ? (int)$data['brand_id'] : null,
             ':id' => $id
         ];
 

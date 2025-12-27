@@ -105,6 +105,7 @@ import RestockForm from './RestockForm';
 import MovementsDrawer from './MovementsDrawer';
 import ExpiringModal from './ExpiringModal';
 import BatchManagementModal from './BatchManagementModal';
+import BrandManagementModal from './BrandManagementModal';
 import ElegantHeader from '../common/ElegantHeader';
 
 export default function InventoryPanel() {
@@ -128,6 +129,7 @@ export default function InventoryPanel() {
     const [expiringItems, setExpiringItems] = useState([]);
     const [loadingExpiring, setLoadingExpiring] = useState(false);
     const [batchItem, setBatchItem] = useState(null);
+    const [showBrandModal, setShowBrandModal] = useState(false);
 
     const fetchInventory = useCallback(async () => {
         if (!token) return;
@@ -289,6 +291,7 @@ export default function InventoryPanel() {
                 exporting={exporting}
                 onExport={exportCSV}
                 onShowAlerts={handleShowAlerts}
+                onManageBrands={() => setShowBrandModal(true)}
             />
 
             <InventoryTable
@@ -334,6 +337,10 @@ export default function InventoryPanel() {
                     onClose={() => setBatchItem(null)}
                     onUpdate={fetchInventory}
                 />
+            )}
+
+            {showBrandModal && (
+                <BrandManagementModal onClose={() => setShowBrandModal(false)} />
             )}
         </div>
     );
