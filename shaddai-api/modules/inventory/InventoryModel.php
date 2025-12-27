@@ -14,7 +14,7 @@ class InventoryModel {
      * @param array $filters ['onlyActive'=>bool,'low_stock'=>bool,'search'=>string]
      */
     public function getAll($filters = []) {
-        $sql = 'SELECT id, code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active, created_at, updated_at FROM inventory_items';
+        $sql = 'SELECT id, code, name, description, stock_quantity, unit_of_measure, reorder_level, expiration_date, price_usd, is_active, created_at, updated_at FROM inventory_items';
         $where = [];
         $params = [];
         if (!empty($filters['onlyActive'])) {
@@ -40,7 +40,11 @@ class InventoryModel {
     }
 
     public function create($data, $userId = null) {
-        $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active) VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :price_usd, :is_active)';
+        $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, expiration_date, price_usd, is_active) VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :expiration_date, :price_usd, :is_active)';
+        
+        // Manejo de fecha vacía para que se guarde como NULL
+        $expirationDate = !empty($data['expiration_date']) ? $data['expiration_date'] : null;
+
         $params = [
             ':code' => $data['code'] ?? null,
             ':name' => $data['name'],
@@ -48,6 +52,7 @@ class InventoryModel {
             ':stock_quantity' => isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : 0,
             ':unit_of_measure' => $data['unit_of_measure'] ?? 'unidad',
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
+            ':expiration_date' => $expirationDate, 
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
         ];
@@ -76,7 +81,11 @@ class InventoryModel {
         }
 
         $newStock = isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : (int)$current['stock_quantity'];
-        $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, stock_quantity = :stock_quantity, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, price_usd = :price_usd, is_active = :is_active WHERE id = :id';
+        
+        // Manejo de fecha vacía
+        $expirationDate = !empty($data['expiration_date']) ? $data['expiration_date'] : null;
+
+        $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, stock_quantity = :stock_quantity, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, expiration_date = :expiration_date, price_usd = :price_usd, is_active = :is_active WHERE id = :id';
         $params = [
             ':code' => $data['code'] ?? null,
             ':name' => $data['name'],
@@ -84,6 +93,7 @@ class InventoryModel {
             ':stock_quantity' => $newStock,
             ':unit_of_measure' => $data['unit_of_measure'] ?? 'unidad',
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
+            ':expiration_date' => $expirationDate,
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
             ':id' => $id
@@ -236,6 +246,21 @@ class InventoryModel {
             ':created_by' => $userId
         ]);
     }
+
+    /**
+     * Obtiene insumos próximos a vencer en X días
+     */
+    public function getExpiring($days = 90) {
+        $sql = "SELECT id, code, name, stock_quantity, expiration_date, unit_of_measure 
+                FROM inventory_items 
+                WHERE is_active = 1 
+                AND expiration_date IS NOT NULL 
+                AND expiration_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY)
+                ORDER BY expiration_date ASC";
+        
+        return $this->db->query($sql, [':days' => (int)$days]);
+    }
+
 }
 
 ?>

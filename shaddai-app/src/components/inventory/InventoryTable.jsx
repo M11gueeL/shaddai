@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Loader2 } from 'lucide-react';
+import { Package, Loader2, AlertTriangle } from 'lucide-react';
 
 export default function InventoryTable({ items, onEdit, onDelete, onRestock, onMovements, loading, canEdit }) {
   if (loading) {
@@ -19,11 +19,22 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
     );
   }
 
+  // Función auxiliar para chequear vencimiento
+  const isExpired = (dateString) => {
+    if (!dateString) return false;
+    const today = new Date();
+    const expDate = new Date(dateString);
+    return expDate < today;
+  };
+
   return (
     <div className="space-y-4">
+      {/* Vista Móvil */}
       <div className="md:hidden space-y-3">
         {items.map((item) => {
           const low = item.stock_quantity <= item.reorder_level;
+          const expired = isExpired(item.expiration_date);
+          
           return (
             <div key={item.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
@@ -41,9 +52,13 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                   <p className="text-sm font-semibold">{item.stock_quantity}</p>
                   <p className="text-[11px] uppercase tracking-wide">Stock</p>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
-                  <p className="text-sm font-semibold">{item.reorder_level}</p>
-                  <p className="text-[11px] uppercase tracking-wide">Reorden</p>
+                {/* Nuevo bloque de vencimiento en móvil */}
+                <div className={`rounded-xl border px-3 py-2 ${expired ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200 bg-gray-50 text-gray-700'}`}>
+                   <p className="text-sm font-semibold flex items-center gap-1">
+                     {expired && <AlertTriangle className="w-3 h-3" />}
+                     {item.expiration_date || 'N/A'}
+                   </p>
+                   <p className="text-[11px] uppercase tracking-wide">Vence</p>
                 </div>
                 <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
                   <p className="text-sm font-semibold">{item.unit_of_measure}</p>
@@ -70,6 +85,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
         })}
       </div>
 
+      {/* Vista Escritorio */}
       <div className="hidden md:block">
         <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm bg-white">
           <table className="min-w-full text-sm">
@@ -78,8 +94,8 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                 <th className="text-left font-medium px-4 py-3">Nombre</th>
                 <th className="text-left font-medium px-4 py-3">Código</th>
                 <th className="text-left font-medium px-4 py-3">Stock</th>
+                <th className="text-left font-medium px-4 py-3">Vencimiento</th> {/* Nueva columna */}
                 <th className="text-left font-medium px-4 py-3">UM</th>
-                <th className="text-left font-medium px-4 py-3">Reorden</th>
                 <th className="text-left font-medium px-4 py-3">Precio USD</th>
                 <th className="text-left font-medium px-4 py-3">Estado</th>
                 <th className="text-right font-medium px-4 py-3">Acciones</th>
@@ -88,6 +104,8 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
             <tbody className="divide-y divide-gray-100">
               {items.map((item) => {
                 const low = item.stock_quantity <= item.reorder_level;
+                const expired = isExpired(item.expiration_date);
+
                 return (
                   <tr key={item.id} className="hover:bg-indigo-50/40 transition">
                     <td className="px-4 py-2.5 font-medium text-gray-800 max-w-[220px] truncate" title={item.name}>{item.name}</td>
@@ -95,8 +113,12 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                     <td className="px-4 py-2.5">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${low ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{item.stock_quantity}</span>
                     </td>
+                    {/* Celda de Vencimiento */}
+                    <td className={`px-4 py-2.5 ${expired ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                      {expired && <AlertTriangle className="inline w-3 h-3 mr-1" />}
+                      {item.expiration_date || '-'}
+                    </td>
                     <td className="px-4 py-2.5 text-gray-600">{item.unit_of_measure}</td>
-                    <td className="px-4 py-2.5 text-gray-600">{item.reorder_level}</td>
                     <td className="px-4 py-2.5 text-gray-700">${Number(item.price_usd).toFixed(2)}</td>
                     <td className="px-4 py-2.5">
                       {item.is_active ? <span className="text-emerald-600 text-xs font-semibold">Activo</span> : <span className="text-gray-400 text-xs font-semibold">Inactivo</span>}

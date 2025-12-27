@@ -114,5 +114,16 @@ class InventoryController {
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
+
+    public function expiring() {
+        try {
+            $days = isset($_GET['days']) ? (int)$_GET['days'] : 90;
+            echo json_encode($this->model->getExpiring($days));
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
 }
 ?>

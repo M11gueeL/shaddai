@@ -10,6 +10,7 @@ export default function ItemForm({ initial, onSubmit, loading }) {
     unit_of_measure: initial?.unit_of_measure || 'unidad',
     reorder_level: initial?.reorder_level || 5,
     stock_quantity: initial?.stock_quantity || 0,
+    expiration_date: initial?.expiration_date || '', // Nuevo campo
     is_active: initial?.is_active ?? 1
   }));
 
@@ -29,6 +30,19 @@ export default function ItemForm({ initial, onSubmit, loading }) {
           <label className="text-xs font-semibold text-gray-600">Código</label>
           <input name="code" value={form.code} onChange={handleChange} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
         </div>
+        
+        {/* Nuevo campo de fecha */}
+        <div>
+          <label className="text-xs font-semibold text-gray-600">Fecha de Vencimiento</label>
+          <input 
+            type="date" 
+            name="expiration_date" 
+            value={form.expiration_date} 
+            onChange={handleChange} 
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" 
+          />
+        </div>
+
         <div>
           <label className="text-xs font-semibold text-gray-600">Precio USD *</label>
           <input name="price_usd" type="number" step="0.01" value={form.price_usd} onChange={handleChange} required className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500" />
