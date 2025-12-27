@@ -3,7 +3,7 @@ import { X, AlertTriangle, Calendar, Clock, AlertCircle, CheckCircle2, Package, 
 
 export default function ExpiringModal({ isOpen, onClose, items, loading }) {
   const [filter, setFilter] = useState('all'); // all, expired, urgent, upcoming
-  const [upcomingRange, setUpcomingRange] = useState(30); // 30, 60, 90
+  const [upcomingRange, setUpcomingRange] = useState(90); // 30, 60, 90
 
   const processedItems = useMemo(() => {
     if (!items) return [];
@@ -12,7 +12,6 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
 
     return items.map(item => {
       // Asegurar que la fecha se interprete como local agregando hora 00:00:00
-      // Esto evita que '2025-12-31' se interprete como UTC y reste un día en zonas horarias occidentales
       const dateStr = item.expiration_date.includes('T') ? item.expiration_date : `${item.expiration_date}T00:00:00`;
       const expDate = new Date(dateStr);
       
@@ -29,22 +28,44 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
 
   const filteredItems = useMemo(() => {
     if (filter === 'all') return processedItems;
-    if (filter === 'expired') return processedItems.filter(i => i.status === 'expired');
-    if (filter === 'urgent') return processedItems.filter(i => i.status === 'urgent');
+    if (filter === 'expired') return processedItems.filter(i => i.daysLeft < 0);
+    if (filter === 'urgent') return processedItems.filter(i => i.daysLeft >= 0 && i.daysLeft < 30);
     
     if (filter === 'upcoming') {
-      // Exclude urgent items (< 30 days).
-      // Show items expiring between day 30 and the selected range.
-      return processedItems.filter(i => i.daysLeft >= 30 && i.daysLeft <= upcomingRange);
+      let min = 30;
+      let max = 30;
+
+      if (upcomingRange === 90) {
+        min = 60;
+        max = 90;
+      } else if (upcomingRange === 60) {
+        min = 30;
+        max = 60;
+      } else if (upcomingRange === 30) {
+        min = 30;
+        max = 30;
+      }
+      
+      return processedItems.filter(i => i.daysLeft >= min && i.daysLeft <= max);
     }
     return processedItems;
   }, [processedItems, filter, upcomingRange]);
 
   const counts = useMemo(() => {
+    // Calcular count de upcoming según el filtro seleccionado actualmente para ser consistentes
+    let upcomingCount = 0;
+    if (upcomingRange === 90) {
+       upcomingCount = processedItems.filter(i => i.daysLeft >= 60 && i.daysLeft <= 90).length;
+    } else if (upcomingRange === 60) {
+       upcomingCount = processedItems.filter(i => i.daysLeft >= 30 && i.daysLeft <= 60).length;
+    } else {
+       upcomingCount = processedItems.filter(i => i.daysLeft >= 30 && i.daysLeft <= 30).length;
+    }
+
     return {
       expired: processedItems.filter(i => i.status === 'expired').length,
       urgent: processedItems.filter(i => i.status === 'urgent').length,
-      upcoming: processedItems.filter(i => i.daysLeft >= 30 && i.daysLeft <= upcomingRange).length
+      upcoming: upcomingCount
     };
   }, [processedItems, upcomingRange]);
 
@@ -65,7 +86,7 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
               </div>
               <h2 className="text-xl font-bold text-gray-900">Control de Vencimientos</h2>
             </div>
-            <p className="text-sm text-gray-500 ml-11">Gestión de insumos vencidos y próximos a caducar.</p>
+            <p className="text-sm text-gray-500 ml-11">Gestión de insumos vencidos y próximos a caducar (por Lote).</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
             <X size={20} />
@@ -73,10 +94,10 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
         </div>
 
         {/* Tabs Toolbar */}
-        <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           
           {/* Main Tabs */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar p-1 -ml-1">
             <FilterTab 
               active={filter === 'all'} 
               onClick={() => setFilter('all')} 
@@ -112,17 +133,17 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
 
           {/* Dynamic Range Filter (Segmented Control) */}
           {filter === 'upcoming' && (
-            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 self-end sm:self-auto">
-              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Rango:</span>
-              <div className="flex bg-gray-200/80 p-1 rounded-lg">
+            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300 self-end xl:self-auto ml-auto">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">Ver siguientes:</span>
+              <div className="flex bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
                 {[30, 60, 90].map(days => (
                   <button
                     key={days}
                     onClick={() => setUpcomingRange(days)}
-                    className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-200 ${
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 ${
                       upcomingRange === days 
-                        ? 'bg-white text-indigo-600 shadow-sm scale-105' 
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                        ? 'bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-100' 
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                     }`}
                   >
                     {days} días
@@ -147,13 +168,14 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
               </div>
               <h3 className="text-gray-900 font-semibold text-lg">Sin resultados</h3>
               <p className="text-gray-500 text-sm mt-1 max-w-xs">
-                No hay insumos para este criterio.
+                No hay lotes para este criterio.
               </p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {filteredItems.map((item) => (
-                <ItemRow key={item.id} item={item} />
+              {filteredItems.map((item, index) => (
+                // Usamos index como key fallback porque puede haber duplicados de ID si hay varios lotes
+                <ItemRow key={`${item.id}-${item.batch_number}-${index}`} item={item} />
               ))}
             </div>
           )}
@@ -161,7 +183,7 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
 
         {/* Footer */}
         <div className="p-4 bg-white border-t border-gray-100 flex justify-between items-center text-xs text-gray-400">
-          <span>Mostrando {filteredItems.length} registros</span>
+          <span>Mostrando {filteredItems.length} lotes</span>
           <button onClick={onClose} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors">
             Cerrar Panel
           </button>
@@ -194,7 +216,7 @@ function FilterTab({ active, onClick, label, count, color, icon: Icon }) {
 }
 
 function ItemRow({ item }) {
-  const { status, daysLeft } = item;
+  const { status, daysLeft, batch_number, quantity } = item;
   
   // Determine visual style based on daysLeft if status is generic 'upcoming'
   let displayStatus = status;
@@ -231,8 +253,14 @@ function ItemRow({ item }) {
         <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
           <span className="flex items-center gap-1.5">
             <Package size={14} />
-            Stock: <strong className="text-gray-700">{item.stock_quantity}</strong> {item.unit_of_measure}
+            Stock Lote: <strong className="text-gray-700">{quantity}</strong> {item.unit_of_measure}
           </span>
+          {batch_number && (
+            <span className="flex items-center gap-1.5">
+                <Filter size={14} />
+                Lote: <strong className="text-gray-700">{batch_number}</strong>
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
             <Calendar size={14} />
             Vence: <span className="font-medium">{item.expDateObj ? item.expDateObj.toLocaleDateString() : new Date(item.expiration_date + 'T00:00:00').toLocaleDateString()}</span>

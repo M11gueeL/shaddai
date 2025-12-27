@@ -10,23 +10,25 @@ class InventoryModel {
     }
 
     public function getAll($filters = []) {
-        $sql = 'SELECT id, code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active, created_at, updated_at FROM inventory_items';
+        $sql = 'SELECT i.id, i.code, i.name, i.description, i.stock_quantity, i.unit_of_measure, i.reorder_level, i.price_usd, i.is_active, i.created_at, i.updated_at,
+                (SELECT MIN(expiration_date) FROM inventory_batches WHERE item_id = i.id AND quantity > 0) as next_expiration
+                FROM inventory_items i';
         $where = [];
         $params = [];
         if (!empty($filters['onlyActive'])) {
-            $where[] = 'is_active = 1';
+            $where[] = 'i.is_active = 1';
         }
         if (!empty($filters['low_stock'])) {
-            $where[] = 'stock_quantity <= reorder_level';
+            $where[] = 'i.stock_quantity <= i.reorder_level';
         }
         if (!empty($filters['search'])) {
-            $where[] = 'name LIKE :search';
+            $where[] = '(i.name LIKE :search OR i.code LIKE :search)';
             $params[':search'] = '%' . $filters['search'] . '%';
         }
         if ($where) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
-        $sql .= ' ORDER BY name ASC';
+        $sql .= ' ORDER BY i.name ASC';
         return $this->db->query($sql, $params);
     }
 
@@ -206,7 +208,7 @@ class InventoryModel {
 
     public function getExpiring($days = null) {
         // Consulta a inventory_batches para obtener los lotes que vencen
-        $sql = "SELECT i.id, i.code, i.name, b.quantity, b.expiration_date, i.unit_of_measure, i.price_usd 
+        $sql = "SELECT i.id, i.code, i.name, b.quantity, b.expiration_date, b.batch_number, i.unit_of_measure, i.price_usd 
                 FROM inventory_batches b
                 JOIN inventory_items i ON b.item_id = i.id
                 WHERE i.is_active = 1 

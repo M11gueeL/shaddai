@@ -33,7 +33,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
       <div className="md:hidden space-y-3">
         {items.map((item) => {
           const low = item.stock_quantity <= item.reorder_level;
-          const expired = isExpired(item.expiration_date);
+          const expired = isExpired(item.next_expiration);
           
           return (
             <div key={item.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -56,7 +56,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                 <div className={`rounded-xl border px-3 py-2 ${expired ? 'border-red-200 bg-red-50 text-red-700' : 'border-gray-200 bg-gray-50 text-gray-700'}`}>
                    <p className="text-sm font-semibold flex items-center gap-1">
                      {expired && <AlertTriangle className="w-3 h-3" />}
-                     {item.expiration_date || 'N/A'}
+                     {item.next_expiration || 'N/A'}
                    </p>
                    <p className="text-[11px] uppercase tracking-wide">Vence</p>
                 </div>
@@ -104,7 +104,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
             <tbody className="divide-y divide-gray-100">
               {items.map((item) => {
                 const low = item.stock_quantity <= item.reorder_level;
-                const expired = isExpired(item.expiration_date);
+                const expired = isExpired(item.next_expiration);
 
                 return (
                   <tr key={item.id} className="hover:bg-indigo-50/40 transition">
@@ -116,7 +116,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                     {/* Celda de Vencimiento */}
                     <td className={`px-4 py-2.5 ${expired ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
                       {expired && <AlertTriangle className="inline w-3 h-3 mr-1" />}
-                      {item.expiration_date || '-'}
+                      {item.next_expiration || '-'}
                     </td>
                     <td className="px-4 py-2.5 text-gray-600">{item.unit_of_measure}</td>
                     <td className="px-4 py-2.5 text-gray-700">${Number(item.price_usd).toFixed(2)}</td>
