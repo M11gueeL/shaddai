@@ -9,12 +9,8 @@ class InventoryModel {
         $this->db = Database::getInstance();
     }
 
-    /**
-     * Lista de items con filtros opcionales
-     * @param array $filters ['onlyActive'=>bool,'low_stock'=>bool,'search'=>string]
-     */
     public function getAll($filters = []) {
-        $sql = 'SELECT id, code, name, description, stock_quantity, unit_of_measure, reorder_level, expiration_date, price_usd, is_active, created_at, updated_at FROM inventory_items';
+        $sql = 'SELECT id, code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active, created_at, updated_at FROM inventory_items';
         $where = [];
         $params = [];
         if (!empty($filters['onlyActive'])) {
@@ -40,11 +36,9 @@ class InventoryModel {
     }
 
     public function create($data, $userId = null) {
-        $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, expiration_date, price_usd, is_active) VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :expiration_date, :price_usd, :is_active)';
+        $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active) 
+                VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :price_usd, :is_active)';
         
-        // Manejo de fecha vacía para que se guarde como NULL
-        $expirationDate = !empty($data['expiration_date']) ? $data['expiration_date'] : null;
-
         $params = [
             ':code' => $data['code'] ?? null,
             ':name' => $data['name'],
@@ -52,7 +46,6 @@ class InventoryModel {
             ':stock_quantity' => isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : 0,
             ':unit_of_measure' => $data['unit_of_measure'] ?? 'unidad',
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
-            ':expiration_date' => $expirationDate, 
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
         ];
@@ -61,11 +54,6 @@ class InventoryModel {
             $this->db->beginTransaction();
             $this->db->execute($sql, $params);
             $id = (int)$this->db->lastInsertId();
-
-            if ($userId && $params[':stock_quantity'] > 0) {
-                $this->recordMovement($id, 'in_restock', (int)$params[':stock_quantity'], $userId, 'Stock inicial al crear el insumo');
-            }
-
             $this->db->commit();
             return $id;
         } catch (Exception $e) {
@@ -75,86 +63,53 @@ class InventoryModel {
     }
 
     public function update($id, $data, $userId = null) {
-        $current = $this->getById($id);
-        if (!$current) {
-            throw new Exception('Item not found');
-        }
-
-        $newStock = isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : (int)$current['stock_quantity'];
+        $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, price_usd = :price_usd, is_active = :is_active WHERE id = :id';
         
-        // Manejo de fecha vacía
-        $expirationDate = !empty($data['expiration_date']) ? $data['expiration_date'] : null;
-
-        $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, stock_quantity = :stock_quantity, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, expiration_date = :expiration_date, price_usd = :price_usd, is_active = :is_active WHERE id = :id';
         $params = [
             ':code' => $data['code'] ?? null,
             ':name' => $data['name'],
             ':description' => $data['description'] ?? null,
-            ':stock_quantity' => $newStock,
             ':unit_of_measure' => $data['unit_of_measure'] ?? 'unidad',
             ':reorder_level' => isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5,
-            ':expiration_date' => $expirationDate,
             ':price_usd' => $data['price_usd'],
             ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1,
             ':id' => $id
         ];
-        $previousStock = (int)$current['stock_quantity'];
 
-        try {
-            $this->db->beginTransaction();
-            $result = $this->db->execute($sql, $params);
-
-            if ($result && $userId && $newStock !== $previousStock) {
-                $difference = $newStock - $previousStock;
-                if ($difference > 0) {
-                    $this->recordMovement($id, 'in_restock', abs($difference), $userId, 'Abastecimiento manual desde edición');
-                } else {
-                    $this->recordMovement($id, 'out_adjustment', abs($difference), $userId, 'Reducción manual desde edición');
-                }
-            }
-
-            $this->db->commit();
-            return $result;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            throw $e;
-        }
+        return $this->db->execute($sql, $params);
     }
 
-    /** Borrado lógico */
     public function delete($id) {
         return $this->db->execute('UPDATE inventory_items SET is_active = 0 WHERE id = :id', [':id' => $id]);
     }
 
     /**
-     * Restock (abastecer) un item: suma stock y registra movimiento.
-     * @param int $id Item ID
-     * @param int $quantity Cantidad a agregar (>0)
-     * @param int $userId Usuario que realiza el movimiento
-     * @param string|null $notes Notas opcionales
+     * NUEVO RESTOCK: Crea un lote y actualiza el padre.
      */
-    public function restock($id, $quantity, $userId, $notes = null) {
-        if ($quantity <= 0) throw new Exception('Quantity must be > 0');
-        $item = $this->getById($id);
-        if (!$item) throw new Exception('Item not found');
-        if ((int)$item['is_active'] !== 1) throw new Exception('Item inactive');
-
+    public function restock($id, $quantity, $userId, $expirationDate, $batchNumber = null, $notes = null) {
+        if ($quantity <= 0) throw new Exception('La cantidad debe ser mayor a 0');
+        
         try {
             $this->db->beginTransaction();
-            // Actualizar stock
-            $newStock = (int)$item['stock_quantity'] + $quantity;
-            $this->db->execute('UPDATE inventory_items SET stock_quantity = :stock WHERE id = :id', [':stock' => $newStock, ':id' => $id]);
-            // Insertar movimiento
-            $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
-            $this->db->execute($sql, [
+
+            // 1. Insertar el Lote
+            $sqlBatch = 'INSERT INTO inventory_batches (item_id, batch_number, quantity, expiration_date) VALUES (:item_id, :batch_number, :quantity, :expiration_date)';
+            $this->db->execute($sqlBatch, [
                 ':item_id' => $id,
-                ':movement_type' => 'in_restock',
+                ':batch_number' => $batchNumber,
                 ':quantity' => $quantity,
-                ':notes' => $notes,
-                ':created_by' => $userId
+                ':expiration_date' => !empty($expirationDate) ? $expirationDate : null // Allow NULL
             ]);
+
+            // 2. Registrar Movimiento (Historial)
+            $expText = !empty($expirationDate) ? "Vence: $expirationDate." : "Sin vencimiento.";
+            $this->recordMovement($id, 'in_restock', $quantity, $userId, "Lote: $batchNumber. $expText $notes");
+
+            // 3. Sincronizar Stock Total y Próximo Vencimiento en la tabla items
+            $this->syncItemStats($id);
+
             $this->db->commit();
-            return $newStock;
+            return true;
         } catch (Exception $e) {
             $this->db->rollBack();
             throw $e;
@@ -162,81 +117,78 @@ class InventoryModel {
     }
 
     /**
-     * Registra una salida (consumo) de inventario. No maneja transacción propia:
-     * asume que el llamador iniciará/confirmará la transacción si lo requiere.
-     * Útil para operaciones compuestas (p. ej. consumo al cargar insumos a una cuenta).
-     *
-     * @param int $id Item ID
-     * @param int $quantity Cantidad a descontar (>0)
-     * @param int $userId Usuario que realiza el movimiento
-     * @param string $movementType Tipo de movimiento (por defecto 'out_consume')
-     * @param string|null $notes Notas opcionales
+     * CONSUMO INTELIGENTE (FEFO): Descuenta de los lotes más viejos.
      */
     public function registerOutflow($id, $quantity, $userId, $movementType = 'out_billed', $notes = null) {
         if ($quantity <= 0) throw new Exception('Quantity must be > 0');
+        
         $item = $this->getById($id);
-        if (!$item) throw new Exception('Item not found');
-        if ((int)$item['is_active'] !== 1) throw new Exception('Item inactive');
-        if ((int)$item['stock_quantity'] < $quantity) throw new Exception('Insufficient stock');
+        if (!$item || (int)$item['stock_quantity'] < $quantity) {
+            throw new Exception("Stock insuficiente. Disponible: " . ($item['stock_quantity'] ?? 0));
+        }
 
-        // Descontar stock
-        $this->db->execute('UPDATE inventory_items SET stock_quantity = stock_quantity - :q WHERE id = :id', [
-            ':q' => $quantity,
-            ':id' => $id
-        ]);
-        // Registrar movimiento
-        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
-        $this->db->execute($sql, [
-            ':item_id' => $id,
-            ':movement_type' => $movementType,
-            ':quantity' => $quantity,
-            ':notes' => $notes,
-            ':created_by' => $userId
-        ]);
-        return true;
+        try {
+            $inTransaction = $this->db->inTransaction(); 
+            if (!$inTransaction) $this->db->beginTransaction();
+
+            $remaining = $quantity;
+
+            // 1. Obtener lotes con stock positivo ordenados por fecha de vencimiento (ASC)
+            // Prioriza los que vencen antes (FEFO) o los más viejos si no hay fecha (NULL last)
+            $batches = $this->db->query("SELECT * FROM inventory_batches WHERE item_id = :id AND quantity > 0 ORDER BY expiration_date ASC FOR UPDATE", [':id' => $id]);
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) break;
+
+                $deduct = min($remaining, $batch['quantity']);
+                
+                // Actualizar lote
+                $this->db->execute("UPDATE inventory_batches SET quantity = quantity - :deduct WHERE id = :bid", [
+                    ':deduct' => $deduct, 
+                    ':bid' => $batch['id']
+                ]);
+
+                $remaining -= $deduct;
+            }
+
+            if ($remaining > 0) {
+                // Si llegamos aquí y falta stock, es que inventory_items tenía un número incorrecto (desincronizado).
+                // Forzamos el ajuste.
+                throw new Exception("Error de integridad de stock en lotes.");
+            }
+
+            // 2. Registrar el movimiento global
+            $this->recordMovement($id, $movementType, $quantity, $userId, $notes);
+
+            // 3. Recalcular totales en el item padre
+            $this->syncItemStats($id);
+
+            if (!$inTransaction) $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            if (isset($inTransaction) && !$inTransaction) $this->db->rollBack();
+            throw $e;
+        }
     }
 
-    /**
-     * Registra una entrada (devolución/ajuste) de inventario. Tampoco maneja transacción propia.
-     * @param int $id Item ID
-     * @param int $quantity Cantidad a sumar (>0)
-     * @param int $userId Usuario que realiza el movimiento
-     * @param string $movementType Tipo de movimiento (por defecto 'in_return')
-     * @param string|null $notes Notas opcionales
-     */
     public function registerInflow($id, $quantity, $userId, $movementType = 'in_restock', $notes = null) {
-        if ($quantity <= 0) throw new Exception('Quantity must be > 0');
-        $item = $this->getById($id);
-        if (!$item) throw new Exception('Item not found');
-        if ((int)$item['is_active'] !== 1) throw new Exception('Item inactive');
-
-        // Aumentar stock
-        $this->db->execute('UPDATE inventory_items SET stock_quantity = stock_quantity + :q WHERE id = :id', [
-            ':q' => $quantity,
-            ':id' => $id
-        ]);
-        // Registrar movimiento
-        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
-        $this->db->execute($sql, [
-            ':item_id' => $id,
-            ':movement_type' => $movementType,
-            ':quantity' => $quantity,
-            ':notes' => $notes,
-            ':created_by' => $userId
-        ]);
-        return true;
+        // Por defecto sin fecha de vencimiento si es un ajuste rápido
+        return $this->restock($id, $quantity, $userId, null, 'AJUSTE-IN', $notes);
     }
 
-    /** Lista movimientos de un item */
-    public function getMovementsByItem($id, $limit = 100) {
-        $sql = 'SELECT id, movement_type, quantity, notes, created_by, created_at FROM inventory_movements WHERE item_id = :id ORDER BY id DESC LIMIT ' . (int)$limit;
-        return $this->db->query($sql, [':id' => $id]);
+    private function syncItemStats($itemId) {
+        // Calcula total
+        $resSum = $this->db->query("SELECT SUM(quantity) as total FROM inventory_batches WHERE item_id = :id", [':id' => $itemId]);
+        $total = $resSum[0]['total'] ?? 0;
+
+        // Ya no actualizamos expiration_date en inventory_items porque se eliminó la columna
+        $this->db->execute("UPDATE inventory_items SET stock_quantity = :qty WHERE id = :id", [
+            ':qty' => $total,
+            ':id' => $itemId
+        ]);
     }
 
     private function recordMovement($itemId, $movementType, $quantity, $userId, $notes = null) {
-        if ($quantity <= 0) {
-            return;
-        }
         $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
         $this->db->execute($sql, [
             ':item_id' => $itemId,
@@ -247,27 +199,26 @@ class InventoryModel {
         ]);
     }
 
-    /**
-     * Obtiene insumos vencidos y próximos a vencer.
-     * Si $days es null, trae todos los que tengan fecha de vencimiento.
-     */
-    public function getExpiring($days = null) {
-        $sql = "SELECT id, code, name, stock_quantity, expiration_date, unit_of_measure, price_usd 
-                FROM inventory_items 
-                WHERE is_active = 1 
-                AND expiration_date IS NOT NULL ";
-        
-        $params = [];
-        if ($days !== null) {
-            $sql .= "AND expiration_date <= DATE_ADD(CURDATE(), INTERVAL :days DAY) ";
-            $params[':days'] = (int)$days;
-        }
-        
-        $sql .= "ORDER BY expiration_date ASC";
-        
-        return $this->db->query($sql, $params);
+    public function getMovementsByItem($id, $limit = 100) {
+        $sql = 'SELECT id, movement_type, quantity, notes, created_by, created_at FROM inventory_movements WHERE item_id = :id ORDER BY id DESC LIMIT ' . (int)$limit;
+        return $this->db->query($sql, [':id' => $id]);
     }
 
+    public function getExpiring($days = null) {
+        // Consulta a inventory_batches para obtener los lotes que vencen
+        $sql = "SELECT i.id, i.code, i.name, b.quantity, b.expiration_date, i.unit_of_measure, i.price_usd 
+                FROM inventory_batches b
+                JOIN inventory_items i ON b.item_id = i.id
+                WHERE i.is_active = 1 
+                AND b.quantity > 0
+                AND b.expiration_date IS NOT NULL ";
+        $params = [];
+        if ($days !== null) {
+            $sql .= "AND b.expiration_date <= DATE_ADD(CURDATE(), INTERVAL :days DAY) ";
+            $params[':days'] = (int)$days;
+        }
+        $sql .= "ORDER BY b.expiration_date ASC";
+        return $this->db->query($sql, $params);
+    }
 }
-
 ?>

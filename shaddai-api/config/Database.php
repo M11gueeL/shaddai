@@ -58,6 +58,10 @@ class Database {
         return $stmt->execute($params);
     }
 
+    public function inTransaction() {
+        return $this->pdo->inTransaction();
+    }
+
     // Métodos para transacciones
     public function beginTransaction() {
         return $this->pdo->beginTransaction();

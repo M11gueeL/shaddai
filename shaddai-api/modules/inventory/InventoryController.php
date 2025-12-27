@@ -25,7 +25,12 @@ class InventoryController {
     public function get($id) {
         try {
             $item = $this->model->getById($id);
-            if ($item) echo json_encode($item); else { http_response_code(404); echo json_encode(['error' => 'Item not found']); }
+            if ($item) {
+                echo json_encode($item);
+            } else {
+                // Respuesta profesional: 200 OK con mensaje informativo
+                echo json_encode(['message' => 'No se encontraron datos para el ID proporcionado.']);
+            }
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => $e->getMessage()]);
@@ -40,10 +45,12 @@ class InventoryController {
 
             $data = $_POST;
             if (empty($data['name']) || !isset($data['price_usd'])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'name and price_usd are required']);
+                // Validación profesional: Mensaje informativo en lugar de error
+                echo json_encode(['message' => 'Por favor, asegúrese de completar el nombre y el precio del producto.']);
                 return;
             }
+            // NOTA: Ignoramos stock_quantity y expiration_date si vienen aquí.
+            // El producto se crea en 0.
             $id = $this->model->create($data, $userId);
             http_response_code(201);
             echo json_encode(['id' => (int)$id]);
@@ -60,11 +67,6 @@ class InventoryController {
             $userId = $payload->sub ?? null;
 
             $data = $_POST;
-            if (empty($data['name']) || !isset($data['price_usd'])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'name and price_usd are required']);
-                return;
-            }
             $ok = $this->model->update($id, $data, $userId);
             echo json_encode(['updated' => (bool)$ok]);
         } catch (Exception $e) {
@@ -90,14 +92,24 @@ class InventoryController {
             $userId = $payload->sub;
 
             $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 0;
+            $expirationDate = $_POST['expiration_date'] ?? null; 
+            $batchNumber = $_POST['batch_number'] ?? null;       
             $notes = $_POST['notes'] ?? null;
+
             if ($quantity <= 0) {
-                http_response_code(400);
-                echo json_encode(['error' => 'quantity must be > 0']);
+                echo json_encode(['message' => 'La cantidad ingresada debe ser mayor a 0.']);
                 return;
             }
-            $newStock = $this->model->restock($id, $quantity, $userId, $notes);
-            echo json_encode(['new_stock' => (int)$newStock]);
+            if (empty($expirationDate)) {
+                 echo json_encode(['message' => 'Es necesario indicar la fecha de vencimiento para el control de lotes.']);
+                 return;
+            }
+
+            // Llamamos a la nueva función con lote
+            $this->model->restock($id, $quantity, $userId, $expirationDate, $batchNumber, $notes);
+            
+            // Devolvemos éxito (el stock se recalcula internamente)
+            echo json_encode(['success' => true]);
         } catch (Exception $e) {
             http_response_code(400);
             echo json_encode(['error' => $e->getMessage()]);
@@ -124,6 +136,5 @@ class InventoryController {
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
-
 }
 ?>

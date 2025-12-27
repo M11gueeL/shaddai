@@ -146,6 +146,10 @@ export default function InventoryPanel() {
     const handleCreate = async (data) => {
         try {
             const res = await createInventoryItem(data, token);
+            if (res.data.message) {
+                toast.info(res.data.message);
+                return;
+            }
             toast.success('Insumo creado');
             setCreating(false);
             fetchInventory();
@@ -156,7 +160,11 @@ export default function InventoryPanel() {
 
     const handleUpdate = async (data) => {
         try {
-            await updateInventoryItem(editingItem.id, data, token);
+            const res = await updateInventoryItem(editingItem.id, data, token);
+            if (res.data.message) {
+                toast.info(res.data.message);
+                return;
+            }
             toast.success('Actualizado');
             setEditingItem(null);
             fetchInventory();
@@ -183,9 +191,13 @@ export default function InventoryPanel() {
         }
     };
 
-    const handleRestock = async ({ quantity, notes }) => {
+    const handleRestock = async (formData) => {
         try {
-            await restockInventoryItem(restockItem.id, { quantity, notes }, token);
+            const res = await restockInventoryItem(restockItem.id, formData, token);
+            if (res.data.message) {
+                toast.info(res.data.message);
+                return;
+            }
             toast.success('Stock actualizado');
             setRestockItem(null);
             fetchInventory();
