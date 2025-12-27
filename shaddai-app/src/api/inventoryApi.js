@@ -24,3 +24,6 @@ export const restockInventoryItem = (id, data, token) =>
 
 export const listInventoryMovements = (id, params = {}, token) =>
   axios.get(`${API_URL}/inventory/${id}/movements`, { ...auth(token), params });
+
+export const getExpiringItems = (token) =>
+  axios.get(`${API_URL}/inventory/expiring`, auth(token));

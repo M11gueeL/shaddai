@@ -117,7 +117,7 @@ class InventoryController {
 
     public function expiring() {
         try {
-            $days = isset($_GET['days']) ? (int)$_GET['days'] : 90;
+            $days = isset($_GET['days']) ? (int)$_GET['days'] : null;
             echo json_encode($this->model->getExpiring($days));
         } catch (Exception $e) {
             http_response_code(500);

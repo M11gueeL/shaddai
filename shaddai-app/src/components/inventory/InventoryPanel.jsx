@@ -95,7 +95,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
-import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, listInventoryMovements } from '../../api/inventoryApi';
+import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, listInventoryMovements, getExpiringItems } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryActions from './InventoryActions';
 import InventoryTable from './InventoryTable';
@@ -103,6 +103,7 @@ import Modal from './Modal';
 import ItemForm from './ItemForm';
 import RestockForm from './RestockForm';
 import MovementsDrawer from './MovementsDrawer';
+import ExpiringModal from './ExpiringModal';
 import ElegantHeader from '../common/ElegantHeader';
 
 export default function InventoryPanel() {
@@ -122,6 +123,9 @@ export default function InventoryPanel() {
     const [movements, setMovements] = useState([]);
     const [loadingMovements, setLoadingMovements] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [showExpiringModal, setShowExpiringModal] = useState(false);
+    const [expiringItems, setExpiringItems] = useState([]);
+    const [loadingExpiring, setLoadingExpiring] = useState(false);
 
     const fetchInventory = useCallback(async () => {
         if (!token) return;
@@ -224,6 +228,19 @@ export default function InventoryPanel() {
         }
     };
 
+    const handleShowAlerts = async () => {
+        setShowExpiringModal(true);
+        setLoadingExpiring(true);
+        try {
+            const res = await getExpiringItems(token);
+            setExpiringItems(res.data || []);
+        } catch (e) {
+            toast.error('Error cargando alertas');
+        } finally {
+            setLoadingExpiring(false);
+        }
+    };
+
     const totalItems = items.length;
     const lowCount = useMemo(() => items.filter(i => i.stock_quantity <= i.reorder_level).length, [items]);
 
@@ -257,6 +274,7 @@ export default function InventoryPanel() {
                 canEdit={canEdit}
                 exporting={exporting}
                 onExport={exportCSV}
+                onShowAlerts={handleShowAlerts}
             />
 
             <InventoryTable
@@ -281,11 +299,18 @@ export default function InventoryPanel() {
             </Modal>
 
             <MovementsDrawer
-                open={!!movementsItem}
+                isOpen={!!movementsItem}
                 item={movementsItem}
                 movements={movements}
                 loading={loadingMovements}
                 onClose={() => { setMovementsItem(null); setMovements([]); }}
+            />
+
+            <ExpiringModal
+                isOpen={showExpiringModal}
+                onClose={() => setShowExpiringModal(false)}
+                items={expiringItems}
+                loading={loadingExpiring}
             />
         </div>
     );

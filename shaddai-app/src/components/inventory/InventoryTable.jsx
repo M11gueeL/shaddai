@@ -94,7 +94,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                 <th className="text-left font-medium px-4 py-3">Nombre</th>
                 <th className="text-left font-medium px-4 py-3">Código</th>
                 <th className="text-left font-medium px-4 py-3">Stock</th>
-                <th className="text-left font-medium px-4 py-3">Vencimiento</th> {/* Nueva columna */}
+                <th className="text-left font-medium px-4 py-3">Vencimiento</th>
                 <th className="text-left font-medium px-4 py-3">UM</th>
                 <th className="text-left font-medium px-4 py-3">Precio USD</th>
                 <th className="text-left font-medium px-4 py-3">Estado</th>

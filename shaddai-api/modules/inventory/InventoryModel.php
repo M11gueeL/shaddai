@@ -248,17 +248,24 @@ class InventoryModel {
     }
 
     /**
-     * Obtiene insumos próximos a vencer en X días
+     * Obtiene insumos vencidos y próximos a vencer.
+     * Si $days es null, trae todos los que tengan fecha de vencimiento.
      */
-    public function getExpiring($days = 90) {
-        $sql = "SELECT id, code, name, stock_quantity, expiration_date, unit_of_measure 
+    public function getExpiring($days = null) {
+        $sql = "SELECT id, code, name, stock_quantity, expiration_date, unit_of_measure, price_usd 
                 FROM inventory_items 
                 WHERE is_active = 1 
-                AND expiration_date IS NOT NULL 
-                AND expiration_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL :days DAY)
-                ORDER BY expiration_date ASC";
+                AND expiration_date IS NOT NULL ";
         
-        return $this->db->query($sql, [':days' => (int)$days]);
+        $params = [];
+        if ($days !== null) {
+            $sql .= "AND expiration_date <= DATE_ADD(CURDATE(), INTERVAL :days DAY) ";
+            $params[':days'] = (int)$days;
+        }
+        
+        $sql .= "ORDER BY expiration_date ASC";
+        
+        return $this->db->query($sql, $params);
     }
 
 }

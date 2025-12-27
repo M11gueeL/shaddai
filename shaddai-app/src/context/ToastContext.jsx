@@ -14,8 +14,8 @@ export const ToastProvider = ({ children }) => {
   // Determine position based on route
   // Login/Public routes -> Top Right (top-4)
   // App routes -> Below Header (top-24)
-  const isPublicRoute = ['/login', '/register', '/forgot-password', '/'].includes(location.pathname) || location.pathname.startsWith('/reset-password');
-  const positionClass = isPublicRoute ? 'top-4' : 'top-24';
+  // User request: Always top right
+  const positionClass = 'top-4';
 
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

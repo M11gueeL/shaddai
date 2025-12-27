@@ -1,7 +1,7 @@
 import React from 'react';
-import { Plus, Search, RefreshCcw, Loader2, Layers, Download } from 'lucide-react';
+import { Plus, Search, RefreshCcw, Loader2, Layers, Download, Bell } from 'lucide-react';
 
-export default function InventoryActions({ onSearch, search, onToggleLowStock, lowStockOnly, onCreateClick, onRefresh, canEdit, exporting, onExport }) {
+export default function InventoryActions({ onSearch, search, onToggleLowStock, lowStockOnly, onCreateClick, onRefresh, canEdit, exporting, onExport, onShowAlerts }) {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 w-full md:w-auto">
@@ -19,6 +19,12 @@ export default function InventoryActions({ onSearch, search, onToggleLowStock, l
           className={`w-full sm:w-auto px-4 py-2.5 text-sm rounded-xl border transition shadow-sm flex items-center justify-center gap-2 ${lowStockOnly ? 'bg-amber-100 border-amber-200 text-amber-800' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
         >
           <Layers className="w-4 h-4" /> {lowStockOnly ? 'Stock Bajo' : 'Todos'}
+        </button>
+        <button
+          onClick={onShowAlerts}
+          className="w-full sm:w-auto px-4 py-2.5 text-sm rounded-xl border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 shadow-sm flex items-center justify-center gap-2"
+        >
+          <Bell className="w-4 h-4" /> Alertas
         </button>
         <button
           onClick={onRefresh}
