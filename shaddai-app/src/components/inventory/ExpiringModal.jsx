@@ -11,7 +11,11 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
     today.setHours(0, 0, 0, 0);
 
     return items.map(item => {
-      const expDate = new Date(item.expiration_date);
+      // Asegurar que la fecha se interprete como local agregando hora 00:00:00
+      // Esto evita que '2025-12-31' se interprete como UTC y reste un día en zonas horarias occidentales
+      const dateStr = item.expiration_date.includes('T') ? item.expiration_date : `${item.expiration_date}T00:00:00`;
+      const expDate = new Date(dateStr);
+      
       const diffTime = expDate - today;
       const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
@@ -19,7 +23,7 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
       if (daysLeft < 0) status = 'expired';
       else if (daysLeft < 30) status = 'urgent';
       
-      return { ...item, daysLeft, status };
+      return { ...item, daysLeft, status, expDateObj: expDate };
     }).sort((a, b) => a.daysLeft - b.daysLeft);
   }, [items]);
 
@@ -231,7 +235,7 @@ function ItemRow({ item }) {
           </span>
           <span className="flex items-center gap-1.5">
             <Calendar size={14} />
-            Vence: <span className="font-medium">{new Date(item.expiration_date).toLocaleDateString()}</span>
+            Vence: <span className="font-medium">{item.expDateObj ? item.expDateObj.toLocaleDateString() : new Date(item.expiration_date + 'T00:00:00').toLocaleDateString()}</span>
           </span>
         </div>
       </div>
