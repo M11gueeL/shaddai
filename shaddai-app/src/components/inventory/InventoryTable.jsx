@@ -1,7 +1,7 @@
 import React from 'react';
 import { Package, Loader2, AlertTriangle } from 'lucide-react';
 
-export default function InventoryTable({ items, onEdit, onDelete, onRestock, onMovements, loading, canEdit }) {
+export default function InventoryTable({ items, onEdit, onDelete, onRestock, onMovements, onManageBatches, loading, canEdit }) {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-16">
@@ -72,6 +72,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <button onClick={() => onMovements(item)} className="flex-1 min-w-[120px] rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 flex items-center justify-center">Movimientos</button>
+                <button onClick={() => onManageBatches(item)} className="flex-1 min-w-[120px] rounded-lg bg-purple-100 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-200 flex items-center justify-center">Lotes</button>
                 {canEdit && (
                   <>
                     <button onClick={() => onRestock(item)} className="flex-1 min-w-[120px] rounded-lg bg-indigo-100 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 flex items-center justify-center">+ Stock</button>
@@ -126,6 +127,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                     <td className="px-4 py-2.5 text-right">
                       <div className="inline-flex gap-1">
                         <button onClick={() => onMovements(item)} className="px-2 py-1.5 rounded-md text-xs bg-slate-100 hover:bg-slate-200 text-slate-700">Mov</button>
+                        <button onClick={() => onManageBatches(item)} className="px-2 py-1.5 rounded-md text-xs bg-purple-100 hover:bg-purple-200 text-purple-700">Lotes</button>
                         {canEdit && (
                           <>
                             <button onClick={() => onRestock(item)} className="px-2 py-1.5 rounded-md text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700">+Stock</button>

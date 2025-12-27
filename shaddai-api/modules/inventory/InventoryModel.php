@@ -85,92 +85,15 @@ class InventoryModel {
         return $this->db->execute('UPDATE inventory_items SET is_active = 0 WHERE id = :id', [':id' => $id]);
     }
 
-    /**
-     * NUEVO RESTOCK: Crea un lote y actualiza el padre.
-     */
-    public function restock($id, $quantity, $userId, $expirationDate, $batchNumber = null, $notes = null) {
-        if ($quantity <= 0) throw new Exception('La cantidad debe ser mayor a 0');
-        
-        try {
-            $this->db->beginTransaction();
-
-            // 1. Insertar el Lote
-            $sqlBatch = 'INSERT INTO inventory_batches (item_id, batch_number, quantity, expiration_date) VALUES (:item_id, :batch_number, :quantity, :expiration_date)';
-            $this->db->execute($sqlBatch, [
-                ':item_id' => $id,
-                ':batch_number' => $batchNumber,
-                ':quantity' => $quantity,
-                ':expiration_date' => !empty($expirationDate) ? $expirationDate : null // Allow NULL
-            ]);
-
-            // 2. Registrar Movimiento (Historial)
-            $expText = !empty($expirationDate) ? "Vence: $expirationDate." : "Sin vencimiento.";
-            $this->recordMovement($id, 'in_restock', $quantity, $userId, "Lote: $batchNumber. $expText $notes");
-
-            // 3. Sincronizar Stock Total y Próximo Vencimiento en la tabla items
-            $this->syncItemStats($id);
-
-            $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            throw $e;
-        }
+    public function getBatchesByItemId($itemId) {
+        return $this->db->query(
+            "SELECT * FROM inventory_batches WHERE item_id = :id ORDER BY expiration_date ASC, created_at ASC",
+            [':id' => $itemId]
+        );
     }
 
-    /**
-     * CONSUMO INTELIGENTE (FEFO): Descuenta de los lotes más viejos.
-     */
-    public function registerOutflow($id, $quantity, $userId, $movementType = 'out_billed', $notes = null) {
-        if ($quantity <= 0) throw new Exception('Quantity must be > 0');
-        
-        $item = $this->getById($id);
-        if (!$item || (int)$item['stock_quantity'] < $quantity) {
-            throw new Exception("Stock insuficiente. Disponible: " . ($item['stock_quantity'] ?? 0));
-        }
-
-        try {
-            $inTransaction = $this->db->inTransaction(); 
-            if (!$inTransaction) $this->db->beginTransaction();
-
-            $remaining = $quantity;
-
-            // 1. Obtener lotes con stock positivo ordenados por fecha de vencimiento (ASC)
-            // Prioriza los que vencen antes (FEFO) o los más viejos si no hay fecha (NULL last)
-            $batches = $this->db->query("SELECT * FROM inventory_batches WHERE item_id = :id AND quantity > 0 ORDER BY expiration_date ASC FOR UPDATE", [':id' => $id]);
-
-            foreach ($batches as $batch) {
-                if ($remaining <= 0) break;
-
-                $deduct = min($remaining, $batch['quantity']);
-                
-                // Actualizar lote
-                $this->db->execute("UPDATE inventory_batches SET quantity = quantity - :deduct WHERE id = :bid", [
-                    ':deduct' => $deduct, 
-                    ':bid' => $batch['id']
-                ]);
-
-                $remaining -= $deduct;
-            }
-
-            if ($remaining > 0) {
-                // Si llegamos aquí y falta stock, es que inventory_items tenía un número incorrecto (desincronizado).
-                // Forzamos el ajuste.
-                throw new Exception("Error de integridad de stock en lotes.");
-            }
-
-            // 2. Registrar el movimiento global
-            $this->recordMovement($id, $movementType, $quantity, $userId, $notes);
-
-            // 3. Recalcular totales en el item padre
-            $this->syncItemStats($id);
-
-            if (!$inTransaction) $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            if (isset($inTransaction) && !$inTransaction) $this->db->rollBack();
-            throw $e;
-        }
+    public function discardBatch($batchId, $quantity, $reason, $userId) {
+        return $this->discardFromBatch($batchId, $quantity, $userId, $reason);
     }
 
     public function registerInflow($id, $quantity, $userId, $movementType = 'in_restock', $notes = null) {
@@ -187,17 +110,6 @@ class InventoryModel {
         $this->db->execute("UPDATE inventory_items SET stock_quantity = :qty WHERE id = :id", [
             ':qty' => $total,
             ':id' => $itemId
-        ]);
-    }
-
-    private function recordMovement($itemId, $movementType, $quantity, $userId, $notes = null) {
-        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by) VALUES (:item_id, :movement_type, :quantity, :notes, :created_by)';
-        $this->db->execute($sql, [
-            ':item_id' => $itemId,
-            ':movement_type' => $movementType,
-            ':quantity' => $quantity,
-            ':notes' => $notes,
-            ':created_by' => $userId
         ]);
     }
 
@@ -221,6 +133,155 @@ class InventoryModel {
         }
         $sql .= "ORDER BY b.expiration_date ASC";
         return $this->db->query($sql, $params);
+    }
+
+    /**
+     * RESTOCK: Crea lote con cantidad inicial y actual sincronizadas
+     */
+    public function restock($id, $quantity, $userId, $expirationDate, $batchNumber = null, $notes = null) {
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Insertar Lote con initial_quantity
+            $sqlBatch = 'INSERT INTO inventory_batches (item_id, batch_number, quantity, initial_quantity, expiration_date, status) 
+                         VALUES (:item_id, :batch_number, :quantity, :initial_quantity, :expiration_date, "active")';
+            
+            $this->db->execute($sqlBatch, [
+                ':item_id' => $id,
+                ':batch_number' => $batchNumber,
+                ':quantity' => $quantity,
+                ':initial_quantity' => $quantity,
+                ':expiration_date' => $expirationDate
+            ]);
+            
+            $batchId = $this->db->lastInsertId();
+
+            // 2. Registrar Movimiento vinculado al Lote
+            $this->recordMovement($id, 'in_restock', $quantity, $userId, "Entrada Lote: $batchNumber", $batchId);
+
+            $this->syncItemStats($id);
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * CONSUMO FEFO: 
+     * Si pides 10 pastillas y hay 2 lotes (uno con 3 y otro con 50),
+     * crea DOS movimientos en el historial para trazabilidad exacta.
+     */
+    public function registerOutflow($id, $quantity, $userId, $movementType = 'out_billed', $notes = null) {
+        $this->db->beginTransaction();
+        try {
+            $remaining = $quantity;
+            
+            // Traer lotes activos ordenados por fecha (FEFO)
+            $batches = $this->db->query("SELECT * FROM inventory_batches WHERE item_id = :id AND quantity > 0 AND status = 'active' ORDER BY expiration_date ASC FOR UPDATE", [':id' => $id]);
+
+            if (empty($batches)) {
+                 // Fallback si no hay lotes (integridad)
+                 throw new Exception("No hay lotes disponibles para este producto.");
+            }
+
+            foreach ($batches as $batch) {
+                if ($remaining <= 0) break;
+
+                $deduct = min($remaining, $batch['quantity']);
+                
+                // 1. Actualizar el lote específico
+                $newQty = $batch['quantity'] - $deduct;
+                $newStatus = ($newQty == 0) ? 'empty' : 'active';
+
+                $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :status WHERE id = :id", [
+                    ':qty' => $newQty, 
+                    ':status' => $newStatus,
+                    ':id' => $batch['id']
+                ]);
+
+                // 2. Registrar movimiento POR CADA LOTE afectado (Trazabilidad Pura)
+                $batchNote = $notes . " (Del Lote: " . ($batch['batch_number'] ?? 'S/N') . ")";
+                $this->recordMovement($id, $movementType, $deduct, $userId, $batchNote, $batch['id']);
+
+                $remaining -= $deduct;
+            }
+
+            if ($remaining > 0) {
+                throw new Exception("Stock insuficiente en lotes activos. Faltan $remaining unidades.");
+            }
+
+            $this->syncItemStats($id);
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * DAR DE BAJA LOTE (Vencimiento, Daño, etc)
+     * Aquí marcas explícitamente que el lote murió por vencimiento.
+     */
+    public function discardFromBatch($batchId, $quantity, $userId, $reason = 'Vencimiento') {
+        try {
+            $this->db->beginTransaction();
+
+            $batchRes = $this->db->query("SELECT * FROM inventory_batches WHERE id = :id", [':id' => $batchId]);
+            if (empty($batchRes)) throw new Exception("Lote no encontrado");
+            $batch = $batchRes[0];
+
+            if ($batch['quantity'] < $quantity) {
+                throw new Exception("Cantidad inválida.");
+            }
+
+            // 1. Restar stock
+            $newQty = $batch['quantity'] - $quantity;
+            
+            // Si la cantidad llega a 0 por descarte, el estado es 'disposed' (o 'empty' si prefieres, pero disposed es mas claro)
+            // Si queda stock pero ya decidimos no usarlo más, podríamos forzar el estado, pero asumamos gestión por cantidad.
+            $status = ($newQty === 0) ? 'disposed' : 'active';
+
+            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st WHERE id = :id", [
+                ':qty' => $newQty, 
+                ':st' => $status,
+                ':id' => $batchId
+            ]);
+
+            // 2. Movimiento TIPO 'out_expired'
+            $itemId = $batch['item_id'];
+            $this->recordMovement(
+                $itemId, 
+                'out_expired', 
+                $quantity, 
+                $userId, 
+                "BAJA MANUAL Lote: {$batch['batch_number']}. Razón: $reason",
+                $batchId
+            );
+
+            $this->syncItemStats($itemId);
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    // Helper actualizado para recibir batch_id
+    private function recordMovement($itemId, $movementType, $quantity, $userId, $notes = null, $batchId = null) {
+        $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by, batch_id) 
+                VALUES (:item_id, :movement_type, :quantity, :notes, :created_by, :batch_id)';
+        $this->db->execute($sql, [
+            ':item_id' => $itemId,
+            ':movement_type' => $movementType,
+            ':quantity' => $quantity,
+            ':notes' => $notes,
+            ':created_by' => $userId,
+            ':batch_id' => $batchId
+        ]);
     }
 }
 ?>

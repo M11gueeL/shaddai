@@ -104,6 +104,7 @@ import ItemForm from './ItemForm';
 import RestockForm from './RestockForm';
 import MovementsDrawer from './MovementsDrawer';
 import ExpiringModal from './ExpiringModal';
+import BatchManagementModal from './BatchManagementModal';
 import ElegantHeader from '../common/ElegantHeader';
 
 export default function InventoryPanel() {
@@ -126,6 +127,7 @@ export default function InventoryPanel() {
     const [showExpiringModal, setShowExpiringModal] = useState(false);
     const [expiringItems, setExpiringItems] = useState([]);
     const [loadingExpiring, setLoadingExpiring] = useState(false);
+    const [batchItem, setBatchItem] = useState(null);
 
     const fetchInventory = useCallback(async () => {
         if (!token) return;
@@ -295,6 +297,7 @@ export default function InventoryPanel() {
                 onEdit={setEditingItem}
                 onDelete={handleDelete}
                 onRestock={setRestockItem}
+                onManageBatches={setBatchItem}
                 onMovements={openMovements}
                 canEdit={canEdit}
             />
@@ -324,6 +327,14 @@ export default function InventoryPanel() {
                 items={expiringItems}
                 loading={loadingExpiring}
             />
+
+            {batchItem && (
+                <BatchManagementModal
+                    item={batchItem}
+                    onClose={() => setBatchItem(null)}
+                    onUpdate={fetchInventory}
+                />
+            )}
         </div>
     );
 }

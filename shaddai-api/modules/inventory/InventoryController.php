@@ -85,6 +85,41 @@ class InventoryController {
         }
     }
 
+    public function getBatches($id) {
+        try {
+            $batches = $this->model->getBatchesByItemId($id);
+            echo json_encode($batches);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function discardBatch() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub;
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $batchId = $data['batch_id'] ?? null;
+            $quantity = $data['quantity'] ?? 0;
+            $reason = $data['reason'] ?? 'Baja manual';
+
+            if (!$batchId || $quantity <= 0) {
+                throw new Exception('Datos inválidos');
+            }
+
+            $this->model->discardBatch($batchId, $quantity, $reason, $userId);
+            echo json_encode(['message' => 'Lote actualizado']);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function restock($id) {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
