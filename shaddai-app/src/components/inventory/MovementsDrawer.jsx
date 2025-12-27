@@ -120,6 +120,19 @@ export default function MovementsDrawer({ isOpen, onClose, item, movements }) {
                     {groupMoves.map((mov) => {
                       const isIn = mov.movement_type.startsWith('in_');
                       const isRestock = mov.movement_type === 'in_restock';
+                      // Check for both 'adjustment' and explicit types just in case
+                      const isAdjustment = mov.movement_type.includes('adjustment');
+                      
+                      let label = '';
+                      if (isIn) {
+                          if (isRestock) label = 'Abastecimiento';
+                          else if (isAdjustment) label = 'Ajuste de stock';
+                          else label = 'Entrada';
+                      } else {
+                          if (isAdjustment) label = 'Ajuste de stock';
+                          else if (mov.movement_type === 'out_expired') label = 'Baja / Vencimiento';
+                          else label = 'Salida / Consumo';
+                      }
                       
                       return (
                         <div key={mov.id} className="px-6 py-4 hover:bg-gray-50 transition-colors group relative">
@@ -138,7 +151,7 @@ export default function MovementsDrawer({ isOpen, onClose, item, movements }) {
                               <div className="flex justify-between items-start">
                                 <div>
                                   <p className={`text-sm font-bold ${isIn ? 'text-emerald-900' : 'text-red-900'}`}>
-                                    {isIn ? (isRestock ? 'Abastecimiento' : 'Entrada') : 'Salida / Consumo'}
+                                    {label}
                                   </p>
                                   <div className="flex items-center gap-2 mt-1">
                                     <span className="text-xs text-gray-400 flex items-center gap-1 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">

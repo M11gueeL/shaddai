@@ -9,9 +9,9 @@ class BrandModel {
     }
 
     public function getAll($onlyActive = false) {
-        $sql = "SELECT * FROM inventory_brands";
+        $sql = "SELECT * FROM inventory_brands WHERE is_deleted = 0";
         if ($onlyActive) {
-            $sql .= " WHERE is_active = 1";
+            $sql .= " AND is_active = 1";
         }
         $sql .= " ORDER BY name ASC";
         return $this->db->query($sql);
@@ -40,7 +40,7 @@ class BrandModel {
 
     public function delete($id) {
         // Soft delete
-        return $this->db->execute("UPDATE inventory_brands SET is_active = 0 WHERE id = :id", [':id' => $id]);
+        return $this->db->execute("UPDATE inventory_brands SET is_deleted = 1, is_active = 0 WHERE id = :id", [':id' => $id]);
     }
 }
 ?>

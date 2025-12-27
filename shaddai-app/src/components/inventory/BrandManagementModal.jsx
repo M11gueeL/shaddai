@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Edit2, Trash2, Save, Loader2, Tag } from 'lucide-react';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../api/inventoryApi';
 import { useAuth } from '../../context/AuthContext';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export default function BrandManagementModal({ onClose }) {
   const { token } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
@@ -56,7 +59,15 @@ export default function BrandManagementModal({ onClose }) {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("¿Seguro que deseas desactivar esta marca?")) return;
+    const isConfirmed = await confirm({
+      title: 'Desactivar Marca',
+      message: '¿Seguro que deseas desactivar esta marca?',
+      confirmText: 'Sí, desactivar',
+      tone: 'danger'
+    });
+
+    if (!isConfirmed) return;
+
     try {
       await deleteBrand(id, token);
       toast.success("Marca desactivada");

@@ -15,7 +15,7 @@ class InventoryModel {
                 (SELECT MIN(expiration_date) FROM inventory_batches WHERE item_id = i.id AND quantity > 0) as next_expiration
                 FROM inventory_items i
                 LEFT JOIN inventory_brands b ON i.brand_id = b.id';
-        $where = [];
+        $where = ['i.is_deleted = 0'];
         $params = [];
         if (!empty($filters['onlyActive'])) {
             $where[] = 'i.is_active = 1';
@@ -86,7 +86,7 @@ class InventoryModel {
     }
 
     public function delete($id) {
-        return $this->db->execute('UPDATE inventory_items SET is_active = 0 WHERE id = :id', [':id' => $id]);
+        return $this->db->execute('UPDATE inventory_items SET is_deleted = 1, is_active = 0 WHERE id = :id', [':id' => $id]);
     }
 
     public function getBatchesByItemId($itemId) {
@@ -291,6 +291,15 @@ class InventoryModel {
                 throw new Exception("El ajuste resulta en una cantidad negativa.");
             }
 
+            // Si es una corrección y la nueva cantidad supera la inicial registrada, actualizamos la inicial
+            // para evitar porcentajes > 100% (asumiendo que fue un error de ingreso inicial)
+            if ($type === 'correction' && $newQty > $batch['initial_quantity']) {
+                $this->db->execute("UPDATE inventory_batches SET initial_quantity = :iq WHERE id = :id", [
+                    ':iq' => $newQty,
+                    ':id' => $batchId
+                ]);
+            }
+
             // Determinar estado
             $status = ($newQty === 0) ? 'empty' : 'active';
             // Si es una baja explícita (discard), usamos 'disposed' si llega a 0
@@ -303,18 +312,26 @@ class InventoryModel {
             ]);
 
             // Determinar tipo de movimiento
-            $movementType = ($quantityChange > 0) ? 'in_adjustment' : 'out_adjustment';
+            // Asegurar que quantityChange sea numérico
+            $qtyChange = (float)$quantityChange;
+            
+            // Si quantityChange es positivo, es una entrada (in_adjustment). Si es negativo, salida (out_adjustment).
+            $movementType = ($qtyChange >= 0) ? 'in_adjustment' : 'out_adjustment';
+            
             if ($type === 'discard') $movementType = 'out_expired'; // O out_damaged
 
-            $absQty = abs($quantityChange);
+            $absQty = abs($qtyChange);
             $itemId = $batch['item_id'];
+            
+            // Debug: Añadir tipo de movimiento a la nota si es necesario, o confiar en la lógica
+            $noteText = "AJUSTE Lote: {$batch['batch_number']}. Razón: $reason";
             
             $this->recordMovement(
                 $itemId, 
                 $movementType, 
                 $absQty, 
                 $userId, 
-                "AJUSTE Lote: {$batch['batch_number']}. Razón: $reason",
+                $noteText,
                 $batchId
             );
 

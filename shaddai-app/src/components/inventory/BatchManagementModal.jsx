@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, AlertTriangle, CheckCircle, Clock, Package, Archive, Edit2, Plus, Minus, PauseCircle, PlayCircle } from 'lucide-react';
 import { getBatches, adjustBatch, toggleBatchStatus } from '../../api/inventoryApi';
 import { useAuth } from '../../context/AuthContext';
-import { toast } from 'react-hot-toast';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 
 export default function BatchManagementModal({ item, onClose, onUpdate }) {
   const { token } = useAuth();
+  const toast = useToast();
+  const { confirm } = useConfirm();
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adjustingBatch, setAdjustingBatch] = useState(null); // { batch, type: 'correction' | 'discard' }
@@ -37,7 +40,15 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
     const newStatus = batch.status === 'active' ? 'suspended' : 'active';
     const action = newStatus === 'active' ? 'activar' : 'suspender';
     
-    if (!window.confirm(`¿Estás seguro de ${action} este lote? ${newStatus === 'suspended' ? 'No se podrá usar para salidas.' : 'Volverá a estar disponible.'}`)) return;
+    const isConfirmed = await confirm({
+      title: `¿${action.charAt(0).toUpperCase() + action.slice(1)} lote?`,
+      message: `¿Estás seguro de ${action} este lote? ${newStatus === 'suspended' ? 'No se podrá usar para salidas.' : 'Volverá a estar disponible.'}`,
+      confirmText: 'Sí, confirmar',
+      cancelText: 'Cancelar',
+      tone: newStatus === 'suspended' ? 'warning' : 'info'
+    });
+
+    if (!isConfirmed) return;
 
     try {
       await toggleBatchStatus({ batch_id: batch.id, status: newStatus }, token);
@@ -191,6 +202,7 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
 }
 
 function AdjustmentOverlay({ batch, type, onClose, onSuccess, token }) {
+  const toast = useToast();
   const [mode, setMode] = useState('subtract'); // 'add' or 'subtract'
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
