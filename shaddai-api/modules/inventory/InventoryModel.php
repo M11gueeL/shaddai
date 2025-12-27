@@ -270,6 +270,81 @@ class InventoryModel {
         }
     }
 
+    /**
+     * AJUSTAR LOTE (Corrección de inventario +/-)
+     */
+    public function adjustBatchQuantity($batchId, $quantityChange, $userId, $reason, $type = 'correction') {
+        try {
+            $this->db->beginTransaction();
+
+            $batchRes = $this->db->query("SELECT * FROM inventory_batches WHERE id = :id", [':id' => $batchId]);
+            if (empty($batchRes)) throw new Exception("Lote no encontrado");
+            $batch = $batchRes[0];
+
+            $newQty = $batch['quantity'] + $quantityChange;
+
+            if ($newQty < 0) {
+                throw new Exception("El ajuste resulta en una cantidad negativa.");
+            }
+
+            // Determinar estado
+            $status = ($newQty === 0) ? 'empty' : 'active';
+            // Si es una baja explícita (discard), usamos 'disposed' si llega a 0
+            if ($type === 'discard' && $newQty === 0) $status = 'disposed';
+
+            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st WHERE id = :id", [
+                ':qty' => $newQty, 
+                ':st' => $status,
+                ':id' => $batchId
+            ]);
+
+            // Determinar tipo de movimiento
+            $movementType = ($quantityChange > 0) ? 'in_adjustment' : 'out_adjustment';
+            if ($type === 'discard') $movementType = 'out_expired'; // O out_damaged
+
+            $absQty = abs($quantityChange);
+            $itemId = $batch['item_id'];
+            
+            $this->recordMovement(
+                $itemId, 
+                $movementType, 
+                $absQty, 
+                $userId, 
+                "AJUSTE Lote: {$batch['batch_number']}. Razón: $reason",
+                $batchId
+            );
+
+            $this->syncItemStats($itemId);
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function toggleBatchStatus($batchId, $status, $userId) {
+        // Validar status permitido
+        if (!in_array($status, ['active', 'suspended'])) {
+            throw new Exception("Estado inválido");
+        }
+        
+        // Solo permitimos cambiar entre active y suspended si quantity > 0
+        // Si quantity es 0, el estado debe ser empty o disposed, no suspended/active
+        $batchRes = $this->db->query("SELECT * FROM inventory_batches WHERE id = :id", [':id' => $batchId]);
+        if (empty($batchRes)) throw new Exception("Lote no encontrado");
+        $batch = $batchRes[0];
+
+        if ($batch['quantity'] <= 0) {
+            throw new Exception("No se puede cambiar el estado de un lote vacío o agotado.");
+        }
+
+        return $this->db->execute("UPDATE inventory_batches SET status = :status WHERE id = :id", [
+            ':status' => $status,
+            ':id' => $batchId
+        ]);
+    }
+
     // Helper actualizado para recibir batch_id
     private function recordMovement($itemId, $movementType, $quantity, $userId, $notes = null, $batchId = null) {
         $sql = 'INSERT INTO inventory_movements (item_id, movement_type, quantity, notes, created_by, batch_id) 

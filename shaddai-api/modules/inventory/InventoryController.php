@@ -120,6 +120,56 @@ class InventoryController {
         }
     }
 
+    public function adjustBatch() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub;
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $batchId = $data['batch_id'] ?? null;
+            $quantity = (int)($data['quantity'] ?? 0); // Puede ser negativo o positivo
+            $reason = $data['reason'] ?? null;
+            $type = $data['type'] ?? 'correction'; // correction, discard
+
+            if (!$batchId || $quantity == 0 || empty($reason)) {
+                throw new Exception('Datos inválidos. Se requiere ID, cantidad distinta de 0 y motivo.');
+            }
+
+            $this->model->adjustBatchQuantity($batchId, $quantity, $userId, $reason, $type);
+            echo json_encode(['message' => 'Lote ajustado correctamente']);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function toggleBatchStatus() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub;
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $batchId = $data['batch_id'] ?? null;
+            $status = $data['status'] ?? null; // 'active' or 'suspended'
+
+            if (!$batchId || !$status) {
+                throw new Exception('Datos incompletos');
+            }
+
+            $this->model->toggleBatchStatus($batchId, $status, $userId);
+            echo json_encode(['message' => 'Estado del lote actualizado']);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function restock($id) {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;

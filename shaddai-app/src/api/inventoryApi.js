@@ -33,3 +33,9 @@ export const getBatches = (id, token) =>
 
 export const discardBatch = (data, token) =>
   axios.post(`${API_URL}/inventory/batches/discard`, data, auth(token));
+
+export const adjustBatch = (data, token) =>
+  axios.post(`${API_URL}/inventory/batches/adjust`, data, auth(token));
+
+export const toggleBatchStatus = (data, token) =>
+  axios.post(`${API_URL}/inventory/batches/status`, data, auth(token));
