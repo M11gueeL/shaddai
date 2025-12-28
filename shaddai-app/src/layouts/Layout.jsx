@@ -8,7 +8,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-200 overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 overflow-x-hidden">
       
       <Sidebar 
         isOpen={sidebarOpen} 

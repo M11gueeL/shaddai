@@ -227,7 +227,7 @@ export default function InventoryPanel() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50 pb-12">
+        <div className="min-h-screen pb-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-6">
                 
                 {/* Header Section */}
@@ -261,7 +261,7 @@ export default function InventoryPanel() {
                 />
 
                 {/* Content */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full">
+                <div className="rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full">
                     <InventoryTable
                         items={items}
                         loading={loading}
