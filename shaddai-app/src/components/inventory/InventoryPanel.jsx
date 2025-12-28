@@ -261,7 +261,7 @@ export default function InventoryPanel() {
                 />
 
                 {/* Content */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full max-w-[100vw]">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full">
                     <InventoryTable
                         items={items}
                         loading={loading}

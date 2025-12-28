@@ -15,7 +15,6 @@ export default function Layout() {
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
       />
       
-      
       <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'md:ml-24'}`}>
         
         <div className="sticky top-0 z-30">
@@ -25,7 +24,7 @@ export default function Layout() {
           />
         </div>
         
-        <main className="flex-1 min-h-0 overflow-y-auto">
+        <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
         
