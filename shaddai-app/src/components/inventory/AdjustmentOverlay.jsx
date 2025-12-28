@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useToast } from '../../context/ToastContext';
 import { adjustBatch } from '../../api/inventoryApi';
 import { Trash2, Edit2, X, Minus, Plus, Clock } from 'lucide-react';
+import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function AdjustmentOverlay({ batch, type, onClose, onSuccess, token }) {
   const toast = useToast();
@@ -104,6 +105,8 @@ export default function AdjustmentOverlay({ batch, type, onClose, onSuccess, tok
                 max={mode === 'subtract' ? batch.quantity : undefined}
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
+                onKeyDown={preventNegativeInput}
+                onPaste={preventNegativePaste}
                 className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-xl font-bold text-center tracking-wide"
                 placeholder="0"
                 autoFocus

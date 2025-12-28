@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
 import { getBrands } from '../../api/inventoryApi';
 import { useAuth } from '../../context/AuthContext';
+import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function ItemForm({ initial, onSubmit, loading }) {
   const { token } = useAuth();
@@ -88,6 +89,8 @@ export default function ItemForm({ initial, onSubmit, loading }) {
               step="0.01" 
               value={form.price_usd} 
               onChange={handleChange} 
+              onKeyDown={preventNegativeInput}
+              onPaste={preventNegativePaste}
               required 
               placeholder="0.00"
               className="block w-full rounded-xl border-gray-300 pl-7 focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4" 
@@ -113,6 +116,8 @@ export default function ItemForm({ initial, onSubmit, loading }) {
             type="number" 
             value={form.reorder_level} 
             onChange={handleChange} 
+            onKeyDown={preventNegativeInput}
+            onPaste={preventNegativePaste}
             className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4" 
           />
           <p className="mt-1 text-xs text-gray-500">Alerta cuando el stock sea menor a este valor.</p>

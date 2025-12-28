@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, PackagePlus } from 'lucide-react';
+import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function RestockForm({ item, onSubmit, loading }) {
   const [quantity, setQuantity] = useState(0);
@@ -32,9 +33,11 @@ export default function RestockForm({ item, onSubmit, loading }) {
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Cantidad a Ingresar *</label>
           <input 
             type="number" 
-            min={1} 
+            min="0"
             required 
             value={quantity} 
+            onKeyDown={preventNegativeInput} 
+            onPaste={preventNegativePaste} 
             onChange={(e) => setQuantity(parseInt(e.target.value || '0'))} 
             className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4" 
             placeholder="0"

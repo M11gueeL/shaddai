@@ -65,6 +65,18 @@ class InventoryController {
                 echo json_encode(['message' => 'Por favor, asegúrese de completar el nombre y el precio del producto.']);
                 return;
             }
+
+            if ($data['price_usd'] < 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'El precio no puede ser negativo.']);
+                return;
+            }
+            if (isset($data['reorder_level']) && $data['reorder_level'] < 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'El punto de reorden no puede ser negativo.']);
+                return;
+            }
+
             // NOTA: Ignoramos stock_quantity y expiration_date si vienen aquí.
             // El producto se crea en 0.
             $id = $this->model->create($data, $userId);
@@ -83,6 +95,18 @@ class InventoryController {
             $userId = $payload->sub ?? null;
 
             $data = $_POST;
+
+            if (isset($data['price_usd']) && $data['price_usd'] < 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'El precio no puede ser negativo.']);
+                return;
+            }
+            if (isset($data['reorder_level']) && $data['reorder_level'] < 0) {
+                http_response_code(400);
+                echo json_encode(['error' => 'El punto de reorden no puede ser negativo.']);
+                return;
+            }
+
             $ok = $this->model->update($id, $data, $userId);
             echo json_encode(['updated' => (bool)$ok]);
         } catch (Exception $e) {
