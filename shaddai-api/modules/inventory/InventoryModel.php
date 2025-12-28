@@ -15,21 +15,64 @@ class InventoryModel {
                 (SELECT MIN(expiration_date) FROM inventory_batches WHERE item_id = i.id AND quantity > 0) as next_expiration
                 FROM inventory_items i
                 LEFT JOIN inventory_brands b ON i.brand_id = b.id';
+        
         $where = ['i.is_deleted = 0'];
         $params = [];
-        if (!empty($filters['onlyActive'])) {
+
+        // Filtro general de búsqueda (Search Bar)
+        if (!empty($filters['search'])) {
+            $term = '%' . $filters['search'] . '%';
+            // Usamos parámetros únicos para cada ocurrencia porque PDO::ATTR_EMULATE_PREPARES está en false
+            $where[] = '(i.name LIKE :search_name OR i.code LIKE :search_code OR b.name LIKE :search_brand)';
+            $params[':search_name'] = $term;
+            $params[':search_code'] = $term;
+            $params[':search_brand'] = $term;
+        }
+
+        // Filtros Avanzados
+        if (!empty($filters['name'])) {
+            $where[] = 'i.name LIKE :filter_name';
+            $params[':filter_name'] = '%' . $filters['name'] . '%';
+        }
+        if (!empty($filters['code'])) {
+            $where[] = 'i.code LIKE :filter_code';
+            $params[':filter_code'] = '%' . $filters['code'] . '%';
+        }
+        if (!empty($filters['brand_id'])) {
+            $where[] = 'i.brand_id = :filter_brand';
+            $params[':filter_brand'] = $filters['brand_id'];
+        }
+        
+        // Filtro de Estado
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            if ($filters['status'] === 'active') {
+                $where[] = 'i.is_active = 1';
+            } elseif ($filters['status'] === 'inactive') {
+                $where[] = 'i.is_active = 0';
+            }
+        } elseif (!empty($filters['onlyActive'])) {
+            // Comportamiento por defecto si no se especifica status explícito
             $where[] = 'i.is_active = 1';
         }
+
+        // Filtro de Precio
+        if (!empty($filters['min_price'])) {
+            $where[] = 'i.price_usd >= :min_price';
+            $params[':min_price'] = $filters['min_price'];
+        }
+        if (!empty($filters['max_price'])) {
+            $where[] = 'i.price_usd <= :max_price';
+            $params[':max_price'] = $filters['max_price'];
+        }
+
         if (!empty($filters['low_stock'])) {
             $where[] = 'i.stock_quantity <= i.reorder_level';
         }
-        if (!empty($filters['search'])) {
-            $where[] = '(i.id LIKE :search OR i.name LIKE :search OR i.code LIKE :search OR b.name LIKE :search OR CAST(i.price_usd AS CHAR) LIKE :search)';
-            $params[':search'] = '%' . $filters['search'] . '%';
-        }
+
         if ($where) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
+        
         $sql .= ' ORDER BY i.name ASC';
         return $this->db->query($sql, $params);
     }

@@ -13,7 +13,13 @@ class InventoryController {
             $filters = [
                 'onlyActive' => !isset($_GET['all']) || $_GET['all'] != '1',
                 'low_stock' => isset($_GET['low_stock']) && $_GET['low_stock'] == '1',
-                'search' => $_GET['search'] ?? null
+                'search' => $_GET['search'] ?? null,
+                'name' => $_GET['name'] ?? null,
+                'code' => $_GET['code'] ?? null,
+                'status' => $_GET['status'] ?? null,
+                'brand_id' => $_GET['brand_id'] ?? null,
+                'min_price' => $_GET['min_price'] ?? null,
+                'max_price' => $_GET['max_price'] ?? null,
             ];
             echo json_encode($this->model->getAll($filters));
         } catch (Exception $e) {
