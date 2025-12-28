@@ -365,6 +365,29 @@ class InventoryModel {
             ':id' => $batchId
         ]);
 
+        // Registrar movimiento interno para mantener consistencia en Kardex
+        // Si se suspende (active -> suspended), es una SALIDA de stock disponible
+        // Si se activa (suspended -> active), es una ENTRADA de stock disponible
+        if ($status === 'suspended' && $batch['status'] === 'active') {
+            $this->recordMovement(
+                $batch['item_id'], 
+                'out_adjustment', 
+                $batch['quantity'], 
+                $userId, 
+                "Lote suspendido/desactivado: " . $batch['batch_number'], 
+                $batchId
+            );
+        } elseif ($status === 'active' && $batch['status'] !== 'active') {
+            $this->recordMovement(
+                $batch['item_id'], 
+                'in_adjustment', 
+                $batch['quantity'], 
+                $userId, 
+                "Lote reactivado: " . $batch['batch_number'], 
+                $batchId
+            );
+        }
+
         // Recalcular stock total del item (para que reste/sume si se suspende/activa)
         $this->syncItemStats($batch['item_id']);
         

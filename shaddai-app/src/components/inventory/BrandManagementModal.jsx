@@ -98,77 +98,82 @@ export default function BrandManagementModal({ onClose }) {
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
           
           {/* Formulario */}
-          <form onSubmit={handleSubmit} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-            <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-              {editingId ? <Edit2 size={16}/> : <Plus size={16}/>}
-              {editingId ? 'Editar Marca' : 'Nueva Marca'}
+          <form onSubmit={handleSubmit} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm mb-6">
+            <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              {editingId ? <Edit2 size={18} className="text-indigo-600"/> : <Plus size={18} className="text-indigo-600"/>}
+              {editingId ? 'Editar Marca' : 'Registrar Nueva Marca'}
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nombre de la Marca *</label>
                 <input 
                   type="text" 
-                  placeholder="Nombre (Ej. La Santé)" 
+                  placeholder="Ej. La Santé" 
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4"
                   required
                 />
               </div>
               <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Descripción (Opcional)</label>
                 <input 
                   type="text" 
-                  placeholder="Descripción (Opcional)" 
+                  placeholder="Breve descripción..." 
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2 mt-3">
+            <div className="flex justify-end gap-3 mt-4 pt-2 border-t border-gray-50">
               {editingId && (
-                <button type="button" onClick={handleCancel} className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <button type="button" onClick={handleCancel} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
                   Cancelar
                 </button>
               )}
               <button 
                 type="submit" 
                 disabled={submitting}
-                className="px-4 py-1.5 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 disabled:opacity-50"
+                className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-50"
               >
-                {submitting ? <Loader2 size={14} className="animate-spin"/> : <Save size={14}/>}
-                {editingId ? 'Actualizar' : 'Guardar'}
+                {submitting ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
+                {editingId ? 'Actualizar Marca' : 'Guardar Marca'}
               </button>
             </div>
           </form>
 
           {/* Lista */}
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="animate-spin text-indigo-600"/></div>
+            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-indigo-600 w-8 h-8"/></div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {brands.map(brand => (
-                <div key={brand.id} className={`flex items-center justify-between p-3 bg-white border rounded-lg hover:shadow-sm transition ${brand.is_active ? 'border-gray-200' : 'border-red-200 bg-red-50 opacity-75'}`}>
+                <div key={brand.id} className={`flex items-center justify-between p-4 bg-white border rounded-xl hover:shadow-md transition-all ${brand.is_active ? 'border-gray-100' : 'border-red-100 bg-red-50/50'}`}>
                   <div>
-                    <div className="font-medium text-gray-800 flex items-center gap-2">
+                    <div className="font-bold text-gray-800 flex items-center gap-2 text-sm">
                       {brand.name}
-                      {!brand.is_active && <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Inactivo</span>}
+                      {!brand.is_active && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">Inactivo</span>}
                     </div>
-                    {brand.description && <div className="text-xs text-gray-500">{brand.description}</div>}
+                    {brand.description && <div className="text-xs text-gray-500 mt-1">{brand.description}</div>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleEdit(brand)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
-                      <Edit2 size={16}/>
+                    <button onClick={() => handleEdit(brand)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
+                      <Edit2 size={18}/>
                     </button>
                     {brand.is_active == 1 && (
-                      <button onClick={() => handleDelete(brand.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition">
-                        <Trash2 size={16}/>
+                      <button onClick={() => handleDelete(brand.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Desactivar">
+                        <Trash2 size={18}/>
                       </button>
                     )}
                   </div>
                 </div>
               ))}
               {brands.length === 0 && (
-                <p className="text-center text-gray-500 text-sm py-4">No hay marcas registradas.</p>
+                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+                    <Tag className="mx-auto h-10 w-10 text-gray-300 mb-2" />
+                    <p className="text-gray-500 font-medium">No hay marcas registradas.</p>
+                </div>
               )}
             </div>
           )}

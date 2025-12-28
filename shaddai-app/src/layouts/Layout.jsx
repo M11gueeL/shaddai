@@ -8,7 +8,7 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-blue-50 to-indigo-200">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-200 overflow-x-hidden">
       
       <Sidebar 
         isOpen={sidebarOpen} 
@@ -16,7 +16,7 @@ export default function Layout() {
       />
       
       
-      <div className={`flex flex-col flex-1 transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'md:ml-24'}`}>
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'md:ml-72' : 'md:ml-24'}`}>
         
         <div className="sticky top-0 z-30">
           <Header 

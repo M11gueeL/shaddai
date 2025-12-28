@@ -40,6 +40,19 @@ export default function InventoryPanel() {
     const [batchItem, setBatchItem] = useState(null);
     const [showBrandModal, setShowBrandModal] = useState(false);
 
+    // Auto-refresh interval (every 5 seconds)
+    useEffect(() => {
+        if (!token) return;
+        const interval = setInterval(() => {
+            // Silent refresh (don't set loading to true to avoid flickering)
+            const params = { all: 1, low_stock: lowStockOnly ? 1 : undefined, search: search || undefined };
+            listInventory(params, token).then(res => {
+                if (res.data) setItems(res.data);
+            }).catch(console.error);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [token, lowStockOnly, search]);
+
     const fetchInventory = useCallback(async () => {
         if (!token) return;
         setLoading(true);
@@ -88,19 +101,19 @@ export default function InventoryPanel() {
 
     const handleDelete = async (item) => {
         const accepted = await confirm({
-            title: `Desactivar ${item.name}`,
-            message: '¿Estás seguro? El insumo dejará de estar disponible para nuevos registros, pero se mantendrá el historial.',
-            confirmText: 'Desactivar',
+            title: `Eliminar ${item.name}`,
+            message: 'Esta acción eliminará el insumo y podría afectar el historial. ¿Deseas continuar?',
+            confirmText: 'Eliminar',
             cancelText: 'Cancelar',
             tone: 'danger'
         });
         if (!accepted) return;
         try {
             await deleteInventoryItem(item.id, token);
-            toast.success('Insumo desactivado');
+            toast.success('Insumo eliminado');
             fetchInventory();
         } catch (e) {
-            toast.error(e.response?.data?.error || 'Error al desactivar');
+            toast.error(e.response?.data?.error || 'Error al eliminar');
         }
     };
 
@@ -214,7 +227,7 @@ export default function InventoryPanel() {
                             <span className={`text-2xl font-bold ${lowCount > 0 ? 'text-red-600' : 'text-gray-900'}`}>{lowCount}</span>
                         </div>
 
-                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between group hover:border-indigo-200 transition-all hidden md:flex">
+                        <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between group hover:border-indigo-200 transition-all md:flex">
                             <div className="flex items-center gap-3 text-gray-500 mb-2">
                                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
                                     <DollarSign size={18} />
@@ -227,7 +240,7 @@ export default function InventoryPanel() {
                 </ElegantHeader>
 
                 {/* Toolbar Section */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col lg:flex-row gap-4 items-center justify-between sticky top-4 z-30 backdrop-blur-xl bg-white/90">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col lg:flex-row gap-4 items-center justify-between sticky top-4 z-30 backdrop-blur-xl">
                     
                     {/* Search */}
                     <div className="relative w-full lg:w-96 group">
@@ -281,13 +294,13 @@ export default function InventoryPanel() {
                             </>
                         )}
 
-                        <button 
+                        {/* <button 
                             onClick={fetchInventory}
                             className="p-2.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors border border-transparent hover:border-indigo-100"
                             title="Recargar"
                         >
                             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                        </button>
+                        </button> */}
 
                         <button 
                             onClick={exportCSV}
@@ -312,7 +325,7 @@ export default function InventoryPanel() {
                 </div>
 
                 {/* Content */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full max-w-[100vw]">
                     <InventoryTable
                         items={items}
                         loading={loading}
