@@ -1,69 +1,100 @@
 import React from 'react';
-import { Package, Loader2 } from 'lucide-react';
+import { 
+    Package, Loader2, MoreVertical, Edit, Trash2, 
+    Archive, History, Layers, PlusCircle, AlertCircle 
+} from 'lucide-react';
 
 export default function InventoryTable({ items, onEdit, onDelete, onRestock, onMovements, onManageBatches, loading, canEdit }) {
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-16">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      <div className="flex flex-col justify-center items-center py-24">
+        <Loader2 className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
+        <p className="text-gray-500 font-medium">Cargando inventario...</p>
       </div>
     );
   }
 
   if (!items.length) {
     return (
-      <div className="text-center py-16 border border-dashed rounded-2xl bg-white/60">
-        <Package className="w-10 h-10 mx-auto text-gray-400 mb-4" />
-        <p className="text-gray-600 text-sm">No hay insumos que mostrar.</p>
+      <div className="text-center py-24 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+        <div className="bg-white p-4 rounded-full shadow-sm inline-block mb-4">
+            <Package className="w-12 h-12 text-gray-300" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900">No hay insumos encontrados</h3>
+        <p className="text-gray-500 text-sm mt-1 max-w-sm mx-auto">Intenta ajustar los filtros de búsqueda o agrega un nuevo insumo al inventario.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Vista Móvil */}
-      <div className="md:hidden space-y-3">
+    <div className="w-full">
+      {/* Mobile View (Cards) */}
+      <div className="md:hidden space-y-4 p-4 bg-gray-50/50">
         {items.map((item) => {
           const low = item.stock_quantity <= item.reorder_level;
           
           return (
-            <div key={item.id} className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="text-base font-semibold leading-snug text-gray-900 break-words">{item.name}</p>
-                  <p className="text-xs text-gray-500">
-                    Código: {item.code || '—'} <span className="mx-1">•</span> {item.brand_name || 'Genérico'}
-                  </p>
+            <div key={item.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+              {/* Status Stripe */}
+              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${item.is_active ? (low ? 'bg-amber-500' : 'bg-emerald-500') : 'bg-gray-300'}`}></div>
+              
+              <div className="pl-3">
+                <div className="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 className="font-bold text-gray-900 text-lg leading-tight">{item.name}</h3>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                            <span className="bg-gray-100 px-2 py-0.5 rounded text-gray-600 font-medium">{item.code || 'S/C'}</span>
+                            <span>•</span>
+                            <span className="text-indigo-600 font-medium">{item.brand_name || 'Genérico'}</span>
+                        </div>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${item.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {item.is_active ? 'Activo' : 'Inactivo'}
+                    </span>
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${item.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {item.is_active ? 'Activo' : 'Inactivo'}
-                </span>
-              </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                <div className={`rounded-xl border px-3 py-2 ${low ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>
-                  <p className="text-sm font-semibold">{item.stock_quantity}</p>
-                  <p className="text-[11px] uppercase tracking-wide">Stock</p>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className={`p-2.5 rounded-xl border ${low ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                        <span className={`block text-xs font-semibold uppercase mb-0.5 ${low ? 'text-amber-700' : 'text-emerald-700'}`}>Stock</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className={`text-lg font-bold ${low ? 'text-amber-800' : 'text-emerald-800'}`}>{item.stock_quantity}</span>
+                            {low && <AlertCircle size={14} className="text-amber-600" />}
+                        </div>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                        <span className="block text-xs font-semibold text-gray-500 uppercase mb-0.5">Precio</span>
+                        <span className="text-lg font-bold text-gray-700">${Number(item.price_usd).toFixed(2)}</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                        <span className="block text-xs font-semibold text-gray-500 uppercase mb-0.5">Unidad</span>
+                        <span className="text-sm font-bold text-gray-700 mt-1 block truncate" title={item.unit_of_measure}>{item.unit_of_measure}</span>
+                    </div>
                 </div>
-                <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
-                  <p className="text-sm font-semibold">{item.unit_of_measure}</p>
-                  <p className="text-[11px] uppercase tracking-wide">Unidad</p>
-                </div>
-                <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
-                  <p className="text-sm font-semibold">${Number(item.price_usd).toFixed(2)}</p>
-                  <p className="text-[11px] uppercase tracking-wide">Precio USD</p>
-                </div>
-              </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button onClick={() => onMovements(item)} className="flex-1 min-w-[120px] rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 flex items-center justify-center">Movimientos</button>
-                <button onClick={() => onManageBatches(item)} className="flex-1 min-w-[120px] rounded-lg bg-purple-100 px-3 py-2 text-xs font-semibold text-purple-700 hover:bg-purple-200 flex items-center justify-center">Lotes</button>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <button onClick={() => onMovements(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap">
+                        <History size={14} /> Historial
+                    </button>
+                    <button onClick={() => onManageBatches(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap">
+                        <Layers size={14} /> Lotes
+                    </button>
+                    {canEdit && (
+                        <button onClick={() => onRestock(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap">
+                            <PlusCircle size={14} /> Stock
+                        </button>
+                    )}
+                </div>
+                
                 {canEdit && (
-                  <>
-                    <button onClick={() => onRestock(item)} className="flex-1 min-w-[120px] rounded-lg bg-indigo-100 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-200 flex items-center justify-center">+ Stock</button>
-                    <button onClick={() => onEdit(item)} className="flex-1 min-w-[120px] rounded-lg bg-blue-100 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-200 flex items-center justify-center">Editar</button>
-                    <button onClick={() => onDelete(item)} className="flex-1 min-w-[120px] rounded-lg bg-red-100 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-200 flex items-center justify-center">Borrar</button>
-                  </>
+                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                        <button onClick={() => onEdit(item)} className="flex-1 text-blue-600 text-xs font-medium py-1.5 hover:bg-blue-50 rounded-lg transition-colors">
+                            Editar
+                        </button>
+                        <div className="w-px h-4 bg-gray-200"></div>
+                        <button onClick={() => onDelete(item)} className="flex-1 text-red-600 text-xs font-medium py-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                            Desactivar
+                        </button>
+                    </div>
                 )}
               </div>
             </div>
@@ -71,58 +102,109 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
         })}
       </div>
 
-      {/* Vista Escritorio */}
-      <div className="hidden md:block">
-        <div className="overflow-x-auto rounded-2xl border border-gray-200 shadow-sm bg-white">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 text-gray-600">
-                <th className="text-left font-medium px-4 py-3">Nombre</th>
-                <th className="text-left font-medium px-4 py-3">Marca</th>
-                <th className="text-left font-medium px-4 py-3">Código</th>
-                <th className="text-left font-medium px-4 py-3">Stock</th>
-                <th className="text-left font-medium px-4 py-3">UM</th>
-                <th className="text-left font-medium px-4 py-3">Precio USD</th>
-                <th className="text-left font-medium px-4 py-3">Estado</th>
-                <th className="text-right font-medium px-4 py-3">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((item) => {
-                const low = item.stock_quantity <= item.reorder_level;
+      {/* Desktop View (Table) */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="min-w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50/80 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-semibold">
+              <th className="px-6 py-4 rounded-tl-2xl">Producto</th>
+              <th className="px-6 py-4">Marca</th>
+              <th className="px-6 py-4 text-center">Stock</th>
+              <th className="px-6 py-4">Precio</th>
+              <th className="px-6 py-4">Estado</th>
+              <th className="px-6 py-4 text-right rounded-tr-2xl">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100 bg-white">
+            {items.map((item) => {
+              const low = item.stock_quantity <= item.reorder_level;
 
-                return (
-                  <tr key={item.id} className="hover:bg-indigo-50/40 transition">
-                    <td className="px-4 py-2.5 font-medium text-gray-800 max-w-[220px] truncate" title={item.name}>{item.name}</td>
-                    <td className="px-4 py-2.5 text-gray-600 text-xs">{item.brand_name || 'Genérico'}</td>
-                    <td className="px-4 py-2.5 text-gray-500">{item.code || '-'}</td>
-                    <td className="px-4 py-2.5">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold ${low ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{item.stock_quantity}</span>
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-600">{item.unit_of_measure}</td>
-                    <td className="px-4 py-2.5 text-gray-700">${Number(item.price_usd).toFixed(2)}</td>
-                    <td className="px-4 py-2.5">
-                      {item.is_active ? <span className="text-emerald-600 text-xs font-semibold">Activo</span> : <span className="text-gray-400 text-xs font-semibold">Inactivo</span>}
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <div className="inline-flex gap-1">
-                        <button onClick={() => onMovements(item)} className="px-2 py-1.5 rounded-md text-xs bg-slate-100 hover:bg-slate-200 text-slate-700">Mov</button>
-                        <button onClick={() => onManageBatches(item)} className="px-2 py-1.5 rounded-md text-xs bg-purple-100 hover:bg-purple-200 text-purple-700">Lotes</button>
+              return (
+                <tr key={item.id} className="group hover:bg-indigo-50/30 transition-colors duration-150">
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-gray-900 text-sm">{item.name}</span>
+                        <span className="text-xs text-gray-500 font-mono mt-0.5">{item.code || 'S/C'}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                        {item.brand_name || 'Genérico'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex flex-col items-center">
+                        <span className={`text-sm font-bold ${low ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {item.stock_quantity}
+                        </span>
+                        <span className="text-[10px] text-gray-400 uppercase">{item.unit_of_measure}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="text-sm font-medium text-gray-700 font-mono">
+                        ${Number(item.price_usd).toFixed(2)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        item.is_active 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                        : 'bg-gray-100 text-gray-500 border border-gray-200'
+                    }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${item.is_active ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+                        {item.is_active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
+                        <button 
+                            onClick={() => onMovements(item)} 
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Ver Historial"
+                        >
+                            <History size={18} />
+                        </button>
+                        <button 
+                            onClick={() => onManageBatches(item)} 
+                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Gestionar Lotes"
+                        >
+                            <Layers size={18} />
+                        </button>
+                        
                         {canEdit && (
-                          <>
-                            <button onClick={() => onRestock(item)} className="px-2 py-1.5 rounded-md text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700">+Stock</button>
-                            <button onClick={() => onEdit(item)} className="px-2 py-1.5 rounded-md text-xs bg-blue-100 hover:bg-blue-200 text-blue-700">Editar</button>
-                            <button onClick={() => onDelete(item)} className="px-2 py-1.5 rounded-md text-xs bg-red-100 hover:bg-red-200 text-red-700">Borrar</button>
-                          </>
+                            <>
+                                <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                                <button 
+                                    onClick={() => onRestock(item)} 
+                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                    title="Abastecer Stock"
+                                >
+                                    <PlusCircle size={18} />
+                                </button>
+                                <button 
+                                    onClick={() => onEdit(item)} 
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Editar"
+                                >
+                                    <Edit size={18} />
+                                </button>
+                                <button 
+                                    onClick={() => onDelete(item)} 
+                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Desactivar"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );

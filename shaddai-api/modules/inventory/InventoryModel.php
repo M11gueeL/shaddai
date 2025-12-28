@@ -24,7 +24,7 @@ class InventoryModel {
             $where[] = 'i.stock_quantity <= i.reorder_level';
         }
         if (!empty($filters['search'])) {
-            $where[] = '(i.name LIKE :search OR i.code LIKE :search)';
+            $where[] = '(i.id LIKE :search OR i.name LIKE :search OR i.code LIKE :search OR b.name LIKE :search OR CAST(i.price_usd AS CHAR) LIKE :search)';
             $params[':search'] = '%' . $filters['search'] . '%';
         }
         if ($where) {
