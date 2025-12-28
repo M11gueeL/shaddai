@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle } from 'lucide-react';
+import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle, FileText } from 'lucide-react';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function InventoryFilters({
@@ -11,8 +11,7 @@ export default function InventoryFilters({
     canEdit,
     onShowBrandModal,
     onShowAlerts,
-    exporting,
-    onExportCSV,
+    onOpenReports,
     onCreate
 }) {
     return (
@@ -86,12 +85,12 @@ export default function InventoryFilters({
                     )}
 
                     <button 
-                        onClick={onExportCSV}
-                        disabled={exporting}
-                        className="p-2.5 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all duration-300 border border-transparent hover:border-emerald-100 hover:shadow-sm"
-                        title="Exportar CSV"
+                        onClick={onOpenReports}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 rounded-xl transition-all duration-300 shadow-sm"
+                        title="Reportes y Análisis"
                     >
-                        <Download size={20} />
+                        <FileText size={18} />
+                        <span className="hidden sm:inline font-medium">Reportes</span>
                     </button>
 
                     {canEdit && (

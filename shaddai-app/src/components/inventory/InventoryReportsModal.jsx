@@ -1,0 +1,265 @@
+import { useState } from 'react';
+import { 
+  Download, 
+  FileText, 
+  X, 
+  Calendar, 
+  ChevronDown, 
+  ClipboardList, 
+  CheckCheck, 
+  AlertTriangle, 
+  ShoppingCart, 
+  AlertOctagon, 
+  PieChart, 
+  Skull, 
+  DollarSign,
+  FileSpreadsheet
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+const reportTypes = [
+  { 
+    id: 'expiration_risk', 
+    title: 'Semáforo de Vencimientos', 
+    description: 'Proyección de riesgo de insumos próximos a vencer.', 
+    icon: AlertTriangle, 
+    color: 'text-amber-600', 
+    bg: 'bg-amber-50' 
+  },
+  { 
+    id: 'movement_kardex', 
+    title: 'Kardex de Movimientos', 
+    description: 'Auditoría de trazabilidad de entradas y salidas.', 
+    icon: ClipboardList, 
+    color: 'text-blue-600', 
+    bg: 'bg-blue-50' 
+  },
+  { 
+    id: 'purchase_suggestion', 
+    title: 'Sugerido de Compras', 
+    description: 'Lista de reabastecimiento inteligente.', 
+    icon: ShoppingCart, 
+    color: 'text-green-600', 
+    bg: 'bg-green-50' 
+  },
+  { 
+    id: 'leaks_adjustments', 
+    title: 'Fugas y Ajustes Manuales', 
+    description: 'Control de pérdidas y ajustes de inventario.', 
+    icon: AlertOctagon, 
+    color: 'text-red-600', 
+    bg: 'bg-red-50' 
+  },
+  { 
+    id: 'consumption_analysis', 
+    title: 'Consumo: Facturado vs. Uso Interno', 
+    description: 'Análisis de rentabilidad y uso operativo.', 
+    icon: PieChart, 
+    color: 'text-purple-600', 
+    bg: 'bg-purple-50' 
+  },
+  { 
+    id: 'dead_stock', 
+    title: 'Stock "Muerto" o Sin Rotación', 
+    description: 'Identificar productos sin movimiento reciente.', 
+    icon: Skull, 
+    color: 'text-gray-600', 
+    bg: 'bg-gray-100' 
+  },
+  { 
+    id: 'inventory_valuation', 
+    title: 'Valoración de Inventario', 
+    description: 'Análisis detallado por lote y costo.', 
+    icon: DollarSign, 
+    color: 'text-emerald-600', 
+    bg: 'bg-emerald-50' 
+  },
+];
+
+export default function InventoryReportsModal({ isOpen, onClose }) {
+  const [selectedReport, setSelectedReport] = useState(reportTypes[0].id);
+  const [isReportListOpen, setIsReportListOpen] = useState(false);
+  const [loadingFormat, setLoadingFormat] = useState(null);
+  
+  const [filters, setFilters] = useState({
+    start_date: new Date().toISOString().split('T')[0], 
+    end_date: new Date().toISOString().split('T')[0],   
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleExport = async (format) => {
+    try {
+      setLoadingFormat(format);
+      
+      // Simulación de generación de reporte
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const reportName = reportTypes.find(r => r.id === selectedReport)?.title || 'Reporte';
+      toast.success(`Reporte "${reportName}" (${format.toUpperCase()}) generado correctamente`);
+      
+      // Aquí iría la lógica real de llamada al API
+      // const response = await inventoryApi.generateReport({ ...filters, type: selectedReport, format }, token);
+      
+      onClose();
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al generar el reporte');
+    } finally {
+      setLoadingFormat(null);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const currentReport = reportTypes.find(r => r.id === selectedReport);
+  const CurrentIcon = currentReport?.icon || ClipboardList;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        
+        {/* Header del Modal */}
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl flex-shrink-0">
+          <div className="text-white">
+            <h3 className="font-bold text-lg">Reportes de Inventario</h3>
+            <p className="text-blue-100 text-xs opacity-90">Generación de reportes y análisis</p>
+          </div>
+          <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-6 bg-gray-50/50 overflow-y-auto">
+          
+          {/* Selección de Reporte */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">Tipo de Reporte</label>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsReportListOpen(!isReportListOpen)}
+                className="w-full flex items-center justify-between text-left border border-gray-200 bg-gray-50 rounded-lg px-3 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:bg-gray-100"
+              >
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <div className={`p-1.5 rounded-md flex-shrink-0 ${currentReport?.bg}`}>
+                    <CurrentIcon className={`w-5 h-5 ${currentReport?.color}`} />
+                  </div>
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-gray-800 font-bold text-sm truncate">{currentReport?.title}</span>
+                    <span className="text-gray-500 text-xs truncate">{currentReport?.description}</span>
+                  </div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isReportListOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isReportListOpen && (
+                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                  <div className="p-1 space-y-0.5">
+                    {reportTypes.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedReport(option.id);
+                          setIsReportListOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors text-left ${selectedReport === option.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                      >
+                        <div className={`p-1.5 rounded-md flex-shrink-0 ${option.bg}`}>
+                          <option.icon className={`w-4 h-4 ${option.color}`} />
+                        </div>
+                        <div className="flex flex-col overflow-hidden">
+                          <span className={`font-medium truncate ${selectedReport === option.id ? 'text-blue-700' : 'text-gray-700'}`}>{option.title}</span>
+                          <span className="text-xs text-gray-500 truncate">{option.description}</span>
+                        </div>
+                        {selectedReport === option.id && <CheckCheck className="w-4 h-4 ml-auto text-blue-600 flex-shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Filtros de Fecha */}
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
+                  <Calendar className="w-3 h-3 text-blue-500" /> Fecha Inicio
+                </label>
+                <input 
+                  type="date" 
+                  name="start_date"
+                  value={filters.start_date}
+                  onChange={handleInputChange}
+                  className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
+                  <Calendar className="w-3 h-3 text-blue-500" /> Fecha Fin
+                </label>
+                <input 
+                  type="date" 
+                  name="end_date"
+                  value={filters.end_date}
+                  onChange={handleInputChange}
+                  className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 italic">
+              * Algunos reportes como "Semáforo de Vencimientos" o "Stock Muerto" pueden ignorar el rango de fechas y usar la fecha actual.
+            </p>
+          </div>
+
+          {/* Botones de Acción */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">Formato de descarga</p>
+            
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => handleExport('pdf')}
+                disabled={!!loadingFormat}
+                className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all group shadow-sm hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-100 text-red-600 rounded-lg group-hover:bg-red-200 transition-colors">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-gray-800 group-hover:text-red-700">Documento PDF</span>
+                    <span className="block text-xs text-gray-500">Ideal para imprimir y reportes oficiales</span>
+                  </div>
+                </div>
+                {loadingFormat === 'pdf' ? <span className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-red-500" />}
+              </button>
+
+              <button
+                onClick={() => handleExport('excel')}
+                disabled={!!loadingFormat}
+                className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl transition-all group shadow-sm hover:shadow-md"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg group-hover:bg-emerald-200 transition-colors">
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-sm font-bold text-gray-800 group-hover:text-emerald-700">Excel (.xlsx)</span>
+                    <span className="block text-xs text-gray-500">Para análisis de datos y contabilidad</span>
+                  </div>
+                </div>
+                {loadingFormat === 'excel' ? <span className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-emerald-500" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -15,6 +15,7 @@ import BrandManagementModal from './BrandManagementModal';
 import ElegantHeader from '../common/ElegantHeader';
 import InventoryStats from './InventoryStats';
 import InventoryFilters from './InventoryFilters';
+import InventoryReportsModal from './InventoryReportsModal';
 
 export default function InventoryPanel() {
     const { token, hasRole } = useAuth();
@@ -32,12 +33,12 @@ export default function InventoryPanel() {
     const [movementsItem, setMovementsItem] = useState(null);
     const [movements, setMovements] = useState([]);
     const [loadingMovements, setLoadingMovements] = useState(false);
-    const [exporting, setExporting] = useState(false);
     const [showExpiringModal, setShowExpiringModal] = useState(false);
     const [expiringItems, setExpiringItems] = useState([]);
     const [loadingExpiring, setLoadingExpiring] = useState(false);
     const [batchItem, setBatchItem] = useState(null);
     const [showBrandModal, setShowBrandModal] = useState(false);
+    const [showReportsModal, setShowReportsModal] = useState(false);
     const [stats, setStats] = useState({ total_items: 0, low_stock_count: 0, total_value: 0 });
 
     // Advanced Filters State
@@ -182,37 +183,6 @@ export default function InventoryPanel() {
         }
     };
 
-    const exportCSV = () => {
-        setExporting(true);
-        try {
-            const header = ['ID','Código','Nombre','Stock','Unidad','Punto Reorden','Precio USD','Estado','Marca'];
-            const rows = items.map(i => [
-                i.id, 
-                i.code || '', 
-                `"${i.name}"`, 
-                i.stock_quantity, 
-                i.unit_of_measure, 
-                i.reorder_level, 
-                i.price_usd, 
-                i.is_active ? 'Activo' : 'Inactivo',
-                i.brand_name || ''
-            ]);
-            const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `inventario_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-            toast.success('Archivo CSV generado');
-        } catch (e) {
-            toast.error('Error al exportar');
-        } finally {
-            setExporting(false);
-        }
-    };
-
     const handleShowAlerts = async () => {
         setShowExpiringModal(true);
         setLoadingExpiring(true);
@@ -255,8 +225,7 @@ export default function InventoryPanel() {
                     canEdit={canEdit}
                     onShowBrandModal={() => setShowBrandModal(true)}
                     onShowAlerts={handleShowAlerts}
-                    exporting={exporting}
-                    onExportCSV={exportCSV}
+                    onOpenReports={() => setShowReportsModal(true)}
                     onCreate={() => setCreating(true)}
                 />
 
@@ -312,6 +281,11 @@ export default function InventoryPanel() {
             {showBrandModal && (
                 <BrandManagementModal onClose={() => setShowBrandModal(false)} />
             )}
+
+            <InventoryReportsModal 
+                isOpen={showReportsModal} 
+                onClose={() => setShowReportsModal(false)} 
+            />
         </div>
     );
 }
