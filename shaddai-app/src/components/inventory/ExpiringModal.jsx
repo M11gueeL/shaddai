@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { X, AlertTriangle, Calendar, Clock, AlertCircle, CheckCircle2, Package, Hourglass, Filter } from 'lucide-react';
+import { X, AlertTriangle, Calendar, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import FilterTab from './FilterTab';
+import ExpiringItemRow from './ExpiringItemRow';
 
 export default function ExpiringModal({ isOpen, onClose, items, loading }) {
   const [filter, setFilter] = useState('all'); // all, expired, urgent, upcoming
@@ -175,7 +177,7 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
             <div className="divide-y divide-gray-100">
               {filteredItems.map((item, index) => (
                 // Usamos index como key fallback porque puede haber duplicados de ID si hay varios lotes
-                <ItemRow key={`${item.id}-${item.batch_number}-${index}`} item={item} />
+                <ExpiringItemRow key={`${item.id}-${item.batch_number}-${index}`} item={item} />
               ))}
             </div>
           )}
@@ -193,80 +195,6 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
   );
 }
 
-function FilterTab({ active, onClick, label, count, color, icon: Icon }) {
-  const colors = {
-    gray: active ? 'bg-gray-800 text-white shadow-lg shadow-gray-200' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200',
-    red: active ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-white text-red-600 hover:bg-red-50 border border-red-100',
-    orange: active ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' : 'bg-white text-orange-600 hover:bg-orange-50 border border-orange-100',
-    blue: active ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-white text-blue-600 hover:bg-blue-50 border border-blue-100',
-  };
 
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${colors[color]}`}
-    >
-      {Icon && <Icon size={16} />}
-      {label}
-      <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold ${active ? 'bg-white/20' : 'bg-gray-100 text-gray-600'}`}>
-        {count}
-      </span>
-    </button>
-  );
-}
 
-function ItemRow({ item }) {
-  const { status, daysLeft, batch_number, quantity } = item;
-  
-  // Determine visual style based on daysLeft if status is generic 'upcoming'
-  let displayStatus = status;
-  if (status === 'upcoming') {
-      if (daysLeft <= 30) displayStatus = 'soon';
-      else if (daysLeft <= 60) displayStatus = 'medium';
-      else displayStatus = 'long';
-  }
 
-  const statusConfig = {
-    expired: { bg: 'bg-red-50', border: 'border-red-100', text: 'text-red-700', badge: 'bg-red-100 text-red-700', label: 'VENCIDO' },
-    urgent: { bg: 'bg-orange-50', border: 'border-orange-100', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-700', label: 'URGENTE' },
-    soon: { bg: 'bg-yellow-50', border: 'border-yellow-100', text: 'text-yellow-700', badge: 'bg-yellow-100 text-yellow-700', label: '30 DÍAS' },
-    medium: { bg: 'bg-blue-50', border: 'border-blue-100', text: 'text-blue-700', badge: 'bg-blue-100 text-blue-700', label: '30-60 DÍAS' },
-    long: { bg: 'bg-indigo-50', border: 'border-indigo-100', text: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700', label: '> 60 DÍAS' },
-  };
-
-  const config = statusConfig[displayStatus] || statusConfig.long;
-
-  return (
-    <div className={`px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors group ${status === 'expired' ? 'bg-red-50/30' : ''}`}>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${config.badge}`}>
-        {status === 'expired' ? <AlertCircle size={20} /> : <Calendar size={20} />}
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-start">
-          <h4 className="font-semibold text-gray-900 truncate pr-2">{item.name}</h4>
-          <span className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${config.badge}`}>
-            {status === 'expired' ? `Hace ${Math.abs(daysLeft)} días` : `${daysLeft} días`}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-          <span className="flex items-center gap-1.5">
-            <Package size={14} />
-            Stock Lote: <strong className="text-gray-700">{quantity}</strong> {item.unit_of_measure}
-          </span>
-          {batch_number && (
-            <span className="flex items-center gap-1.5">
-                <Filter size={14} />
-                Lote: <strong className="text-gray-700">{batch_number}</strong>
-            </span>
-          )}
-          <span className="flex items-center gap-1.5">
-            <Calendar size={14} />
-            Vence: <span className="font-medium">{item.expDateObj ? item.expDateObj.toLocaleDateString() : new Date(item.expiration_date + 'T00:00:00').toLocaleDateString()}</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}

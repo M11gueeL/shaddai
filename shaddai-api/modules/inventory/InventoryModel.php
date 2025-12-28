@@ -9,6 +9,17 @@ class InventoryModel {
         $this->db = Database::getInstance();
     }
 
+    // desarrolla un metodo que obtenga de las tablas relacionadas al inventory los siguientes tres datos: total de items, total de stock bajo (dinmicamente segun el reorder_level) y total de valor de inventario (sumando stock_quantity * price_usd) de forma general osea todos los items
+    public function getInventoryStats() {
+        $sql = 'SELECT 
+                    (SELECT COUNT(*) FROM inventory_items WHERE is_deleted = 0) AS total_items,
+                    (SELECT COUNT(*) FROM inventory_items WHERE stock_quantity <= reorder_level AND is_deleted = 0) AS low_stock_count,
+                    (SELECT SUM(stock_quantity * price_usd) FROM inventory_items WHERE is_deleted = 0) AS total_value
+                ';
+        $result = $this->db->query($sql);
+        return $result ? $result[0] : ['total_items' => 0, 'low_stock_count' => 0, 'total_value' => 0];
+    }
+
     public function getAll($filters = []) {
         $sql = 'SELECT i.id, i.code, i.name, i.description, i.stock_quantity, i.unit_of_measure, i.reorder_level, i.price_usd, i.is_active, i.created_at, i.updated_at, i.brand_id,
                 b.name as brand_name,

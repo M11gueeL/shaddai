@@ -14,7 +14,7 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
     );
   }
 
-  if (!items.length) {
+  if (!Array.isArray(items) || !items.length) {
     return (
       <div className="text-center py-24 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
         <div className="bg-white p-4 rounded-full shadow-sm inline-block mb-4">

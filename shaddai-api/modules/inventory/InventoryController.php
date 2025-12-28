@@ -28,6 +28,16 @@ class InventoryController {
         }
     }
 
+    public function stats() {
+        try {
+            $stats = $this->model->getInventoryStats();
+            echo json_encode($stats);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function get($id) {
         try {
             $item = $this->model->getById($id);

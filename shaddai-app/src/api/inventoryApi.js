@@ -7,6 +7,9 @@ const auth = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
 export const listInventory = (params = {}, token) =>
   axios.get(`${API_URL}/inventory`, { ...auth(token), params });
 
+export const getInventoryStats = (token) =>
+  axios.get(`${API_URL}/inventory/stats`, auth(token));
+
 export const getInventoryItem = (id, token) =>
   axios.get(`${API_URL}/inventory/${id}`, auth(token));
 
