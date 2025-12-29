@@ -571,6 +571,46 @@ class InventoryModel {
         }
     }
 
+    public function getPurchaseSuggestionData() {
+        // Seleccionar items donde stock <= reorder_level
+        // Asumiremos Nivel Óptimo = reorder_level * 2 por defecto.
+        
+        $sql = 'SELECT 
+                    code,
+                    name as item_name,
+                    stock_quantity,
+                    reorder_level,
+                    (reorder_level * 2 - stock_quantity) as deficit
+                FROM inventory_items
+                WHERE stock_quantity <= reorder_level
+                AND is_active = 1
+                ORDER BY deficit DESC';
+        
+        return $this->db->query($sql);
+    }
+
+    public function getLeaksAndAdjustmentsData($startDate, $endDate) {
+        $sql = 'SELECT 
+                    im.created_at,
+                    CONCAT(u.first_name, " ", u.last_name) as user_name,
+                    im.movement_type,
+                    im.quantity as quantity_adjusted,
+                    im.notes,
+                    i.name as item_name,
+                    i.code as item_code
+                FROM inventory_movements im
+                JOIN inventory_items i ON im.item_id = i.id
+                LEFT JOIN users u ON im.created_by = u.id
+                WHERE DATE(im.created_at) BETWEEN :start_date AND :end_date
+                AND im.movement_type IN ("in_adjustment", "out_adjustment")
+                ORDER BY im.created_at DESC';
+        
+        return $this->db->query($sql, [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ]);
+    }
+
     public function getUserNameById($id) {
         $sql = 'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = :id';
         $res = $this->db->query($sql, [':id' => $id]);

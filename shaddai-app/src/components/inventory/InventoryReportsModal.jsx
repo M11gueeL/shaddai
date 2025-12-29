@@ -217,7 +217,7 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
           </div>
 
           {/* Filtros de Fecha */}
-          {selectedReport !== 'expiration_risk' && (
+          {selectedReport !== 'expiration_risk' && selectedReport !== 'purchase_suggestion' && (
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>

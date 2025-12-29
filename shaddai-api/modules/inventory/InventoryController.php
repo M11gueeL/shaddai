@@ -297,6 +297,20 @@ class InventoryController {
                 } else {
                     $this->reportService->generateKardexPdf($data, $startDate, $endDate, $generatedBy);
                 }
+            } elseif ($type === 'purchase_suggestion') {
+                $data = $this->model->getPurchaseSuggestionData();
+                if ($format === 'excel') {
+                    $this->reportService->generatePurchaseSuggestionExcel($data, $generatedBy);
+                } else {
+                    $this->reportService->generatePurchaseSuggestionPdf($data, $generatedBy);
+                }
+            } elseif ($type === 'leaks_adjustments') {
+                $data = $this->model->getLeaksAndAdjustmentsData($startDate, $endDate);
+                if ($format === 'excel') {
+                    $this->reportService->generateLeaksAdjustmentsExcel($data, $startDate, $endDate, $generatedBy);
+                } else {
+                    $this->reportService->generateLeaksAdjustmentsPdf($data, $startDate, $endDate, $generatedBy);
+                }
             } else {
                 throw new Exception("Tipo de reporte no soportado: $type");
             }

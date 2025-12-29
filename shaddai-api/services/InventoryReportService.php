@@ -78,7 +78,7 @@ class InventoryReportService {
 
         // Título
         $sheet->mergeCells('A1:F1');
-        $sheet->setCellValue('A1', 'REPORTE DE SEMÁFORO DE VENCIMIENTOS - SHADDAI');
+        $sheet->setCellValue('A1', 'REPORTE DE SEMÁFORO DE VENCIMIENTOS - Centro de Especialidades Médicas Shaddai Rafa');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('0056B3');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -144,7 +144,7 @@ class InventoryReportService {
 
         // Título
         $sheet->mergeCells('A1:H1');
-        $sheet->setCellValue('A1', 'REPORTE DE KARDEX DE MOVIMIENTOS - SHADDAI');
+        $sheet->setCellValue('A1', 'REPORTE DE KARDEX DE MOVIMIENTOS - Centro de Especialidades Médicas Shaddai Rafa');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('0056B3');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -203,6 +203,185 @@ class InventoryReportService {
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="reporte_kardex.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function generatePurchaseSuggestionPdf($data, $generatedBy = '') {
+        ob_start();
+        require __DIR__ . '/../templates/reports/inventory/purchase_suggestion_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        if (ob_get_length()) ob_end_clean();
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="sugerido_compras.pdf"');
+        echo $dompdf->output();
+        exit;
+    }
+
+    public function generatePurchaseSuggestionExcel($data, $generatedBy = '') {
+        if (ob_get_length()) ob_end_clean();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Título
+        $sheet->mergeCells('A1:E1');
+        $sheet->setCellValue('A1', 'SUGERIDO DE COMPRAS - Centro de Especialidades Médicas Shaddai Rafa');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('0056B3');
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Meta
+        $sheet->mergeCells('A2:E2');
+        $sheet->setCellValue('A2', "Generado por: $generatedBy | Fecha: " . date('d/m/Y H:i'));
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Encabezados
+        $headers = ['Código', 'Insumo', 'Stock Actual', 'Punto Reorden', 'Déficit Sugerido'];
+        $col = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . '4', $h);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+
+        // Estilo Encabezado
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0056B3']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+        $sheet->getStyle('A4:E4')->applyFromArray($headerStyle);
+
+        // Datos
+        $row = 5;
+        foreach ($data as $item) {
+            $sheet->setCellValue('A' . $row, $item['code']);
+            $sheet->setCellValue('B' . $row, $item['item_name']);
+            $sheet->setCellValue('C' . $row, $item['stock_quantity']);
+            $sheet->setCellValue('D' . $row, $item['reorder_level']);
+            $sheet->setCellValue('E' . $row, $item['deficit']);
+
+            // Resaltar déficit alto
+            if ($item['stock_quantity'] == 0) {
+                $sheet->getStyle('C' . $row)->getFont()->getColor()->setRGB('B91C1C'); // Rojo si stock 0
+                $sheet->getStyle('C' . $row)->getFont()->setBold(true);
+            }
+
+            $row++;
+        }
+
+        $sheet->getStyle('A4:E' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="sugerido_compras.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function generateLeaksAdjustmentsPdf($data, $startDate, $endDate, $generatedBy = '') {
+        // Traducir tipos
+        foreach ($data as &$row) {
+            $row['movement_type_label'] = $this->translateMovementType($row['movement_type']);
+        }
+        unset($row);
+
+        ob_start();
+        require __DIR__ . '/../templates/reports/inventory/leaks_adjustments_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        if (ob_get_length()) ob_end_clean();
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="fugas_ajustes.pdf"');
+        echo $dompdf->output();
+        exit;
+    }
+
+    public function generateLeaksAdjustmentsExcel($data, $startDate, $endDate, $generatedBy = '') {
+        if (ob_get_length()) ob_end_clean();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Título
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', 'REPORTE DE FUGAS Y AJUSTES MANUALES - Centro de Especialidades Médicas Shaddai Rafa');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('B91C1C'); // Rojo para alertas
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Meta
+        $sheet->mergeCells('A2:F2');
+        $sheet->setCellValue('A2', "Del $startDate al $endDate | Generado por: $generatedBy");
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Encabezados
+        $headers = ['Fecha/Hora', 'Insumo', 'Usuario', 'Tipo', 'Cantidad', 'Nota/Justificación'];
+        $col = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . '4', $h);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+
+        // Estilo Encabezado
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'B91C1C']], // Rojo
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+        $sheet->getStyle('A4:F4')->applyFromArray($headerStyle);
+
+        // Datos
+        $row = 5;
+        foreach ($data as $item) {
+            $sheet->setCellValue('A' . $row, date('d/m/Y H:i', strtotime($item['created_at'])));
+            $sheet->setCellValue('B' . $row, $item['item_name']);
+            $sheet->setCellValue('C' . $row, $item['user_name']);
+            $sheet->setCellValue('D' . $row, $this->translateMovementType($item['movement_type']));
+            
+            // Cantidad
+            $isEntry = strpos($item['movement_type'], 'in_') === 0;
+            $sign = $isEntry ? '+' : '-';
+            $sheet->setCellValue('E' . $row, $sign . $item['quantity_adjusted']);
+            
+            $sheet->setCellValue('F' . $row, $item['notes']);
+
+            // Colores
+            if ($isEntry) {
+                $sheet->getStyle('E' . $row)->getFont()->getColor()->setRGB('15803D');
+            } else {
+                $sheet->getStyle('E' . $row)->getFont()->getColor()->setRGB('B91C1C');
+            }
+
+            $row++;
+        }
+
+        $sheet->getStyle('A4:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="fugas_ajustes.xlsx"');
         header('Cache-Control: max-age=0');
 
         $writer = new Xlsx($spreadsheet);
