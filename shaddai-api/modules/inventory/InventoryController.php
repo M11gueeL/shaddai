@@ -311,6 +311,21 @@ class InventoryController {
                 } else {
                     $this->reportService->generateLeaksAdjustmentsPdf($data, $startDate, $endDate, $generatedBy);
                 }
+            } elseif ($type === 'dead_stock') {
+                // Use startDate as the cutoff date
+                $data = $this->model->getDeadStockData($startDate);
+                if ($format === 'excel') {
+                    $this->reportService->generateDeadStockExcel($data, $startDate, $generatedBy);
+                } else {
+                    $this->reportService->generateDeadStockPdf($data, $startDate, $generatedBy);
+                }
+            } elseif ($type === 'inventory_valuation') {
+                $data = $this->model->getInventoryValuationData();
+                if ($format === 'excel') {
+                    $this->reportService->generateInventoryValuationExcel($data, $generatedBy);
+                } else {
+                    $this->reportService->generateInventoryValuationPdf($data, $generatedBy);
+                }
             } else {
                 throw new Exception("Tipo de reporte no soportado: $type");
             }

@@ -616,5 +616,45 @@ class InventoryModel {
         $res = $this->db->query($sql, [':id' => $id]);
         return $res[0] ?? null;
     }
+
+    public function getDeadStockData($cutoffDate) {
+        // Items con stock > 0 que no han tenido salidas (out_%) desde la fecha de corte
+        // O que nunca han tenido salidas
+        $sql = "SELECT 
+                    i.code, 
+                    i.name as item_name, 
+                    b.batch_number, 
+                    b.quantity as batch_quantity,
+                    i.price_usd as unit_cost,
+                    (b.quantity * i.price_usd) as immobilized_value,
+                    MAX(m.created_at) as last_outflow_date,
+                    DATEDIFF(NOW(), MAX(m.created_at)) as days_stagnant
+                FROM inventory_items i
+                JOIN inventory_batches b ON i.id = b.item_id
+                LEFT JOIN inventory_movements m ON i.id = m.item_id AND m.batch_id = b.id AND m.movement_type LIKE 'out_%'
+                WHERE i.is_deleted = 0 AND b.quantity > 0
+                GROUP BY i.id, b.id
+                HAVING last_outflow_date < :cutoff_date OR last_outflow_date IS NULL
+                ORDER BY days_stagnant DESC";
+        
+        return $this->db->query($sql, [':cutoff_date' => $cutoffDate . ' 23:59:59']);
+    }
+
+    public function getInventoryValuationData() {
+        $sql = "SELECT 
+                    i.code,
+                    i.name as item_name,
+                    b.batch_number,
+                    b.quantity as batch_quantity,
+                    i.price_usd as unit_cost,
+                    (b.quantity * i.price_usd) as total_value,
+                    b.expiration_date
+                FROM inventory_batches b
+                JOIN inventory_items i ON b.item_id = i.id
+                WHERE b.quantity > 0 AND i.is_deleted = 0
+                ORDER BY i.name ASC, b.expiration_date ASC";
+        
+        return $this->db->query($sql);
+    }
 }
 ?>

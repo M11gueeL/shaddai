@@ -388,4 +388,162 @@ class InventoryReportService {
         $writer->save('php://output');
         exit;
     }
+
+    public function generateDeadStockPdf($data, $cutoffDate, $generatedBy = '') {
+        ob_start();
+        require __DIR__ . '/../templates/reports/inventory/dead_stock_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        if (ob_get_length()) ob_end_clean();
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="stock_muerto.pdf"');
+        echo $dompdf->output();
+        exit;
+    }
+
+    public function generateDeadStockExcel($data, $cutoffDate, $generatedBy = '') {
+        if (ob_get_length()) ob_end_clean();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', 'REPORTE DE STOCK "MUERTO" O SIN ROTACIÓN - Centro de Especialidades Médicas Shaddai Rafa');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('4B5563');
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells('A2:F2');
+        $sheet->setCellValue('A2', "Sin movimiento desde: $cutoffDate | Generado por: $generatedBy");
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $headers = ['Código', 'Insumo', 'Lote', 'Última Salida', 'Días Estancado', 'Valor Inmovilizado'];
+        $col = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . '4', $h);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4B5563']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+        $sheet->getStyle('A4:F4')->applyFromArray($headerStyle);
+
+        $row = 5;
+        foreach ($data as $item) {
+            $sheet->setCellValue('A' . $row, $item['code']);
+            $sheet->setCellValue('B' . $row, $item['item_name']);
+            $sheet->setCellValue('C' . $row, $item['batch_number']);
+            $sheet->setCellValue('D' . $row, $item['last_outflow_date'] ? date('d/m/Y', strtotime($item['last_outflow_date'])) : 'Nunca');
+            $sheet->setCellValue('E' . $row, $item['days_stagnant'] ?? 'N/A');
+            $sheet->setCellValue('F' . $row, '$ ' . number_format($item['immobilized_value'], 2));
+            $row++;
+        }
+
+        $sheet->getStyle('A4:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="stock_muerto.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    public function generateInventoryValuationPdf($data, $generatedBy = '') {
+        ob_start();
+        require __DIR__ . '/../templates/reports/inventory/inventory_valuation_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        if (ob_get_length()) ob_end_clean();
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="valoracion_inventario.pdf"');
+        echo $dompdf->output();
+        exit;
+    }
+
+    public function generateInventoryValuationExcel($data, $generatedBy = '') {
+        if (ob_get_length()) ob_end_clean();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', 'VALORACIÓN DE INVENTARIO POR LOTE - Centro de Especialidades Médicas Shaddai Rafa');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('059669');
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells('A2:F2');
+        $sheet->setCellValue('A2', "Generado por: $generatedBy | Fecha: " . date('d/m/Y H:i'));
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $headers = ['Código', 'Insumo', 'Lote', 'Vencimiento', 'Cantidad', 'Valor Total ($)'];
+        $col = 'A';
+        foreach ($headers as $h) {
+            $sheet->setCellValue($col . '4', $h);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+            $col++;
+        }
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '059669']],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
+        ];
+        $sheet->getStyle('A4:F4')->applyFromArray($headerStyle);
+
+        $row = 5;
+        $totalValue = 0;
+        foreach ($data as $item) {
+            $sheet->setCellValue('A' . $row, $item['code']);
+            $sheet->setCellValue('B' . $row, $item['item_name']);
+            $sheet->setCellValue('C' . $row, $item['batch_number']);
+            $sheet->setCellValue('D' . $row, date('d/m/Y', strtotime($item['expiration_date'])));
+            $sheet->setCellValue('E' . $row, $item['batch_quantity']);
+            $sheet->setCellValue('F' . $row, $item['total_value']);
+            $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+            
+            $totalValue += $item['total_value'];
+            $row++;
+        }
+
+        // Total Row
+        $sheet->mergeCells('A' . $row . ':E' . $row);
+        $sheet->setCellValue('A' . $row, 'TOTAL VALORIZADO');
+        $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        
+        $sheet->setCellValue('F' . $row, $totalValue);
+        $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('F' . $row)->getFont()->setBold(true);
+
+        $sheet->getStyle('A4:F' . ($row))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="valoracion_inventario.xlsx"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
 }

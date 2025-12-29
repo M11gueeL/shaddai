@@ -217,12 +217,12 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
           </div>
 
           {/* Filtros de Fecha */}
-          {selectedReport !== 'expiration_risk' && selectedReport !== 'purchase_suggestion' && (
+          {selectedReport !== 'expiration_risk' && selectedReport !== 'purchase_suggestion' && selectedReport !== 'inventory_valuation' && (
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
-                    <Calendar className="w-3 h-3 text-blue-500" /> Fecha Inicio
+                    <Calendar className="w-3 h-3 text-blue-500" /> {selectedReport === 'dead_stock' ? 'Sin movimiento desde' : 'Fecha Inicio'}
                   </label>
                   <input 
                     type="date" 
@@ -232,6 +232,7 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
                     className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
+                {selectedReport !== 'dead_stock' && (
                 <div>
                   <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
                     <Calendar className="w-3 h-3 text-blue-500" /> Fecha Fin
@@ -244,6 +245,7 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
                     className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
+                )}
               </div>
 
               {/* Filtro de Insumo (Solo para Kardex) */}
