@@ -31,7 +31,26 @@ class InventoryReportService {
         exit;
     }
 
+    private function translateMovementType($type) {
+        $map = [
+            'in_restock' => 'Abastecimiento',
+            'in_adjustment' => 'Ajuste de stock (Entrada)',
+            'out_adjustment' => 'Ajuste de stock (Salida)',
+            'out_expired' => 'Baja / Vencimiento',
+            'out_damaged' => 'Baja / Dañado',
+            'out_internal_use' => 'Uso Interno',
+            'out_billed' => 'Salida / Consumo'
+        ];
+        return $map[$type] ?? ucfirst(str_replace('_', ' ', $type));
+    }
+
     public function generateKardexPdf($data, $startDate, $endDate, $generatedBy = '') {
+        // Traducir tipos antes de pasar a la vista
+        foreach ($data as &$row) {
+            $row['movement_type_label'] = $this->translateMovementType($row['movement_type']);
+        }
+        unset($row); // Romper referencia
+
         ob_start();
         require __DIR__ . '/../templates/reports/inventory/kardex_pdf.php';
         $html = ob_get_clean();
@@ -135,7 +154,7 @@ class InventoryReportService {
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         // Encabezados
-        $headers = ['Fecha/Hora', 'Código', 'Insumo', 'Tipo', 'Responsable', 'Movimiento', 'Notas'];
+        $headers = ['Fecha/Hora', 'Código', 'Insumo', 'Tipo', 'Responsable', 'Movimiento', 'Saldo', 'Notas'];
         $col = 'A';
         foreach ($headers as $h) {
             $sheet->setCellValue($col . '4', $h);
@@ -149,7 +168,7 @@ class InventoryReportService {
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0056B3']],
             'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
         ];
-        $sheet->getStyle('A4:G4')->applyFromArray($headerStyle);
+        $sheet->getStyle('A4:H4')->applyFromArray($headerStyle);
 
         // Datos
         $row = 5;
@@ -157,15 +176,30 @@ class InventoryReportService {
             $sheet->setCellValue('A' . $row, date('d/m/Y H:i', strtotime($item['created_at'])));
             $sheet->setCellValue('B' . $row, $item['item_code']);
             $sheet->setCellValue('C' . $row, $item['item_name']);
-            $sheet->setCellValue('D' . $row, ucfirst(str_replace('_', ' ', $item['movement_type'])));
+            $sheet->setCellValue('D' . $row, $this->translateMovementType($item['movement_type']));
             $sheet->setCellValue('E' . $row, $item['user_name']);
-            $sheet->setCellValue('F' . $row, $item['quantity_moved']);
-            $sheet->setCellValue('G' . $row, $item['notes']);
+            
+            // Movimiento con signo
+            $isEntry = strpos($item['movement_type'], 'in_') === 0;
+            $sign = $isEntry ? '+' : '-';
+            $sheet->setCellValue('F' . $row, $sign . $item['quantity_moved']);
+            
+            // Saldo (si existe)
+            $sheet->setCellValue('G' . $row, $item['balance'] ?? '-');
+            
+            $sheet->setCellValue('H' . $row, $item['notes']);
+
+            // Colores para movimiento
+            if ($isEntry) {
+                $sheet->getStyle('F' . $row)->getFont()->getColor()->setRGB('15803D'); // Verde
+            } else {
+                $sheet->getStyle('F' . $row)->getFont()->getColor()->setRGB('B91C1C'); // Rojo
+            }
 
             $row++;
         }
 
-        $sheet->getStyle('A4:G' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle('A4:H' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="reporte_kardex.xlsx"');

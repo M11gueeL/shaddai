@@ -34,7 +34,8 @@
                 <th style="width: 20%">Insumo</th>
                 <th style="width: 15%">Tipo</th>
                 <th style="width: 15%">Responsable</th>
-                <th style="width: 10%">Mov.</th>
+                <th style="width: 8%">Mov.</th>
+                <th style="width: 8%">Saldo</th>
                 <th style="width: 15%">Notas</th>
             </tr>
         </thead>
@@ -46,12 +47,15 @@
                 <td><?php echo htmlspecialchars($row['item_name']); ?></td>
                 <td>
                     <span class="type-badge">
-                        <?php echo ucfirst(str_replace('_', ' ', $row['movement_type'])); ?>
+                        <?php echo htmlspecialchars($row['movement_type_label']); ?>
                     </span>
                 </td>
                 <td><?php echo htmlspecialchars($row['user_name']); ?></td>
-                <td style="font-weight: bold; color: <?php echo $row['quantity_moved'] > 0 ? '#15803d' : '#b91c1c'; ?>">
-                    <?php echo ($row['quantity_moved'] > 0 ? '+' : '') . $row['quantity_moved']; ?>
+                <td style="font-weight: bold; color: <?php echo strpos($row['movement_type'], 'in_') === 0 ? '#15803d' : '#b91c1c'; ?>">
+                    <?php echo (strpos($row['movement_type'], 'in_') === 0 ? '+' : '-') . $row['quantity_moved']; ?>
+                </td>
+                <td style="font-weight: bold; color: #333;">
+                    <?php echo isset($row['balance']) ? $row['balance'] : '-'; ?>
                 </td>
                 <td><?php echo htmlspecialchars($row['notes']); ?></td>
             </tr>

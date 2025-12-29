@@ -486,32 +486,89 @@ class InventoryModel {
     }
 
     public function getMovementKardexData($startDate, $endDate, $itemId = null) {
-        $sql = 'SELECT 
-                    im.created_at,
-                    CONCAT(u.first_name, " ", u.last_name) as user_name,
-                    im.movement_type,
-                    im.quantity as quantity_moved,
-                    im.notes,
-                    i.name as item_name,
-                    i.code as item_code
-                FROM inventory_movements im
-                JOIN inventory_items i ON im.item_id = i.id
-                LEFT JOIN users u ON im.created_by = u.id
-                WHERE DATE(im.created_at) BETWEEN :start_date AND :end_date';
-        
-        $params = [
-            ':start_date' => $startDate,
-            ':end_date' => $endDate
-        ];
-
+        // Si se selecciona un item específico, calculamos el saldo histórico
         if ($itemId) {
-            $sql .= ' AND im.item_id = :item_id';
-            $params[':item_id'] = $itemId;
-        }
+            // 1. Obtener stock actual
+            $itemRes = $this->db->query("SELECT stock_quantity FROM inventory_items WHERE id = :id", [':id' => $itemId]);
+            $currentStock = $itemRes[0]['stock_quantity'] ?? 0;
 
-        $sql .= ' ORDER BY im.created_at DESC';
-        
-        return $this->db->query($sql, $params);
+            // 2. Obtener TODOS los movimientos ordenados por fecha DESC (del más reciente al más antiguo)
+            // No filtramos por fecha aún para poder calcular el saldo
+            $sql = 'SELECT 
+                        im.created_at,
+                        CONCAT(u.first_name, " ", u.last_name) as user_name,
+                        im.movement_type,
+                        im.quantity as quantity_moved,
+                        im.notes,
+                        i.name as item_name,
+                        i.code as item_code
+                    FROM inventory_movements im
+                    JOIN inventory_items i ON im.item_id = i.id
+                    LEFT JOIN users u ON im.created_by = u.id
+                    WHERE im.item_id = :item_id
+                    ORDER BY im.created_at DESC, im.id DESC';
+            
+            $allMovements = $this->db->query($sql, [':item_id' => $itemId]);
+
+            // 3. Calcular saldos (Working Backwards)
+            // El saldo después del movimiento N es el saldo actual (si es el último)
+            // Saldo Antes de Mov N = Saldo Despues - (+Cantidad)  [Si fue entrada]
+            // Saldo Antes de Mov N = Saldo Despues - (-Cantidad)  [Si fue salida]
+            
+            $runningBalance = $currentStock;
+            $processedData = [];
+
+            foreach ($allMovements as $mov) {
+                // Determinar si el movimiento SUMÓ o RESTÓ al stock
+                // Tipos de entrada: in_restock, in_adjustment
+                // Tipos de salida: out_adjustment, out_expired, out_damaged, out_internal_use, out_billed
+                
+                $isEntry = strpos($mov['movement_type'], 'in_') === 0;
+                $qty = $mov['quantity_moved'];
+                
+                // El saldo que mostramos en la fila es el saldo RESULTANTE de ese movimiento
+                $balanceAfter = $runningBalance;
+                
+                // Calcular el saldo ANTERIOR a este movimiento para la siguiente iteración (hacia atrás)
+                if ($isEntry) {
+                    // Si fue entrada, antes había MENOS
+                    $runningBalance -= $qty;
+                } else {
+                    // Si fue salida, antes había MÁS
+                    $runningBalance += $qty;
+                }
+
+                // Verificar si entra en el rango de fechas solicitado
+                $movDate = date('Y-m-d', strtotime($mov['created_at']));
+                if ($movDate >= $startDate && $movDate <= $endDate) {
+                    $mov['balance'] = $balanceAfter;
+                    $processedData[] = $mov;
+                }
+            }
+
+            return $processedData;
+
+        } else {
+            // Comportamiento original para reporte general (sin saldo)
+            $sql = 'SELECT 
+                        im.created_at,
+                        CONCAT(u.first_name, " ", u.last_name) as user_name,
+                        im.movement_type,
+                        im.quantity as quantity_moved,
+                        im.notes,
+                        i.name as item_name,
+                        i.code as item_code
+                    FROM inventory_movements im
+                    JOIN inventory_items i ON im.item_id = i.id
+                    LEFT JOIN users u ON im.created_by = u.id
+                    WHERE DATE(im.created_at) BETWEEN :start_date AND :end_date
+                    ORDER BY im.created_at DESC';
+            
+            return $this->db->query($sql, [
+                ':start_date' => $startDate,
+                ':end_date' => $endDate
+            ]);
+        }
     }
 
     public function getUserNameById($id) {
