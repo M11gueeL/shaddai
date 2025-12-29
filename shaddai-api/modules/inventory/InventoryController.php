@@ -255,6 +255,43 @@ class InventoryController {
         }
     }
 
+    public function registerInternalConsumption() {
+        try {
+            // 1. Verificar seguridad
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub;
+
+            // 2. Recibir datos del frontend
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $itemId = $data['item_id'] ?? null;
+            $quantity = $data['quantity'] ?? 0;
+            $notes = $data['notes'] ?? 'Consumo interno de clínica';
+
+            if (!$itemId || $quantity <= 0) {
+                throw new Exception('Datos inválidos. Indique insumo y cantidad.');
+            }
+
+            // 3. Usar tu modelo existente para registrar la salida
+            // El modelo ya tiene lógica FEFO (First Expired, First Out) en registerOutflow
+            $this->model->registerOutflow(
+                $itemId, 
+                $quantity, 
+                $userId, 
+                'out_internal_use', // <--- AQUÍ ESTÁ LA CLAVE
+                $notes
+            );
+
+            echo json_encode(['message' => 'Consumo interno registrado correctamente']);
+
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function expiring() {
         try {
             $days = isset($_GET['days']) ? (int)$_GET['days'] : null;
@@ -326,6 +363,10 @@ class InventoryController {
                 } else {
                     $this->reportService->generateInventoryValuationPdf($data, $generatedBy);
                 }
+            } elseif ($type === 'consumption_analysis') {
+                $data = $this->model->getConsumptionAnalysisData($startDate, $endDate);
+                // Llamar a tu servicio de reportes para generar el PDF
+                $this->reportService->generateConsumptionAnalysisPdf($data, $startDate, $endDate, $generatedBy);
             } else {
                 throw new Exception("Tipo de reporte no soportado: $type");
             }

@@ -25,6 +25,9 @@ export const deleteInventoryItem = (id, token) =>
 export const restockInventoryItem = (id, data, token) =>
   axios.post(`${API_URL}/inventory/${id}/restock`, data, auth(token));
 
+export const registerInternalConsumption = (data, token) =>
+  axios.post(`${API_URL}/inventory/internal-consumption`, data, auth(token));
+
 export const listInventoryMovements = (id, params = {}, token) =>
   axios.get(`${API_URL}/inventory/${id}/movements`, { ...auth(token), params });
 

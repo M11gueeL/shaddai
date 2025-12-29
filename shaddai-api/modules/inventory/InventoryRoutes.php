@@ -21,6 +21,7 @@ class InventoryRoutes {
         $router->add('PUT', 'inventory/{id}', [$c, 'update'], ['auth', 'role:admin']);
         $router->add('DELETE', 'inventory/{id}', [$c, 'delete'], ['auth', 'role:admin']);
         $router->add('POST', 'inventory/{id}/restock', [$c, 'restock'], ['auth', 'role:admin']);
+        $router->add('POST', 'inventory/internal-consumption', [$c, 'registerInternalConsumption'], ['auth']);
     }
 }
 ?>

@@ -1,10 +1,10 @@
 import React from 'react';
 import { 
     Package, Loader2, MoreVertical, Edit, Trash2, 
-    Archive, History, Layers, PlusCircle, AlertCircle 
+    Archive, History, Layers, PlusCircle, AlertCircle, Briefcase 
 } from 'lucide-react';
 
-export default function InventoryTable({ items, onEdit, onDelete, onRestock, onMovements, onManageBatches, loading, canEdit }) {
+export default function InventoryTable({ items, onEdit, onDelete, onRestock, onInternalConsumption, onMovements, onManageBatches, loading, canEdit }) {
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center py-24">
@@ -79,9 +79,14 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                         <Layers size={14} /> Lotes
                     </button>
                     {canEdit && (
-                        <button onClick={() => onRestock(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap">
-                            <PlusCircle size={14} /> Stock
-                        </button>
+                        <>
+                            <button onClick={() => onRestock(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap">
+                                <PlusCircle size={14} /> Stock
+                            </button>
+                            <button onClick={() => onInternalConsumption(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-amber-50 border border-amber-100 text-amber-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-colors whitespace-nowrap">
+                                <Briefcase size={14} /> Uso Int.
+                            </button>
+                        </>
                     )}
                 </div>
                 
@@ -181,6 +186,13 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onM
                                     title="Abastecer Stock"
                                 >
                                     <PlusCircle size={18} />
+                                </button>
+                                <button 
+                                    onClick={() => onInternalConsumption(item)} 
+                                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                    title="Registrar Uso Interno"
+                                >
+                                    <Briefcase size={18} />
                                 </button>
                                 <button 
                                     onClick={() => onEdit(item)} 

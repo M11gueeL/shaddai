@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
-import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats } from '../../api/inventoryApi';
+import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryTable from './InventoryTable';
 import Modal from './Modal';
 import ItemForm from './ItemForm';
 import RestockForm from './RestockForm';
+import InternalConsumptionForm from './InternalConsumptionForm';
 import MovementsDrawer from './MovementsDrawer';
 import ExpiringModal from './ExpiringModal';
 import BatchManagementModal from './BatchManagementModal';
@@ -30,6 +31,7 @@ export default function InventoryPanel() {
     const [creating, setCreating] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [restockItem, setRestockItem] = useState(null);
+    const [consumptionItem, setConsumptionItem] = useState(null);
     const [movementsItem, setMovementsItem] = useState(null);
     const [movements, setMovements] = useState([]);
     const [loadingMovements, setLoadingMovements] = useState(false);
@@ -170,6 +172,19 @@ export default function InventoryPanel() {
         }
     };
 
+    const handleInternalConsumption = async (formData) => {
+        try {
+            const res = await registerInternalConsumption(formData, token);
+            if (res.data.message) {
+                toast.success(res.data.message);
+            }
+            setConsumptionItem(null);
+            fetchInventory();
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'Error registrando consumo interno');
+        }
+    };
+
     const openMovements = async (item) => {
         setMovementsItem(item);
         setLoadingMovements(true);
@@ -237,6 +252,7 @@ export default function InventoryPanel() {
                         onEdit={setEditingItem}
                         onDelete={handleDelete}
                         onRestock={setRestockItem}
+                        onInternalConsumption={setConsumptionItem}
                         onMovements={openMovements}
                         onManageBatches={setBatchItem}
                         canEdit={canEdit}
@@ -253,6 +269,9 @@ export default function InventoryPanel() {
             </Modal>
             <Modal open={!!restockItem} title={`Abastecer: ${restockItem?.name || ''}`} onClose={() => setRestockItem(null)} maxWidth="max-w-sm md:max-w-md">
                 {restockItem && <RestockForm item={restockItem} loading={false} onSubmit={handleRestock} />}
+            </Modal>
+            <Modal open={!!consumptionItem} title={`Uso Interno: ${consumptionItem?.name || ''}`} onClose={() => setConsumptionItem(null)} maxWidth="max-w-sm md:max-w-md">
+                {consumptionItem && <InternalConsumptionForm item={consumptionItem} loading={false} onSubmit={handleInternalConsumption} />}
             </Modal>
 
             <MovementsDrawer

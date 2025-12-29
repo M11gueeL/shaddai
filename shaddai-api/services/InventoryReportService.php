@@ -31,6 +31,26 @@ class InventoryReportService {
         exit;
     }
 
+    public function generateConsumptionAnalysisPdf($data, $startDate, $endDate, $generatedBy = '') {
+        ob_start();
+        require __DIR__ . '/../templates/reports/inventory/consumption_analysis_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        if (ob_get_length()) ob_end_clean();
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="reporte_consumo_interno.pdf"');
+        echo $dompdf->output();
+        exit;
+    }
+
     private function translateMovementType($type) {
         $map = [
             'in_restock' => 'Abastecimiento',

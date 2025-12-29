@@ -20,6 +20,44 @@ class InventoryModel {
         return $result ? $result[0] : ['total_items' => 0, 'low_stock_count' => 0, 'total_value' => 0];
     }
 
+    public function getConsumptionAnalysisData($startDate, $endDate) {
+        // Agrupamos por insumo y sumamos las cantidades según el tipo de movimiento
+        // Nota: Usamos el precio actual (price_usd) para estimar el costo/valor, 
+        // ya que el sistema no maneja histórico de costos por ahora.
+        
+        $sql = "SELECT 
+                    i.code,
+                    i.name as item_name,
+                    i.unit_of_measure,
+                    i.price_usd as unit_value,
+                    
+                    -- Sumar salidas facturadas
+                    SUM(CASE WHEN m.movement_type = 'out_billed' THEN m.quantity ELSE 0 END) as billed_qty,
+                    
+                    -- Calcular dinero generado (Aprox)
+                    (SUM(CASE WHEN m.movement_type = 'out_billed' THEN m.quantity ELSE 0 END) * i.price_usd) as billed_amount,
+                    
+                    -- Sumar salidas por uso interno
+                    SUM(CASE WHEN m.movement_type = 'out_internal_use' THEN m.quantity ELSE 0 END) as internal_qty,
+                    
+                    -- Calcular costo operativo (Aprox - Dinero que no entró)
+                    (SUM(CASE WHEN m.movement_type = 'out_internal_use' THEN m.quantity ELSE 0 END) * i.price_usd) as internal_cost_amount
+
+                FROM inventory_movements m
+                JOIN inventory_items i ON m.item_id = i.id
+                WHERE DATE(m.created_at) BETWEEN :start AND :end
+                GROUP BY i.id, i.name, i.price_usd
+                
+                -- Solo mostrar items que tuvieron movimiento
+                HAVING billed_qty > 0 OR internal_qty > 0
+                ORDER BY billed_amount DESC";
+
+        return $this->db->query($sql, [
+            ':start' => $startDate,
+            ':end' => $endDate
+        ]);
+    }
+
     public function getAll($filters = []) {
         $sql = 'SELECT i.id, i.code, i.name, i.description, i.stock_quantity, i.unit_of_measure, i.reorder_level, i.price_usd, i.is_active, i.created_at, i.updated_at, i.brand_id,
                 b.name as brand_name,
