@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import medicalRecordsApi from '../../api/medicalRecords';
 import userApi from '../../api/userApi';
 import PatientsApi from '../../api/PatientsApi';
-
+import MedicalRecordWelcome from './MedicalRecordWelcome';
 import SearchPatientBar from './SearchPatientBar';
 import RecordHeader from './RecordHeader';
 import EncountersList from './encounters/EncountersList';
@@ -272,7 +272,9 @@ export default function MedicalRecordsPanel() {
                             </div>
                         </div>
                     ) : (
-                        <div className="text-gray-500 text-sm">Busca un paciente por su número de cédula, nombre, teléfono o email para cargar su historia.</div>
+                        <div className="h-[calc(100vh-200px)]">
+                            <MedicalRecordWelcome />
+                        </div>
                     )
             }
 

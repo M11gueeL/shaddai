@@ -115,8 +115,7 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
       </div>
 
       {/* Dropdown */}
-      {isOpen && (
-        <div className="mt-2 w-full bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+      <div className={`absolute left-0 right-0 mt-2 w-full bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden origin-top transition-all duration-300 ease-in-out z-50 ${isOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'}`}>
           {isLoadingPatients ? (
             <div className="p-8 text-center text-gray-500 flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -180,7 +179,6 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
             </div>
           )}
         </div>
-      )}
     </div>
   );
 }
