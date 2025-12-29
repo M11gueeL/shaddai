@@ -232,7 +232,11 @@ class InventoryModel {
      * crea DOS movimientos en el historial para trazabilidad exacta.
      */
     public function registerOutflow($id, $quantity, $userId, $movementType = 'out_billed', $notes = null) {
-        $this->db->beginTransaction();
+        $startedTransaction = false;
+        if (!$this->db->inTransaction()) {
+            $this->db->beginTransaction();
+            $startedTransaction = true;
+        }
         try {
             $remaining = $quantity;
             
@@ -271,10 +275,14 @@ class InventoryModel {
             }
 
             $this->syncItemStats($id);
-            $this->db->commit();
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
             return true;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($startedTransaction) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

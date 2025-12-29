@@ -27,7 +27,7 @@ class BillingAccountController {
             $patient_id = (int)($_POST['patient_id'] ?? 0);
             $payer_patient_id = (int)($_POST['payer_patient_id'] ?? 0);
             $appointment_id = isset($_POST['appointment_id']) ? (int)$_POST['appointment_id'] : null;
-            if ($patient_id <= 0 || $payer_patient_id <= 0) { http_response_code(400); echo json_encode(['error'=>'patient_id and payer_patient_id are required']); return; }
+            if ($patient_id <= 0 || $payer_patient_id <= 0) { http_response_code(400); echo json_encode(['error'=>'El paciente y el pagador son requeridos']); return; }
             $rate = $this->rateService->getTodayOrFail();
             $id = $this->model->create([
                 'patient_id' => $patient_id,
@@ -43,7 +43,7 @@ class BillingAccountController {
 
     public function getAccountById($id) {
         $acc = $this->model->getAccount((int)$id);
-        if ($acc) echo json_encode($acc); else { http_response_code(404); echo json_encode(['error'=>'Account not found']); }
+        if ($acc) echo json_encode($acc); else { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); }
     }
 
     public function listAccounts() {
@@ -60,14 +60,14 @@ class BillingAccountController {
     public function addDetailToAccount($id) {
         try {
             $account = $this->model->getAccountWithRate((int)$id);
-            if (!$account) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
-            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'Cannot add details to a cancelled or paid account']); return; }
+            if (!$account) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
+            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden agregar detalles a una cuenta anulada o pagada']); return; }
             $service_id = (int)($_POST['service_id'] ?? 0);
             $qty = (int)($_POST['quantity'] ?? 1);
-            if ($service_id <= 0) { http_response_code(400); echo json_encode(['error'=>'service_id is required']); return; }
+            if ($service_id <= 0) { http_response_code(400); echo json_encode(['error'=>'El ID del servicio es requerido']); return; }
             if ($qty <= 0) $qty = 1;
             $service = $this->serviceModel->getById($service_id);
-            if (!$service || (int)$service['is_active'] !== 1) { http_response_code(400); echo json_encode(['error'=>'Service not found or inactive']); return; }
+            if (!$service || (int)$service['is_active'] !== 1) { http_response_code(400); echo json_encode(['error'=>'Servicio no encontrado o inactivo']); return; }
             $priceUsd = (float)$service['price_usd'];
             $priceBs = round($priceUsd * (float)$account['rate_bcv'], 2);
             $detailId = $this->model->addDetail((int)$id, $service_id, $service['name'], $qty, $priceUsd, $priceBs);
@@ -82,15 +82,15 @@ class BillingAccountController {
             $payload = $_REQUEST['jwt_payload'] ?? null;
             if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
             $account = $this->model->getAccountWithRate((int)$id);
-            if (!$account) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
-            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'Cannot add supplies to a cancelled or paid account']); return; }
+            if (!$account) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
+            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden agregar insumos a una cuenta anulada o pagada']); return; }
             $item_id = (int)($_POST['item_id'] ?? 0);
             $qty = (int)($_POST['quantity'] ?? 1);
-            if ($item_id <= 0) { http_response_code(400); echo json_encode(['error'=>'item_id is required']); return; }
+            if ($item_id <= 0) { http_response_code(400); echo json_encode(['error'=>'El ID del insumo es requerido']); return; }
             if ($qty <= 0) $qty = 1;
             $item = $this->inventoryModel->getById($item_id);
-            if (!$item || (int)$item['is_active'] !== 1) { http_response_code(400); echo json_encode(['error'=>'Item not found or inactive']); return; }
-            if ((int)$item['stock_quantity'] < $qty) { http_response_code(400); echo json_encode(['error'=>'Insufficient stock']); return; }
+            if (!$item || (int)$item['is_active'] !== 1) { http_response_code(400); echo json_encode(['error'=>'Insumo no encontrado o inactivo']); return; }
+            if ((int)$item['stock_quantity'] < $qty) { http_response_code(400); echo json_encode(['error'=>'Stock insuficiente']); return; }
             $priceUsd = (float)$item['price_usd'];
             $priceBs = round($priceUsd * (float)$account['rate_bcv'], 2);
             // Transaction: reduce stock & add supply line
@@ -116,11 +116,11 @@ class BillingAccountController {
             // Find account id from detail
             $db = Database::getInstance();
             $row = $db->query('SELECT account_id FROM billing_account_details WHERE id = :id', [':id'=>(int)$detailId]);
-            if (!$row) { http_response_code(404); echo json_encode(['error'=>'Detail not found']); return; }
+            if (!$row) { http_response_code(404); echo json_encode(['error'=>'Detalle no encontrado']); return; }
             $accountId = (int)$row[0]['account_id'];
             $acc = $this->model->getAccountWithRate($accountId);
-            if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
-            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'Cannot remove details from a cancelled or paid account']); return; }
+            if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
+            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar detalles de una cuenta anulada o pagada']); return; }
             $this->model->removeDetail((int)$detailId);
             $totals = $this->billingService->computeTotalsForAccount($accountId);
             echo json_encode(['removed'=>true, 'totals'=>$totals]);
@@ -133,13 +133,13 @@ class BillingAccountController {
             if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
             $db = Database::getInstance();
             $row = $db->query('SELECT account_id, item_id, quantity FROM billing_account_supplies WHERE id = :id', [':id'=>(int)$supplyId]);
-            if (!$row) { http_response_code(404); echo json_encode(['error'=>'Supply not found']); return; }
+            if (!$row) { http_response_code(404); echo json_encode(['error'=>'Insumo no encontrado']); return; }
             $accountId = (int)$row[0]['account_id'];
             $itemId = (int)$row[0]['item_id'];
             $qty = (int)$row[0]['quantity'];
             $acc = $this->model->getAccountWithRate($accountId);
-            if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
-            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'Cannot remove supplies from a cancelled or paid account']); return; }
+            if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
+            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar insumos de una cuenta anulada o pagada']); return; }
             try {
                 $db->beginTransaction();
                 $this->model->removeSupply((int)$supplyId);
@@ -158,8 +158,8 @@ class BillingAccountController {
     public function cancelAccount($id) {
         try {
             $acc = $this->model->getAccountWithRate((int)$id);
-            if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
-            if ($acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'Cannot cancel a paid account']); return; }
+            if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
+            if ($acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se puede anular una cuenta pagada']); return; }
             $this->model->updateStatus((int)$id, 'cancelled');
             echo json_encode(['status'=>'cancelled']);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
