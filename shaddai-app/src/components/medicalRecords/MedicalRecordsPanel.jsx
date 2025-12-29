@@ -272,7 +272,7 @@ export default function MedicalRecordsPanel() {
                             </div>
                         </div>
                     ) : (
-                        <div className="h-[calc(100vh-200px)]">
+                        <div className="h-[calc(80vh-100px)] overflow-y-hidden">
                             <MedicalRecordWelcome />
                         </div>
                     )

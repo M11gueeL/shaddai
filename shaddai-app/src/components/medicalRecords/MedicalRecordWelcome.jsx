@@ -15,9 +15,9 @@ export default function MedicalRecordWelcome() {
                 
                 {/* Hero Icon Section */}
                 <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-teal-100 to-blue-100 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
-                    <div className="relative inline-flex items-center justify-center w-24 h-24 bg-white rounded-full shadow-lg border border-slate-100">
-                        <FileText className="w-10 h-10 text-teal-600" />
+                    <div className="absolute -inset-1 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500"></div>
+                    <div className="relative inline-flex items-center justify-center w-24 h-24 bg-white rounded-full shadow-lg border border-slate-100 group-hover:shadow-xl transition-shadow duration-300">
+                        <FileText className="w-10 h-10 text-teal-600 group-hover:text-teal-800 transition-colors duration-300" />
                         <div className="absolute bottom-0 right-0 p-2 bg-blue-600 rounded-full border-4 border-white shadow-sm">
                             <Search className="w-4 h-4 text-white" />
                         </div>
@@ -30,7 +30,7 @@ export default function MedicalRecordWelcome() {
                         Consulta de Historia Clínica
                     </h2>
                     <p className="text-slate-500 text-base leading-relaxed">
-                        Selecciona un paciente usando la barra superior para comenzar la consulta.
+                        Utilice la barra de búsqueda superior para seleccionar a un paciente. Podrá acceder a su historia clínica, registrar nuevas consultas y gestionar antecedentes médicos.
                     </p>
                 </div>
             </div>
