@@ -424,7 +424,7 @@ class InventoryReportService {
         if (ob_get_length()) ob_end_clean();
         
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="stock_muerto.pdf"');
+        header('Content-Disposition: attachment; filename="stock_inmovilizado.pdf"');
         echo $dompdf->output();
         exit;
     }
@@ -436,7 +436,7 @@ class InventoryReportService {
         $sheet = $spreadsheet->getActiveSheet();
 
         $sheet->mergeCells('A1:F1');
-        $sheet->setCellValue('A1', 'REPORTE DE STOCK "MUERTO" O SIN ROTACIÓN - Centro de Especialidades Médicas Shaddai Rafa');
+        $sheet->setCellValue('A1', 'REPORTE DE STOCK INMOVILIZADO - Centro de Especialidades Médicas Shaddai Rafa');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14)->getColor()->setRGB('4B5563');
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -473,7 +473,7 @@ class InventoryReportService {
         $sheet->getStyle('A4:F' . ($row - 1))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header('Content-Disposition: attachment;filename="stock_muerto.xlsx"');
+        header('Content-Disposition: attachment;filename="stock_inmovilizado.xlsx"');
         header('Cache-Control: max-age=0');
 
         $writer = new Xlsx($spreadsheet);

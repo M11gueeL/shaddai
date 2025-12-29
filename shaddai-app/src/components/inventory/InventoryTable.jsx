@@ -1,7 +1,8 @@
 import React from 'react';
 import { 
-    Package, Loader2, MoreVertical, Edit, Trash2, 
-    Archive, History, Layers, PlusCircle, AlertCircle, Briefcase 
+    Package, Loader2, Edit, Trash2, 
+    History, Layers, PlusCircle, AlertCircle, Briefcase,
+    NotebookPen
 } from 'lucide-react';
 
 export default function InventoryTable({ items, onEdit, onDelete, onRestock, onInternalConsumption, onMovements, onManageBatches, loading, canEdit }) {
@@ -161,52 +162,57 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onI
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <button 
-                            onClick={() => onMovements(item)} 
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                            title="Ver Historial"
-                        >
-                            <History size={18} />
-                        </button>
-                        <button 
-                            onClick={() => onManageBatches(item)} 
-                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            title="Gestionar Lotes"
-                        >
-                            <Layers size={18} />
-                        </button>
+                    <div className="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                        {/* Grupo: Información / Gestión */}
+                        <div className="flex bg-gray-50 rounded-lg p-1 border border-gray-100 mr-2">
+                            <button 
+                                onClick={() => onMovements(item)} 
+                                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-white rounded-md transition-all shadow-sm hover:shadow"
+                                title="Ver Historial"
+                            >
+                                <History size={16} />
+                            </button>
+                            <button 
+                                onClick={() => onManageBatches(item)} 
+                                className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-white rounded-md transition-all shadow-sm hover:shadow"
+                                title="Gestionar Lotes"
+                            >
+                                <Layers size={16} />
+                            </button>
+                        </div>
                         
                         {canEdit && (
                             <>
-                                <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                                {/* Grupo: Operativo */}
                                 <button 
                                     onClick={() => onRestock(item)} 
-                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                    className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm shadow-indigo-200 mr-1"
                                     title="Abastecer Stock"
                                 >
-                                    <PlusCircle size={18} />
+                                    <PlusCircle size={16} />
                                 </button>
                                 <button 
                                     onClick={() => onInternalConsumption(item)} 
-                                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                    className="p-2 text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors mr-2"
                                     title="Registrar Uso Interno"
                                 >
-                                    <Briefcase size={18} />
+                                    <NotebookPen size={16} />
                                 </button>
+
+                                {/* Grupo: Admin */}
                                 <button 
                                     onClick={() => onEdit(item)} 
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                     title="Editar"
                                 >
-                                    <Edit size={18} />
+                                    <Edit size={16} />
                                 </button>
                                 <button 
                                     onClick={() => onDelete(item)} 
-                                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                     title="Desactivar"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={16} />
                                 </button>
                             </>
                         )}

@@ -11,6 +11,31 @@ class InventoryController {
         $this->reportService = new InventoryReportService();
     }
 
+    public function updateBatchExpiration() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            $userId = $payload->sub;
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            $batchId = $data['batch_id'] ?? null;
+            $newDate = $data['expiration_date'] ?? null;
+
+            if (!$batchId || !$newDate) {
+                throw new Exception('Datos incompletos.');
+            }
+
+            $this->model->updateBatchExpiration($batchId, $newDate, $userId);
+            echo json_encode(['message' => 'Fecha de vencimiento actualizada correctamente.']);
+
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function list() {
         try {
             $filters = [

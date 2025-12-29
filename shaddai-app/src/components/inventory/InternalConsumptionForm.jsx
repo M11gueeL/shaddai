@@ -26,7 +26,7 @@ export default function InternalConsumptionForm({ item, onSubmit, loading }) {
             Registrando salida para: <span className="font-bold">{item.name}</span> (Stock Actual: {item.stock_quantity})
         </p>
         <p className="text-xs text-amber-600 mt-1">
-            Este movimiento se registrará como gasto operativo de la clínica.
+            Este movimiento se registrará como gasto operativo del consultorio.
         </p>
       </div>
       
@@ -48,14 +48,14 @@ export default function InternalConsumptionForm({ item, onSubmit, loading }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Motivo / Departamento *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Motivo *</label>
         <input 
             type="text" 
             required
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 py-2.5 text-sm transition-all px-4"
-            placeholder="Ej: Limpieza Piso 1, Enfermería Turno Mañana..."
+            placeholder="Ej: Uso en consulta, donación, etc."
         />
       </div>
 

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Stock Muerto</title>
+    <title>Stock Inmovilizado</title>
     <style>
         body { font-family: sans-serif; font-size: 12px; color: #333; }
         .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4B5563; padding-bottom: 10px; }
@@ -20,7 +20,7 @@
 <body>
     <div class="header">
         <h1>Centro de Especialidades Médicas Shaddai Rafa</h1>
-        <h1>Reporte de Stock sin movimiento</h1>
+        <h1>Reporte de Stock Inmovilizado</h1>
         <p>Sin movimiento desde: <?= $cutoffDate ?> | Generado por: <?= htmlspecialchars($generatedBy) ?></p>
     </div>
 

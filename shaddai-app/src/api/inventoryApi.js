@@ -49,6 +49,9 @@ export const adjustBatch = (data, token) =>
 export const toggleBatchStatus = (data, token) =>
   axios.post(`${API_URL}/inventory/batches/status`, data, auth(token));
 
+export const updateBatchExpiration = (data, token) =>
+  axios.post(`${API_URL}/inventory/batches/update-expiration`, data, auth(token));
+
 // --- BRANDS ---
 export const getBrands = (params = {}, token) =>
   axios.get(`${API_URL}/brands`, { ...auth(token), params });

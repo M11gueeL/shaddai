@@ -11,7 +11,7 @@ import {
   ShoppingCart, 
   AlertOctagon, 
   PieChart, 
-  Skull, 
+  Archive, 
   DollarSign,
   FileSpreadsheet
 } from 'lucide-react';
@@ -23,7 +23,7 @@ const reportTypes = [
   { 
     id: 'expiration_risk', 
     title: 'Semáforo de Vencimientos', 
-    description: 'Proyección de riesgo de insumos próximos a vencer.', 
+    description: 'Proyección de riesgo y prevención de pérdidas por vencimiento.', 
     icon: AlertTriangle, 
     color: 'text-amber-600', 
     bg: 'bg-amber-50' 
@@ -31,7 +31,7 @@ const reportTypes = [
   { 
     id: 'movement_kardex', 
     title: 'Kardex de Movimientos', 
-    description: 'Auditoría de trazabilidad de entradas y salidas.', 
+    description: 'Auditoría forense y trazabilidad completa de movimientos.', 
     icon: ClipboardList, 
     color: 'text-blue-600', 
     bg: 'bg-blue-50' 
@@ -39,7 +39,7 @@ const reportTypes = [
   { 
     id: 'purchase_suggestion', 
     title: 'Sugerido de Compras', 
-    description: 'Lista de reabastecimiento inteligente.', 
+    description: 'Lista de reabastecimiento basada en puntos de reorden.', 
     icon: ShoppingCart, 
     color: 'text-green-600', 
     bg: 'bg-green-50' 
@@ -47,7 +47,7 @@ const reportTypes = [
   { 
     id: 'leaks_adjustments', 
     title: 'Fugas y Ajustes Manuales', 
-    description: 'Control de pérdidas y ajustes de inventario.', 
+    description: 'Control de pérdidas, ajustes manuales y auditoría de seguridad.', 
     icon: AlertOctagon, 
     color: 'text-red-600', 
     bg: 'bg-red-50' 
@@ -55,23 +55,23 @@ const reportTypes = [
   { 
     id: 'consumption_analysis', 
     title: 'Consumo: Facturado vs. Uso Interno', 
-    description: 'Análisis de rentabilidad y uso operativo.', 
+    description: 'Análisis de rentabilidad: Facturado vs. Gasto Operativo.', 
     icon: PieChart, 
     color: 'text-purple-600', 
     bg: 'bg-purple-50' 
   },
   { 
     id: 'dead_stock', 
-    title: 'Stock "Muerto" o Sin Rotación', 
-    description: 'Identificar productos sin movimiento reciente.', 
-    icon: Skull, 
+    title: 'Stock Inmovilizado', 
+    description: 'Identificación de capital inmovilizado sin rotación reciente.', 
+    icon: Archive, 
     color: 'text-gray-600', 
     bg: 'bg-gray-100' 
   },
   { 
     id: 'inventory_valuation', 
     title: 'Valoración de Inventario', 
-    description: 'Análisis detallado por lote y costo.', 
+    description: 'Valoración financiera exacta detallada por lotes activos.', 
     icon: DollarSign, 
     color: 'text-emerald-600', 
     bg: 'bg-emerald-50' 
@@ -270,10 +270,6 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
                     </div>
                   </div>
               )}
-
-              <p className="text-xs text-gray-400 italic">
-                * Algunos reportes como "Stock Muerto" pueden ignorar el rango de fechas y usar la fecha actual.
-              </p>
             </div>
           )}
 

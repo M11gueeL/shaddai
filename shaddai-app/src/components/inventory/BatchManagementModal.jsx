@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, AlertTriangle, CheckCircle, Clock, Package, Archive, Edit2, PauseCircle, PlayCircle } from 'lucide-react';
-import { getBatches, toggleBatchStatus } from '../../api/inventoryApi';
+import { X, Trash2, AlertTriangle, CheckCircle, Clock, Package, Archive, Edit2, PauseCircle, PlayCircle, Save } from 'lucide-react';
+import { getBatches, toggleBatchStatus, updateBatchExpiration } from '../../api/inventoryApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -13,6 +13,7 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adjustingBatch, setAdjustingBatch] = useState(null); // { batch, type: 'correction' | 'discard' }
+  const [editingDateBatch, setEditingDateBatch] = useState(null); // { id, date }
 
   useEffect(() => {
     if (item && token) {
@@ -35,6 +36,24 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
     setAdjustingBatch(null);
     fetchBatches();
     onUpdate();
+  };
+
+  const handleUpdateDate = async () => {
+    if (!editingDateBatch || !editingDateBatch.date) return;
+    
+    try {
+        await updateBatchExpiration({ 
+            batch_id: editingDateBatch.id, 
+            expiration_date: editingDateBatch.date 
+        }, token);
+        
+        toast.success('Fecha de vencimiento actualizada');
+        setEditingDateBatch(null);
+        fetchBatches();
+        onUpdate(); // Refresh main table stats if needed
+    } catch (error) {
+        toast.error(error.response?.data?.error || 'Error actualizando fecha');
+    }
   };
 
   const handleToggleStatus = async (batch) => {
@@ -127,8 +146,34 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
                             {style.icon} {style.label}
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 flex gap-4">
-                          <span>Vence: <strong>{batch.expiration_date}</strong></span>
+                        <div className="text-sm text-gray-600 flex gap-4 items-center">
+                          {editingDateBatch?.id === batch.id ? (
+                              <div className="flex items-center gap-2">
+                                  <input 
+                                      type="date" 
+                                      value={editingDateBatch.date}
+                                      onChange={(e) => setEditingDateBatch({...editingDateBatch, date: e.target.value})}
+                                      className="text-xs border-gray-300 rounded-md py-1 px-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                  />
+                                  <button onClick={handleUpdateDate} className="text-green-600 hover:bg-green-50 p-1 rounded">
+                                      <Save size={14} />
+                                  </button>
+                                  <button onClick={() => setEditingDateBatch(null)} className="text-red-600 hover:bg-red-50 p-1 rounded">
+                                      <X size={14} />
+                                  </button>
+                              </div>
+                          ) : (
+                              <div className="flex items-center gap-2 group/date">
+                                  <span>Vence: <strong>{batch.expiration_date}</strong></span>
+                                  <button 
+                                    onClick={() => setEditingDateBatch({ id: batch.id, date: batch.expiration_date })}
+                                    className="opacity-0 group-hover/date:opacity-100 text-gray-400 hover:text-indigo-600 transition-opacity"
+                                    title="Corregir fecha"
+                                  >
+                                      <Edit2 size={12} />
+                                  </button>
+                              </div>
+                          )}
                           <span className="text-gray-400">|</span>
                           <span>Entrada: <strong>{batch.created_at?.substring(0,10)}</strong></span>
                         </div>

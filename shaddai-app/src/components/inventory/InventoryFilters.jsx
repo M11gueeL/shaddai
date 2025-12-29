@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle, FileText } from 'lucide-react';
+import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle, FileText, Bookmark, Bell } from 'lucide-react';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function InventoryFilters({
@@ -45,21 +45,9 @@ export default function InventoryFilters({
                     >
                         <Filter size={18} className={`transition-transform duration-300 ${showFilters ? 'rotate-180 text-indigo-600' : ''}`} />
                         <span>Filtros</span>
-                        {(filters.name || filters.code || filters.brand_id || filters.status || filters.min_price || filters.max_price) && (
+                        {(filters.name || filters.code || filters.brand_id || filters.status || filters.min_price || filters.max_price || lowStockOnly) && (
                             <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
                         )}
-                    </button>
-
-                    <button 
-                        onClick={() => setLowStockOnly(!lowStockOnly)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 border ${
-                            lowStockOnly 
-                            ? 'bg-red-50 text-red-700 border-red-200 shadow-sm' 
-                            : 'bg-white text-gray-600 border-transparent hover:bg-red-50 hover:text-red-600 hover:border-red-100'
-                        }`}
-                    >
-                        <AlertTriangle size={18} className={lowStockOnly ? 'fill-current animate-pulse' : ''} />
-                        <span className="hidden sm:inline">Bajo Stock</span>
                     </button>
 
                     <div className="h-6 w-px bg-gray-200 hidden sm:block mx-1"></div>
@@ -68,18 +56,20 @@ export default function InventoryFilters({
                         <>
                             <button 
                                 onClick={onShowBrandModal}
-                                className="p-2.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all duration-300 border border-transparent hover:border-indigo-100 hover:shadow-sm"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 rounded-xl transition-all duration-300 shadow-sm"
                                 title="Gestionar Marcas"
                             >
-                                <Tag size={20} />
+                                <Bookmark size={18} />
+                                <span className="hidden sm:inline font-medium">Marcas</span>
                             </button>
 
                             <button 
                                 onClick={onShowAlerts}
-                                className="p-2.5 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all duration-300 border border-transparent hover:border-amber-100 hover:shadow-sm"
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 rounded-xl transition-all duration-300 shadow-sm"
                                 title="Alertas de Vencimiento"
                             >
-                                <AlertTriangle size={20} />
+                                <Bell size={18} />
+                                <span className="hidden sm:inline font-medium">Alertas</span>
                             </button>
                         </>
                     )}
@@ -182,6 +172,24 @@ export default function InventoryFilters({
                                 <option value="active">Solo Activos</option>
                                 <option value="inactive">Solo Inactivos</option>
                             </select>
+                        </div>
+
+                        {/* Low Stock Toggle */}
+                        <div className="flex items-end pb-2">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer"
+                                        checked={lowStockOnly}
+                                        onChange={(e) => setLowStockOnly(e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                </div>
+                                <span className={`text-sm font-medium transition-colors ${lowStockOnly ? 'text-red-700' : 'text-gray-600 group-hover:text-gray-800'}`}>
+                                    Solo Bajo Stock
+                                </span>
+                            </label>
                         </div>
 
                         {/* Price Range */}

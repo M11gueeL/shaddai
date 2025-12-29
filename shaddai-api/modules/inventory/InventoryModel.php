@@ -10,6 +10,24 @@ class InventoryModel {
     }
 
     // desarrolla un metodo que obtenga de las tablas relacionadas al inventory los siguientes tres datos: total de items, total de stock bajo (dinmicamente segun el reorder_level) y total de valor de inventario (sumando stock_quantity * price_usd) de forma general osea todos los items
+    public function updateBatchExpiration($batchId, $newDate, $userId) {
+        // Validar formato de fecha
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
+            throw new Exception("Formato de fecha inválido.");
+        }
+
+        // Registrar en historial (opcional, pero recomendado para auditoría)
+        // Por simplicidad, solo actualizamos el lote, pero idealmente se guardaría un log.
+        
+        $sql = 'UPDATE inventory_batches SET expiration_date = :date, updated_at = NOW() WHERE id = :id';
+        $this->db->query($sql, [
+            ':date' => $newDate,
+            ':id' => $batchId
+        ]);
+        
+        return true;
+    }
+
     public function getInventoryStats() {
         $sql = 'SELECT 
                     (SELECT COUNT(*) FROM inventory_items WHERE is_deleted = 0) AS total_items,
@@ -295,7 +313,7 @@ class InventoryModel {
                 $newQty = $batch['quantity'] - $deduct;
                 $newStatus = ($newQty == 0) ? 'empty' : 'active';
 
-                $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :status WHERE id = :id", [
+                $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :status, updated_at = NOW() WHERE id = :id", [
                     ':qty' => $newQty, 
                     ':status' => $newStatus,
                     ':id' => $batch['id']
@@ -348,7 +366,7 @@ class InventoryModel {
             // Si queda stock pero ya decidimos no usarlo más, podríamos forzar el estado, pero asumamos gestión por cantidad.
             $status = ($newQty === 0) ? 'disposed' : 'active';
 
-            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st WHERE id = :id", [
+            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st, updated_at = NOW() WHERE id = :id", [
                 ':qty' => $newQty, 
                 ':st' => $status,
                 ':id' => $batchId
@@ -394,7 +412,7 @@ class InventoryModel {
             // Si es una corrección y la nueva cantidad supera la inicial registrada, actualizamos la inicial
             // para evitar porcentajes > 100% (asumiendo que fue un error de ingreso inicial)
             if ($type === 'correction' && $newQty > $batch['initial_quantity']) {
-                $this->db->execute("UPDATE inventory_batches SET initial_quantity = :iq WHERE id = :id", [
+                $this->db->execute("UPDATE inventory_batches SET initial_quantity = :iq, updated_at = NOW() WHERE id = :id", [
                     ':iq' => $newQty,
                     ':id' => $batchId
                 ]);
@@ -405,7 +423,7 @@ class InventoryModel {
             // Si es una baja explícita (discard), usamos 'disposed' si llega a 0
             if ($type === 'discard' && $newQty === 0) $status = 'disposed';
 
-            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st WHERE id = :id", [
+            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st, updated_at = NOW() WHERE id = :id", [
                 ':qty' => $newQty, 
                 ':st' => $status,
                 ':id' => $batchId
@@ -460,7 +478,7 @@ class InventoryModel {
             throw new Exception("No se puede cambiar el estado de un lote vacío o agotado.");
         }
 
-        $this->db->execute("UPDATE inventory_batches SET status = :status WHERE id = :id", [
+        $this->db->execute("UPDATE inventory_batches SET status = :status, updated_at = NOW() WHERE id = :id", [
             ':status' => $status,
             ':id' => $batchId
         ]);
