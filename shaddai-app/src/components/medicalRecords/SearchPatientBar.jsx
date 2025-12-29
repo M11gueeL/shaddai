@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, User, X, Loader2, Mail, CreditCard, Hash } from 'lucide-react';
+import { Search, User, X, Loader2, Mail, CreditCard, Hash, Phone } from 'lucide-react';
 import PatientsApi from '../../api/PatientsApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -52,11 +52,13 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
       const name = p.full_name?.toLowerCase() || '';
       const cedula = p.cedula?.toLowerCase() || '';
       const email = p.email?.toLowerCase() || '';
+      const phone = p.phone?.toLowerCase() || '';
       const id = String(p.id);
 
       return name.includes(lowerQ) || 
              cedula.includes(lowerQ) || 
              email.includes(lowerQ) || 
+             phone.includes(lowerQ) ||
              id.includes(lowerQ);
     });
 
@@ -81,7 +83,7 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
         onSearchByCedula(patient.cedula);
     }
     setIsOpen(false);
-    setQuery(''); // Limpiar el input como se solicitó
+    setQuery(''); 
   };
 
   return (
@@ -97,7 +99,7 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
         <input
           type="text"
           className="block w-full pl-12 pr-10 py-4 bg-white border-0 ring-1 ring-gray-200 rounded-2xl text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:shadow-lg transition-all duration-300 ease-out text-base"
-          placeholder="Buscar paciente por Nombre, Cédula, Email o ID..."
+          placeholder="Buscar paciente por nombre, cédula, teléfono o email.."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={handleFocus}
@@ -114,14 +116,14 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-full bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
+        <div className="mt-2 w-full bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top">
           {isLoadingPatients ? (
             <div className="p-8 text-center text-gray-500 flex flex-col items-center gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
               <p className="text-sm font-medium">Cargando directorio de pacientes...</p>
             </div>
           ) : filteredPatients.length > 0 ? (
-            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
               <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50/50 sticky top-0 backdrop-blur-sm">
                 Resultados ({filteredPatients.length})
               </div>
@@ -140,7 +142,7 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
                         <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
                           {patient.full_name}
                         </h4>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
                           <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full">
                             <CreditCard className="h-3 w-3" />
                             {patient.cedula || 'S/C'}
@@ -149,6 +151,12 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
                             <span className="flex items-center gap-1">
                               <Mail className="h-3 w-3" />
                               {patient.email}
+                            </span>
+                          )}
+                          {patient.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {patient.phone}
                             </span>
                           )}
                         </div>
