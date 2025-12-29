@@ -1,11 +1,14 @@
 <?php
 require_once __DIR__ . '/InventoryModel.php';
+require_once __DIR__ . '/../../services/InventoryReportService.php';
 
 class InventoryController {
     private $model;
+    private $reportService;
 
     public function __construct() {
         $this->model = new InventoryModel();
+        $this->reportService = new InventoryReportService();
     }
 
     public function list() {
@@ -259,6 +262,48 @@ class InventoryController {
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function generateReport() {
+        try {
+            $type = $_GET['type'] ?? '';
+            $format = $_GET['format'] ?? 'pdf';
+            $startDate = $_GET['start_date'] ?? date('Y-m-d');
+            $endDate = $_GET['end_date'] ?? date('Y-m-d');
+            $itemId = !empty($_GET['item_id']) ? $_GET['item_id'] : null;
+            
+            // Obtener usuario actual desde el token
+            $generatedBy = 'Usuario del Sistema';
+            if (isset($_REQUEST['jwt_payload']) && isset($_REQUEST['jwt_payload']->sub)) {
+                $userId = $_REQUEST['jwt_payload']->sub;
+                $user = $this->model->getUserNameById($userId);
+                if ($user) {
+                    $generatedBy = $user['name'];
+                }
+            }
+
+            if ($type === 'expiration_risk') {
+                $data = $this->model->getExpirationRiskData();
+                if ($format === 'excel') {
+                    $this->reportService->generateExpirationRiskExcel($data, $generatedBy);
+                } else {
+                    $this->reportService->generateExpirationRiskPdf($data, $generatedBy);
+                }
+            } elseif ($type === 'movement_kardex') {
+                $data = $this->model->getMovementKardexData($startDate, $endDate, $itemId);
+                if ($format === 'excel') {
+                    $this->reportService->generateKardexExcel($data, $startDate, $endDate, $generatedBy);
+                } else {
+                    $this->reportService->generateKardexPdf($data, $startDate, $endDate, $generatedBy);
+                }
+            } else {
+                throw new Exception("Tipo de reporte no soportado: $type");
+            }
+
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
         }
     }
 }

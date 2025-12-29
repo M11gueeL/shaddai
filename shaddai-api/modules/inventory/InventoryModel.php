@@ -461,5 +461,55 @@ class InventoryModel {
             ':batch_id' => $batchId
         ]);
     }
+
+    public function getExpirationRiskData() {
+        $sql = 'SELECT 
+                    i.name as item_name,
+                    ib.batch_number,
+                    ib.quantity as remaining_quantity,
+                    ib.expiration_date,
+                    DATEDIFF(ib.expiration_date, CURDATE()) as days_remaining
+                FROM inventory_batches ib
+                JOIN inventory_items i ON ib.item_id = i.id
+                WHERE ib.quantity > 0
+                ORDER BY ib.expiration_date ASC';
+        
+        return $this->db->query($sql);
+    }
+
+    public function getMovementKardexData($startDate, $endDate, $itemId = null) {
+        $sql = 'SELECT 
+                    im.created_at,
+                    CONCAT(u.first_name, " ", u.last_name) as user_name,
+                    im.movement_type,
+                    im.quantity as quantity_moved,
+                    im.notes,
+                    i.name as item_name,
+                    i.code as item_code
+                FROM inventory_movements im
+                JOIN inventory_items i ON im.item_id = i.id
+                LEFT JOIN users u ON im.created_by = u.id
+                WHERE DATE(im.created_at) BETWEEN :start_date AND :end_date';
+        
+        $params = [
+            ':start_date' => $startDate,
+            ':end_date' => $endDate
+        ];
+
+        if ($itemId) {
+            $sql .= ' AND im.item_id = :item_id';
+            $params[':item_id'] = $itemId;
+        }
+
+        $sql .= ' ORDER BY im.created_at DESC';
+        
+        return $this->db->query($sql, $params);
+    }
+
+    public function getUserNameById($id) {
+        $sql = 'SELECT CONCAT(first_name, " ", last_name) as name FROM users WHERE id = :id';
+        $res = $this->db->query($sql, [':id' => $id]);
+        return $res[0] ?? null;
+    }
 }
 ?>

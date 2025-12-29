@@ -31,6 +31,9 @@ export const listInventoryMovements = (id, params = {}, token) =>
 export const getExpiringItems = (token) =>
   axios.get(`${API_URL}/inventory/expiring`, auth(token));
 
+export const generateInventoryReport = (params, token) =>
+  axios.get(`${API_URL}/inventory/reports`, { ...auth(token), params, responseType: 'blob' });
+
 export const getBatches = (id, token) =>
   axios.get(`${API_URL}/inventory/${id}/batches`, auth(token));
 

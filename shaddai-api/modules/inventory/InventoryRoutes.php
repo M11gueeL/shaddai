@@ -8,6 +8,7 @@ class InventoryRoutes {
         $router->add('GET', 'inventory', [$c, 'list'], ['auth']);
         $router->add('GET', 'inventory/expiring', [$c, 'expiring'], ['auth']);
         $router->add('GET', 'inventory/stats', [$c, 'stats'], ['auth']);
+        $router->add('GET', 'inventory/reports', [$c, 'generateReport'], ['auth']);
         $router->add('GET', 'inventory/{id}', [$c, 'get'], ['auth']);
         $router->add('GET', 'inventory/{id}/batches', [$c, 'getBatches'], ['auth']);
         $router->add('GET', 'inventory/{id}/movements', [$c, 'movements'], ['auth']);

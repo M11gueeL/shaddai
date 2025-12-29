@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Download, 
   FileText, 
@@ -16,6 +16,8 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { generateInventoryReport, listInventory } from '../../api/inventoryApi';
+import { useAuth } from '../../context/AuthContext';
 
 const reportTypes = [
   { 
@@ -77,14 +79,25 @@ const reportTypes = [
 ];
 
 export default function InventoryReportsModal({ isOpen, onClose }) {
+  const { token } = useAuth();
   const [selectedReport, setSelectedReport] = useState(reportTypes[0].id);
   const [isReportListOpen, setIsReportListOpen] = useState(false);
   const [loadingFormat, setLoadingFormat] = useState(null);
+  const [items, setItems] = useState([]);
   
   const [filters, setFilters] = useState({
     start_date: new Date().toISOString().split('T')[0], 
-    end_date: new Date().toISOString().split('T')[0],   
+    end_date: new Date().toISOString().split('T')[0],
+    item_id: ''   
   });
+
+  useEffect(() => {
+    if (isOpen) {
+        listInventory({ all: 1 }, token)
+            .then(res => setItems(res.data))
+            .catch(err => console.error("Error loading items", err));
+    }
+  }, [isOpen, token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -94,15 +107,33 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
   const handleExport = async (format) => {
     try {
       setLoadingFormat(format);
+      const params = {
+        type: selectedReport,
+        format,
+        ...filters
+      };
+
+      const response = await generateInventoryReport(params, token);
       
-      // Simulación de generación de reporte
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const blob = new Blob([response.data], { 
+        type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
       
-      const reportName = reportTypes.find(r => r.id === selectedReport)?.title || 'Reporte';
-      toast.success(`Reporte "${reportName}" (${format.toUpperCase()}) generado correctamente`);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
       
-      // Aquí iría la lógica real de llamada al API
-      // const response = await inventoryApi.generateReport({ ...filters, type: selectedReport, format }, token);
+      const ext = format === 'excel' ? 'xlsx' : format;
+      const reportName = reportTypes.find(r => r.id === selectedReport)?.title || 'reporte';
+      const safeName = reportName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      
+      link.setAttribute('download', `${safeName}_${filters.start_date}.${ext}`);
+      
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      toast.success(`Reporte generado correctamente`);// const response = await inventoryApi.generateReport({ ...filters, type: selectedReport, format }, token);
       
       onClose();
     } catch (error) {
@@ -186,37 +217,63 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
           </div>
 
           {/* Filtros de Fecha */}
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
-                  <Calendar className="w-3 h-3 text-blue-500" /> Fecha Inicio
-                </label>
-                <input 
-                  type="date" 
-                  name="start_date"
-                  value={filters.start_date}
-                  onChange={handleInputChange}
-                  className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                />
+          {selectedReport !== 'expiration_risk' && (
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
+                    <Calendar className="w-3 h-3 text-blue-500" /> Fecha Inicio
+                  </label>
+                  <input 
+                    type="date" 
+                    name="start_date"
+                    value={filters.start_date}
+                    onChange={handleInputChange}
+                    className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
+                    <Calendar className="w-3 h-3 text-blue-500" /> Fecha Fin
+                  </label>
+                  <input 
+                    type="date" 
+                    name="end_date"
+                    value={filters.end_date}
+                    onChange={handleInputChange}
+                    className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="flex items-center gap-2 text-xs font-bold text-gray-700 mb-1.5">
-                  <Calendar className="w-3 h-3 text-blue-500" /> Fecha Fin
-                </label>
-                <input 
-                  type="date" 
-                  name="end_date"
-                  value={filters.end_date}
-                  onChange={handleInputChange}
-                  className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                />
-              </div>
+
+              {/* Filtro de Insumo (Solo para Kardex) */}
+              {selectedReport === 'movement_kardex' && (
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">Filtrar por Insumo (Opcional)</label>
+                    <div className="relative">
+                        <select
+                            name="item_id"
+                            value={filters.item_id}
+                            onChange={handleInputChange}
+                            className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none py-2 pl-3 pr-8"
+                        >
+                            <option value="">Todos los insumos</option>
+                            {items.map(item => (
+                                <option key={item.id} value={item.id}>
+                                    {item.code} - {item.name}
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+              )}
+
+              <p className="text-xs text-gray-400 italic">
+                * Algunos reportes como "Stock Muerto" pueden ignorar el rango de fechas y usar la fecha actual.
+              </p>
             </div>
-            <p className="text-xs text-gray-400 italic">
-              * Algunos reportes como "Semáforo de Vencimientos" o "Stock Muerto" pueden ignorar el rango de fechas y usar la fecha actual.
-            </p>
-          </div>
+          )}
 
           {/* Botones de Acción */}
           <div className="space-y-3">
