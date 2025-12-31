@@ -14,11 +14,12 @@ export default function ReportsSection({ recordId, record, token, user, condense
   const { confirm } = useConfirm();
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null); // report object
+  const [viewMode, setViewMode] = useState('list');
   const [form, setForm] = useState({ report_type: 'Informe médico', content: '', status: 'draft' });
   const [newContent, setNewContent] = useState('');
   const isDoctorOrAdmin = Array.isArray(user?.roles) && (user.roles.includes('medico') || user.roles.includes('admin'));
   const [doctorExtras, setDoctorExtras] = useState({ specialties: '', mpps: '', college: '' });
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'create', 'view'
+  const [isEditing, setIsEditing] = useState(false);
 
   const load = async () => {
     try {
@@ -29,6 +30,32 @@ export default function ReportsSection({ recordId, record, token, user, condense
     }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [recordId]);
+
+  // Helper for safe date formatting
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Fecha desconocida';
+    // Ensure ISO format for better browser compatibility
+    const safeDate = dateString.replace(' ', 'T');
+    const d = new Date(safeDate);
+    if (isNaN(d.getTime())) return 'Fecha inválida';
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const getMonth = (dateString) => {
+    if (!dateString) return '-';
+    const safeDate = dateString.replace(' ', 'T');
+    const d = new Date(safeDate);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleString('es-ES', { month: 'short' }).replace('.', '');
+  };
+
+  const getDay = (dateString) => {
+    if (!dateString) return '-';
+    const safeDate = dateString.replace(' ', 'T');
+    const d = new Date(safeDate);
+    if (isNaN(d.getTime())) return '-';
+    return d.getDate();
+  };
 
   // Load doctor's specialties and codes for headers
   useEffect(() => {
@@ -59,6 +86,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
       const res = await medicalRecordsApi.getReport(id, token);
       setSelected(res.data);
       setViewMode('view');
+      setIsEditing(false);
     } catch (e) { toast.error('No se pudo abrir el informe'); }
   };
 
@@ -70,21 +98,46 @@ export default function ReportsSection({ recordId, record, token, user, condense
 
   const createWithStatus = async (status) => {
     try {
-      await medicalRecordsApi.createReportForRecord(recordId, { report_type: form.report_type, content: newContent, status }, token);
+      const res = await medicalRecordsApi.createReportForRecord(recordId, { report_type: form.report_type, content: newContent, status }, token);
       toast.success(status === 'final' ? 'Informe guardado como final' : 'Informe guardado como borrador');
+      
+      // Reset form
       setForm({ report_type: form.report_type, content: '', status: 'draft' });
       setNewContent('');
-      load();
-      setViewMode('list');
+      
+      // Reload list and try to select the new report
+      await load();
+      
+      // If we can identify the new report (e.g. it's the last one or returned by API), select it
+      // Assuming API returns the created object or we pick the latest
+      const created = res.data?.report || res.data;
+      if (created && created.id) {
+          setSelected(created);
+          setViewMode('view');
+          setIsEditing(false);
+          
+          // Workaround: If backend ignored 'final' status, force update
+          if (status === 'final' && created.status !== 'final') {
+              await medicalRecordsApi.updateReport(created.id, { ...created, status: 'final' }, token);
+              setSelected({ ...created, status: 'final' });
+              load(); // Reload again to reflect status in list
+          }
+      } else {
+          setViewMode('list');
+      }
     } catch (e) { toast.error('No se pudo crear'); }
   };
 
   const update = async (status = null) => {
     if (!selected?.id) return;
     try {
-      const payload = { report_type: selected.report_type, content: selected.content, status: status || selected.status };
+      const newStatus = status || selected.status;
+      const payload = { report_type: selected.report_type, content: selected.content, status: newStatus };
       await medicalRecordsApi.updateReport(selected.id, payload, token);
-      toast.success(status === 'final' ? 'Informe guardado como final' : 'Informe actualizado');
+      toast.success(newStatus === 'final' ? 'Informe finalizado' : 'Informe actualizado');
+      
+      setSelected({ ...selected, status: newStatus });
+      setIsEditing(false);
       load();
     } catch (e) { toast.error('No se pudo actualizar'); }
   };
@@ -270,7 +323,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
                         </span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                        <span>{formatDate(r.created_at)}</span>
                         <span>·</span>
                         <span className="truncate">Dr. {r.doctor_name}</span>
                     </div>
@@ -328,10 +381,10 @@ export default function ReportsSection({ recordId, record, token, user, condense
                             <div className="flex-shrink-0">
                                 <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center border shadow-sm transition-all ${selected?.id === r.id ? 'bg-white border-indigo-200 shadow-indigo-100' : 'bg-slate-50 border-slate-100'}`}>
                                     <span className={`text-[10px] font-bold uppercase tracking-wider ${selected?.id === r.id ? 'text-indigo-500' : 'text-slate-400'}`}>
-                                        {new Date(r.created_at).toLocaleString('es-ES', { month: 'short' }).replace('.', '')}
+                                        {getMonth(r.created_at)}
                                     </span>
                                     <span className={`text-lg font-bold leading-none mt-0.5 ${selected?.id === r.id ? 'text-indigo-700' : 'text-slate-600'}`}>
-                                        {new Date(r.created_at).getDate()}
+                                        {getDay(r.created_at)}
                                     </span>
                                 </div>
                             </div>
@@ -428,54 +481,80 @@ export default function ReportsSection({ recordId, record, token, user, condense
                             </button>
                             <div>
                                 <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider">{selected.report_type}</h4>
-                                <p className="text-xs text-slate-500">Por: {selected.doctor_name || 'Desconocido'} · {new Date(selected.created_at).toLocaleString()}</p>
+                                <p className="text-xs text-slate-500">Por: {selected.doctor_name || 'Desconocido'} · {formatDate(selected.created_at)}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button 
-                                onClick={exportSelectedToPDF} 
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm" 
-                                title="Descargar como PDF"
-                            >
-                                <FileText className="w-3.5 h-3.5" /> PDF
-                            </button>
-                            <button 
-                                onClick={exportSelectedToWord} 
-                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm" 
-                                title="Descargar como Word"
-                            >
-                                <FileEdit className="w-3.5 h-3.5" /> Word
-                            </button>
+                            {!isEditing && (
+                                <>
+                                    <button 
+                                        onClick={exportSelectedToPDF} 
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm" 
+                                        title="Descargar como PDF"
+                                    >
+                                        <FileText className="w-3.5 h-3.5" /> PDF
+                                    </button>
+                                    <button 
+                                        onClick={exportSelectedToWord} 
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm" 
+                                        title="Descargar como Word"
+                                    >
+                                        <FileEdit className="w-3.5 h-3.5" /> Word
+                                    </button>
+                                </>
+                            )}
                             
                             {canEditReport(selected) && (
                                 <>
                                     <div className="w-px h-5 bg-slate-200 mx-1"></div>
-                                    <button onClick={() => remove(selected.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Informe">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    {!isEditing ? (
+                                        <>
+                                            <button 
+                                                onClick={() => setIsEditing(true)} 
+                                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 transition-colors border border-indigo-100 shadow-sm"
+                                            >
+                                                <Edit3 className="w-3.5 h-3.5" /> Editar
+                                            </button>
+                                            <button onClick={() => remove(selected.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Informe">
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button 
+                                            onClick={() => { setIsEditing(false); load(); }} // Cancel edit
+                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200 transition-colors"
+                                        >
+                                            <X className="w-3.5 h-3.5" /> Cancelar
+                                        </button>
+                                    )}
                                 </>
                             )}
                         </div>
                     </div>
                     
                     <div className="p-8 bg-white min-h-[500px]">
-                        {canEditReport(selected) && selected.status !== 'final' ? (
-                            <div className="space-y-4">
+                        {isEditing ? (
+                            <div className="space-y-4 animate-in fade-in">
+                                <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-xs text-amber-800 flex items-center gap-2 mb-2">
+                                    <FileEdit className="w-4 h-4" />
+                                    Estás editando este informe. Recuerda guardar los cambios.
+                                </div>
                                 <RichTextEditor 
                                     value={selected.content} 
                                     onChange={(val) => setSelected({...selected, content: val})} 
                                 />
                                 <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                                     <button onClick={() => update('draft')} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">
-                                        Guardar Cambios
+                                        Guardar como Borrador
                                     </button>
                                     <button onClick={() => update('final')} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-200 hover:bg-emerald-700">
-                                        Finalizar Informe
+                                        <Save className="w-4 h-4 inline mr-2" />
+                                        Guardar y Finalizar
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: selected.content }} />
+                            <div className="prose prose-slate max-w-none animate-in fade-in" dangerouslySetInnerHTML={{ __html: selected.content }} />
                         )}
                     </div>
                 </div>

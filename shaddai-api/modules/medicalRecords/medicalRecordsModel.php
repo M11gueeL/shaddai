@@ -542,7 +542,7 @@ class MedicalRecordsModel {
      * @return array
      */
     public function getReportsByMedicalRecordId($medicalRecordId) {
-        $sql = "SELECT mr.id, mr.report_date, mr.report_type, mr.status, mr.doctor_id, CONCAT(u.first_name, ' ', u.last_name) as doctor_name
+        $sql = "SELECT mr.id, mr.report_date, mr.report_type, mr.status, mr.created_at, mr.doctor_id, CONCAT(u.first_name, ' ', u.last_name) as doctor_name
                 FROM medical_reports mr
                 JOIN users u ON mr.doctor_id = u.id
                 WHERE mr.medical_record_id = :record_id
