@@ -98,8 +98,9 @@ export default function ReportsSection({ recordId, record, token, user, condense
 
   const createWithStatus = async (status) => {
     try {
-      const res = await medicalRecordsApi.createReportForRecord(recordId, { report_type: form.report_type, content: newContent, status }, token);
-      toast.success(status === 'final' ? 'Informe guardado como final' : 'Informe guardado como borrador');
+      const statusToSend = status || 'draft';
+      const res = await medicalRecordsApi.createReportForRecord(recordId, { report_type: form.report_type, content: newContent, status: statusToSend }, token);
+      toast.success(statusToSend === 'final' ? 'Informe guardado como final' : 'Informe guardado como borrador');
       
       // Reset form
       setForm({ report_type: form.report_type, content: '', status: 'draft' });
@@ -117,7 +118,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
           setIsEditing(false);
           
           // Workaround: If backend ignored 'final' status, force update
-          if (status === 'final' && created.status !== 'final') {
+          if (statusToSend === 'final' && created.status !== 'final' && created.status !== 'finalized') {
               await medicalRecordsApi.updateReport(created.id, { ...created, status: 'final' }, token);
               setSelected({ ...created, status: 'final' });
               load(); // Reload again to reflect status in list
@@ -131,7 +132,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
   const update = async (status = null) => {
     if (!selected?.id) return;
     try {
-      const newStatus = status || selected.status;
+      const newStatus = status || selected.status || 'draft';
       const payload = { report_type: selected.report_type, content: selected.content, status: newStatus };
       await medicalRecordsApi.updateReport(selected.id, payload, token);
       toast.success(newStatus === 'final' ? 'Informe finalizado' : 'Informe actualizado');
@@ -312,15 +313,17 @@ export default function ReportsSection({ recordId, record, token, user, condense
               else toast.info('Este informe es un borrador. Edítalo desde la pestaña Informes.');
             }}>
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg shrink-0 ${r.status === 'final' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                    {r.status === 'final' ? <FileCheck className="w-4 h-4" /> : <FileEdit className="w-4 h-4" />}
+                <div className={`p-2 rounded-lg shrink-0 ${(r.status === 'final' || r.status === 'finalized') ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                    {(r.status === 'final' || r.status === 'finalized') ? <FileCheck className="w-4 h-4" /> : <FileEdit className="w-4 h-4" />}
                 </div>
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between mb-0.5">
                         <span className="font-bold text-slate-700 text-sm truncate group-hover:text-indigo-600 transition-colors">{r.report_type || 'Informe'}</span>
-                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md ${r.status === 'final' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {r.status === 'final' ? 'Final' : 'Borrador'}
-                        </span>
+                        {r.status !== 'final' && r.status !== 'finalized' && (
+                            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700">
+                                Borrador
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-500">
                         <span>{formatDate(r.created_at)}</span>
@@ -354,9 +357,14 @@ export default function ReportsSection({ recordId, record, token, user, condense
                 Genere, edite y exporte informes médicos, constancias y referencias.
             </p>
         </div>
-        {viewMode === 'list' && isDoctorOrAdmin && (
+        {isDoctorOrAdmin && (
             <button 
-                onClick={() => setViewMode('create')}
+                onClick={() => {
+                    setViewMode('create');
+                    setSelected(null);
+                    setForm({ report_type: 'Informe médico', content: '', status: 'draft' });
+                    setNewContent('');
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
             >
                 <Plus className="w-4 h-4" /> Nuevo Informe
@@ -405,9 +413,11 @@ export default function ReportsSection({ recordId, record, token, user, condense
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-2">
-                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${r.status === 'final' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
-                                        {r.status === 'final' ? 'Finalizado' : 'Borrador'}
-                                    </span>
+                                    {r.status !== 'final' && r.status !== 'finalized' && (
+                                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-100">
+                                            Borrador
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <ChevronRight className={`w-4 h-4 mt-2 transition-colors ${selected?.id === r.id ? 'text-indigo-400' : 'text-slate-300 group-hover:text-indigo-300'}`} />
@@ -529,6 +539,15 @@ export default function ReportsSection({ recordId, record, token, user, condense
                                     )}
                                 </>
                             )}
+                            
+                            <div className="w-px h-5 bg-slate-200 mx-1"></div>
+                            <button 
+                                onClick={() => { setSelected(null); setViewMode('list'); }}
+                                className="p-1.5 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors"
+                                title="Cerrar vista"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                     

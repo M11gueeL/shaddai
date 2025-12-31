@@ -514,7 +514,7 @@ class MedicalRecordsModel {
             ':type'         => $data['report_type'] ?? null,
             ':recipient'    => $data['recipient'] ?? null,
             ':content'      => $data['content'],
-            ':status'       => $data['status'] ?? 'draft'
+            ':status'       => (isset($data['status']) && ($data['status'] === 'final' || $data['status'] === 'finalized')) ? 'finalized' : 'draft'
         ];
          if ($this->db->execute($sql, $params)) {
             return $this->db->lastInsertId();
@@ -568,7 +568,7 @@ class MedicalRecordsModel {
             ':type'         => $data['report_type'] ?? null,
             ':recipient'    => $data['recipient'] ?? null,
             ':content'      => $data['content'],
-            ':status'       => $data['status'] ?? 'draft',
+            ':status'       => (isset($data['status']) && ($data['status'] === 'final' || $data['status'] === 'finalized')) ? 'finalized' : 'draft',
             ':id'           => $reportId
         ];
         return $this->db->execute($sql, $params);
