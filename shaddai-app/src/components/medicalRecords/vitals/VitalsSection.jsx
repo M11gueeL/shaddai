@@ -27,6 +27,15 @@ export default function VitalsSection({ recordId, token }) {
 
   const submit = async (e) => {
     e.preventDefault();
+    
+    const vitalFields = ['systolic_bp', 'diastolic_bp', 'heart_rate', 'respiratory_rate', 'temperature', 'oxygen_saturation', 'weight', 'height'];
+    const hasData = vitalFields.some(field => form[field] && String(form[field]).trim() !== '');
+
+    if (!hasData) {
+        toast.warning('Debe registrar al menos un signo vital (ej. Presión, Peso, Temperatura, etc).');
+        return;
+    }
+
     try {
       await medicalRecordsApi.addVitalSignsForRecord(recordId, form, token);
       toast.success('Signos registrados');
@@ -125,7 +134,7 @@ export default function VitalsSection({ recordId, token }) {
                             placeholder="70.5"
                         />
                         <VitalInput 
-                            label="Talla" 
+                            label="Altura" 
                             icon={<Ruler className="w-3.5 h-3.5" />} 
                             value={form?.height} 
                             onChange={v => setForm({...form, height: v})} 
@@ -136,9 +145,12 @@ export default function VitalsSection({ recordId, token }) {
                     </div>
 
                     {bmiPreview && (
-                        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-500 uppercase">IMC Estimado</span>
-                            <span className="text-sm font-bold text-slate-800">{bmiPreview}</span>
+                        <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 flex items-center justify-between animate-in fade-in">
+                            <div className="flex flex-col">
+                                <span className="text-xs font-bold text-indigo-600 uppercase">IMC Calculado</span>
+                                <span className="text-[10px] text-indigo-400">Automático</span>
+                            </div>
+                            <span className="text-lg font-bold text-indigo-700">{bmiPreview}</span>
                         </div>
                     )}
 
@@ -185,7 +197,7 @@ export default function VitalsSection({ recordId, token }) {
                         <VitalDisplay label="Temperatura" value={v.temperature} unit="°C" icon={<Thermometer className="w-4 h-4 text-amber-500" />} />
                         <VitalDisplay label="Sat. O₂" value={v.oxygen_saturation} unit="%" icon={<Activity className="w-4 h-4 text-emerald-500" />} />
                         <VitalDisplay label="Peso" value={v.weight} unit="kg" icon={<Scale className="w-4 h-4 text-indigo-500" />} />
-                        <VitalDisplay label="Talla" value={v.height} unit="m" icon={<Ruler className="w-4 h-4 text-violet-500" />} />
+                        <VitalDisplay label="Altura" value={v.height} unit="m" icon={<Ruler className="w-4 h-4 text-violet-500" />} />
                     </div>
 
                     {v.notes && (
