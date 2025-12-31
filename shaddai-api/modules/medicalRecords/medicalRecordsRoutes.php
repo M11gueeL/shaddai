@@ -86,7 +86,8 @@ class MedicalRecordsRoutes {
         $router->add('GET', 'medicalrecords/{recordId}/attachments', [$controller, 'getAttachmentsForRecord'], ['auth', 'role:admin,medico,recepcionista']);
         // Eliminar el registro de un adjunto (no el archivo físico)
         $router->add('DELETE', 'medicalrecords/attachments/{attachmentId}', [$controller, 'deleteAttachment'], ['auth', 'role:admin,medico']);
-        // Nota: Necesitarás una ruta segura para *descargar* el archivo, ej. GET /medicalrecords/attachments/{attachmentId}/download
+        // Descargar archivo adjunto
+        $router->add('GET', 'medicalrecords/attachments/{attachmentId}/download', [$controller, 'downloadAttachment'], ['auth', 'role:admin,medico,recepcionista']);
 
 
         // --- Rutas para Informes Médicos ---

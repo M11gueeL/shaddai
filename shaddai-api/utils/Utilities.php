@@ -18,7 +18,8 @@ class Utilities {
         }
         $binaryRoutes = [
             '@^/receipts/\d+/download$@',
-            '@^/system/database/export$@'
+            '@^/system/database/export$@',
+            '@^/medicalrecords/attachments/\d+/download$@'
         ];
 
         $isBinary = false;

@@ -56,6 +56,27 @@ export default function AttachmentsSection({ recordId, token }) {
     }
   };
 
+  const handleDownload = async (attachment) => {
+    try {
+      const response = await medicalRecordsApi.downloadAttachment(attachment.id, token);
+      
+      // Create a blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', attachment.file_name);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Descarga iniciada');
+    } catch (e) {
+      console.error(e);
+      toast.error('Error al descargar el archivo');
+    }
+  };
+
   const getFileIcon = (filename) => {
     const ext = filename.split('.').pop().toLowerCase();
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return <Image className="w-8 h-8 text-purple-500" />;
@@ -159,7 +180,10 @@ export default function AttachmentsSection({ recordId, token }) {
                                 <p className="text-xs text-slate-500 mt-0.5">{new Date(a.uploaded_at).toLocaleDateString()}</p>
                                 {a.description && <p className="text-xs text-slate-600 mt-2 line-clamp-2">{a.description}</p>}
                                 <div className="flex items-center gap-2 mt-3">
-                                    <button className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                                    <button 
+                                        onClick={() => handleDownload(a)}
+                                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                                    >
                                         <Download className="w-3 h-3" /> Descargar
                                     </button>
                                 </div>

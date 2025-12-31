@@ -519,16 +519,19 @@ class MedicalRecordsController {
              }
 
             // Lógica para mover el archivo subido a una ubicación segura
-            // IMPORTANTE: Implementa esto con seguridad (validar tipo, tamaño, nombre, etc.)
-            // $uploadDir = __DIR__ . '/../../uploads/attachments/'; // Define tu directorio
-            // $fileName = uniqid() . '-' . basename($fileInfo['name']);
-            // $filePath = $uploadDir . $fileName;
-            // if (!move_uploaded_file($fileInfo['tmp_name'], $filePath)) {
-            //     throw new Exception('Error al mover el archivo subido.');
-            // }
-            // ---- FIN LÓGICA DE MOVER ARCHIVO ----
-            // *** ¡¡¡ IMPLEMENTA ESTA PARTE !!! ***
-            $filePath = 'ruta/simulada/al/archivo/' . $fileInfo['name']; // Placeholder
+            $uploadDir = __DIR__ . '/../../public/uploads/medical_records/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            
+            // Generar nombre único para evitar colisiones
+            $extension = pathinfo($fileInfo['name'], PATHINFO_EXTENSION);
+            $fileName = uniqid('att_', true) . '.' . $extension;
+            $filePath = $uploadDir . $fileName;
+            
+            if (!move_uploaded_file($fileInfo['tmp_name'], $filePath)) {
+                throw new Exception('Error al mover el archivo subido.');
+            }
 
             // Obtener usuario autenticado
             $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
@@ -541,13 +544,17 @@ class MedicalRecordsController {
                 'description' => $data['description'] ?? null
             ];
 
-            $attachId = $this->model->addAttachment($recordId, $uploadedBy, $fileInfo['name'], $filePath, $options);
+            // Guardamos la ruta relativa a 'public/'
+            $dbPath = 'uploads/medical_records/' . $fileName;
+
+            $attachId = $this->model->addAttachment($recordId, $uploadedBy, $fileInfo['name'], $dbPath, $options);
 
             if ($attachId) {
                   http_response_code(201);
-                  echo json_encode(['message' => 'Archivo adjunto registrado', 'id' => $attachId, 'path' => $filePath]);
+                  echo json_encode(['message' => 'Archivo adjunto registrado', 'id' => $attachId, 'path' => $dbPath]);
              } else {
-                 // Considera borrar el archivo físico si falla el registro en BD
+                 // Borrar archivo si falla BD
+                 if (file_exists($filePath)) unlink($filePath);
                  throw new Exception('No se pudo registrar el adjunto.');
              }
 
@@ -556,6 +563,59 @@ class MedicalRecordsController {
             echo json_encode(['error' => $e->getMessage()]);
         }
      }
+
+    /**
+     * Descarga un archivo adjunto.
+     * GET /medicalrecords/attachments/{attachmentId}/download
+     */
+    public function downloadAttachment($attachmentId) {
+        try {
+            $attachment = $this->model->getAttachmentById($attachmentId);
+            if (!$attachment) {
+                http_response_code(404);
+                throw new Exception('Adjunto no encontrado.');
+            }
+
+            // Construir ruta física
+            // La ruta en BD es relativa a public/ ej: uploads/medical_records/archivo.pdf
+            // __DIR__ es modules/medicalRecords
+            $baseDir = __DIR__ . '/../../public/';
+            $filePath = $baseDir . $attachment['file_path'];
+
+            // Normalizar separadores de directorio para Windows/Linux
+            $filePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
+
+            if (!file_exists($filePath)) {
+                // Fallback: intentar ver si la ruta en BD era absoluta o relativa diferente (para compatibilidad con datos viejos si los hubiera)
+                if (file_exists($attachment['file_path'])) {
+                     $filePath = $attachment['file_path'];
+                } else {
+                    http_response_code(404);
+                    throw new Exception('El archivo físico no existe en el servidor.');
+                }
+            }
+
+            // Forzar descarga
+            header('Content-Description: File Transfer');
+            header('Content-Type: ' . ($attachment['file_type'] ?: 'application/octet-stream'));
+            header('Content-Disposition: attachment; filename="' . basename($attachment['file_name']) . '"');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . filesize($filePath));
+            header('Access-Control-Expose-Headers: Content-Disposition');
+            
+            // Limpiar buffer de salida para evitar corrupción de archivos
+            while (ob_get_level()) ob_end_clean();
+            
+            readfile($filePath);
+            exit;
+
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
      
      /**
      * Obtiene la lista de adjuntos de una historia.

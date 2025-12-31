@@ -64,6 +64,10 @@ const medicalRecordsApi = {
     return axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/attachments`, form, getAuthHeaders(token, { 'Content-Type': 'multipart/form-data' }));
   },
   deleteAttachment: (attachmentId, token) => axios.delete(`${API_URL}/medicalrecords/attachments/${attachmentId}`, getAuthHeaders(token)),
+  downloadAttachment: (attachmentId, token) => axios.get(`${API_URL}/medicalrecords/attachments/${attachmentId}/download`, {
+    ...getAuthHeaders(token).headers ? { headers: getAuthHeaders(token).headers } : getAuthHeaders(token), // Handle structure of getAuthHeaders
+    responseType: 'blob',
+  }),
 
   // --- Reports ---
   listReports: (recordId, token) => axios.get(`${API_URL}/medicalrecords/${recordId}/reports`, getAuthHeaders(token)),
