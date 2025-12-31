@@ -223,7 +223,7 @@ export default function VitalsSection({ recordId, token }) {
 function VitalInput({ label, icon, value, onChange, unit, step="1", placeholder }) {
     return (
         <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 block flex items-center gap-1">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
                 {icon} {label}
             </label>
             <div className="relative">
