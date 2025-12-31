@@ -165,28 +165,94 @@ export default function ReportsSection({ recordId, record, token, user, condense
 
   const buildExportHtml = (contentHtml, reportForHeader = null) => {
     const p = record || {};
-    const doctorName = reportForHeader?.doctor_name || selected?.doctor_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim();
-    const useExtras = reportForHeader?.doctor_id && String(reportForHeader.doctor_id) === String(user?.id);
-    const header = `
-      <div style="font-family: Arial, sans-serif;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <div>
-            <div style="font-size:14px;color:#555;">Paciente</div>
-            <div style="font-weight:bold;font-size:16px;">${p.patient_name || ''}</div>
-            <div style="font-size:12px;color:#555;">C.I: ${p.patient_cedula || ''}</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:14px;color:#555;">Médico tratante</div>
-            <div style="font-weight:bold;font-size:16px;">${doctorName || ''}</div>
-            ${useExtras && doctorExtras.specialties ? `<div style=\"font-size:12px;color:#555;\">${doctorExtras.specialties}</div>` : ''}
-            ${useExtras && (doctorExtras.mpps || doctorExtras.college) ? `<div style=\"font-size:12px;color:#555;\">${doctorExtras.mpps ? `MPPS: ${doctorExtras.mpps}` : ''}${(doctorExtras.mpps && doctorExtras.college) ? ' · ' : ''}${doctorExtras.college ? `Colegio: ${doctorExtras.college}` : ''}</div>` : ''}
-            <div style="font-size:12px;color:#555;">Fecha: ${new Date().toLocaleDateString()}</div>
-          </div>
+    // Use data from reportForHeader (if provided) or selected report
+    const r = reportForHeader || selected || {};
+    
+    const doctorName = r.doctor_name || `${user?.first_name || ''} ${user?.last_name || ''}`.trim();
+    
+    // Try to get extras from report object first (fetched from DB), otherwise fall back to current user extras if it's the same user
+    let specialties = r.specialty_name;
+    let mpps = r.mpps_code;
+    let collegeCode = r.college_code;
+    let collegeName = r.college_name;
+    let collegeSiglas = r.college_siglas;
+
+    // Fallback to doctorExtras if report data is missing (e.g. new report not yet saved/reloaded) AND it is the current user
+    const isCurrentUser = String(r.doctor_id || user?.id) === String(user?.id);
+    if (isCurrentUser) {
+        if (!specialties) specialties = doctorExtras.specialties;
+        if (!mpps) mpps = doctorExtras.mpps;
+        // doctorExtras.college is a combined string, so we might need to parse or just use it if individual fields are missing
+        // But let's try to use what we have.
+    }
+
+    const collegeString = (collegeName || collegeSiglas) 
+        ? `${collegeName || ''} ${collegeSiglas ? `(${collegeSiglas})` : ''}`.trim() 
+        : (isCurrentUser ? doctorExtras.college : '');
+
+    const reportDate = formatDate(r.report_date || new Date().toISOString());
+
+    return `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>${r.report_type || 'Informe Médico'}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12pt; color: #333; line-height: 1.6; margin: 0; padding: 40px; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #059669; padding-bottom: 15px; }
+        .header h1 { margin: 0; color: #059669; font-size: 22px; text-transform: uppercase; letter-spacing: 1px; }
+        .header h2 { margin: 5px 0 0; font-size: 14px; color: #666; font-weight: normal; }
+        
+        .info-section { margin-bottom: 30px; display: flex; justify-content: space-between; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .info-block h3 { margin: 0 0 5px; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
+        .info-block p { margin: 0; font-weight: 600; color: #1e293b; font-size: 14px; }
+        .info-block .sub-text { font-size: 12px; color: #64748b; font-weight: normal; margin-top: 2px; }
+
+        .report-title { text-align: center; font-size: 18px; font-weight: bold; margin: 20px 0; text-transform: uppercase; color: #1e293b; text-decoration: underline; text-underline-offset: 4px; }
+        
+        .content { text-align: justify; min-height: 300px; }
+        
+        .footer { margin-top: 50px; text-align: center; font-size: 10px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+        .footer p { margin: 2px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Centro de Especialidades Médicas Shaddai Rafa</h1>
+        <h2>Rif: J-50466144-0</h2>
+    </div>
+
+    <div class="info-section">
+        <div class="info-block" style="text-align: left;">
+            <h3>Paciente</h3>
+            <p>${p.patient_name || ''}</p>
+            <div class="sub-text">C.I: ${p.patient_cedula || ''}</div>
         </div>
-        <hr />
-      </div>
-    `;
-    return `<!DOCTYPE html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head><body>${header}<div>${contentHtml || ''}</div></body></html>`;
+        <div class="info-block" style="text-align: right;">
+            <h3>Médico Tratante</h3>
+            <p>${doctorName}</p>
+            <div class="sub-text">${specialties || ''}</div>
+            <div class="sub-text">
+                ${mpps ? `MPPS: ${mpps}` : ''} 
+                ${collegeCode ? ` · CM: ${collegeCode}` : ''}
+            </div>
+            <div class="sub-text">${collegeString}</div>
+        </div>
+    </div>
+
+    <div class="report-title">${r.report_type || 'Informe Médico'}</div>
+
+    <div class="content">
+        ${contentHtml || ''}
+    </div>
+
+    <div class="footer">
+        <p>Generado el ${reportDate}</p>
+        <p>Centro de Especialidades Médicas Shaddai Rafa - La salud es nuestra prioridad</p>
+    </div>
+</body>
+</html>`;
   };
 
   const exportSelectedToPDF = async () => {

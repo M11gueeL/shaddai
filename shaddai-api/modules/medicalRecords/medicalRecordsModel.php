@@ -528,10 +528,21 @@ class MedicalRecordsModel {
      * @return array|null
      */
     public function getMedicalReportById($reportId) {
-        $sql = "SELECT mr.*, CONCAT(u.first_name, ' ', u.last_name) as doctor_name
+        $sql = "SELECT mr.*, 
+                       CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+                       umi.mpps_code,
+                       umi.college_code,
+                       mc.full_name as college_name,
+                       mc.abbreviation as college_siglas,
+                       GROUP_CONCAT(s.name SEPARATOR ', ') as specialty_name
                 FROM medical_reports mr
                 JOIN users u ON mr.doctor_id = u.id
-                WHERE mr.id = :id";
+                LEFT JOIN user_medical_info umi ON u.id = umi.user_id
+                LEFT JOIN medical_colleges mc ON umi.medical_college_id = mc.id
+                LEFT JOIN user_specialties us ON u.id = us.user_id
+                LEFT JOIN medical_specialties s ON us.specialty_id = s.id
+                WHERE mr.id = :id
+                GROUP BY mr.id";
         $result = $this->db->query($sql, [':id' => $reportId]);
         return $result[0] ?? null;
     }
@@ -542,10 +553,15 @@ class MedicalRecordsModel {
      * @return array
      */
     public function getReportsByMedicalRecordId($medicalRecordId) {
-        $sql = "SELECT mr.id, mr.report_date, mr.report_type, mr.status, mr.created_at, mr.doctor_id, CONCAT(u.first_name, ' ', u.last_name) as doctor_name
+        $sql = "SELECT mr.id, mr.report_date, mr.report_type, mr.status, mr.created_at, mr.doctor_id, 
+                       CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
+                       GROUP_CONCAT(s.name SEPARATOR ', ') as specialty_name
                 FROM medical_reports mr
                 JOIN users u ON mr.doctor_id = u.id
+                LEFT JOIN user_specialties us ON u.id = us.user_id
+                LEFT JOIN medical_specialties s ON us.specialty_id = s.id
                 WHERE mr.medical_record_id = :record_id
+                GROUP BY mr.id
                 ORDER BY mr.report_date DESC, mr.created_at DESC";
         return $this->db->query($sql, [':record_id' => $medicalRecordId]);
     }
