@@ -246,18 +246,43 @@ export default function ReportsSection({ recordId, record, token, user, condense
 
   if (condensed) {
     return (
-      <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl shadow-sm">
-        <div className="p-4 text-slate-800 font-medium">Informes y constancias</div>
-        <div className="divide-y">
-          {items?.length ? items.map(r => (
-            <button key={r.id} className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50/80 transition" onClick={() => {
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-2">
+                <FileText className="w-4 h-4 text-indigo-500" /> Informes Recientes
+            </h3>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {items?.length ? items.slice(0, 5).map(r => (
+            <button key={r.id} className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-all group" onClick={() => {
               if (r.status !== 'draft') viewReportAsPDF(r.id);
               else toast.info('Este informe es un borrador. Edítalo desde la pestaña Informes.');
             }}>
-              <div className="font-medium truncate">{r.report_type || 'Informe'}</div>
-              <div className="text-xs text-slate-500">{r.doctor_name} · {r.report_date} · {r.status}</div>
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg shrink-0 ${r.status === 'final' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                    {r.status === 'final' ? <FileCheck className="w-4 h-4" /> : <FileEdit className="w-4 h-4" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-bold text-slate-700 text-sm truncate group-hover:text-indigo-600 transition-colors">{r.report_type || 'Informe'}</span>
+                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md ${r.status === 'final' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {r.status === 'final' ? 'Final' : 'Borrador'}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                        <span>·</span>
+                        <span className="truncate">Dr. {r.doctor_name}</span>
+                    </div>
+                </div>
+              </div>
             </button>
-          )) : <div className="px-4 py-6 text-sm text-slate-500">Sin informes</div>}
+          )) : (
+            <div className="p-6 text-center">
+                <FileText className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                <p className="text-xs text-slate-500">No hay informes registrados</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -298,21 +323,41 @@ export default function ReportsSection({ recordId, record, token, user, condense
                         <button 
                             key={r.id} 
                             onClick={() => openReport(r.id)}
-                            className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex items-start gap-3 ${selected?.id === r.id ? 'bg-indigo-50/50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}
+                            className={`w-full text-left p-4 hover:bg-slate-50 transition-all flex items-start gap-3 group ${selected?.id === r.id ? 'bg-indigo-50/50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}
                         >
-                            <div className={`p-2 rounded-lg shrink-0 ${r.status === 'final' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                {r.status === 'final' ? <FileCheck className="w-5 h-5" /> : <FileEdit className="w-5 h-5" />}
+                            <div className="flex-shrink-0">
+                                <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center border shadow-sm transition-all ${selected?.id === r.id ? 'bg-white border-indigo-200 shadow-indigo-100' : 'bg-slate-50 border-slate-100'}`}>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${selected?.id === r.id ? 'text-indigo-500' : 'text-slate-400'}`}>
+                                        {new Date(r.created_at).toLocaleString('es-ES', { month: 'short' }).replace('.', '')}
+                                    </span>
+                                    <span className={`text-lg font-bold leading-none mt-0.5 ${selected?.id === r.id ? 'text-indigo-700' : 'text-slate-600'}`}>
+                                        {new Date(r.created_at).getDate()}
+                                    </span>
+                                </div>
                             </div>
+                            
                             <div className="flex-1 min-w-0">
-                                <h5 className="font-bold text-slate-800 text-sm truncate">{r.report_type}</h5>
-                                <p className="text-xs text-slate-500 mt-0.5">{new Date(r.created_at).toLocaleDateString()}</p>
+                                <h5 className={`font-bold text-sm truncate transition-colors ${selected?.id === r.id ? 'text-indigo-700' : 'text-slate-800 group-hover:text-indigo-600'}`}>
+                                    {r.report_type}
+                                </h5>
+                                <div className="flex flex-col gap-0.5 mt-1">
+                                    <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                                        Dr. {r.doctor_name}
+                                    </span>
+                                    {r.specialty_name && (
+                                        <span className="text-[10px] text-slate-400 uppercase tracking-wide pl-2.5">
+                                            {r.specialty_name}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex items-center gap-2 mt-2">
-                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${r.status === 'final' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${r.status === 'final' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
                                         {r.status === 'final' ? 'Finalizado' : 'Borrador'}
                                     </span>
                                 </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-slate-300 mt-2" />
+                            <ChevronRight className={`w-4 h-4 mt-2 transition-colors ${selected?.id === r.id ? 'text-indigo-400' : 'text-slate-300 group-hover:text-indigo-300'}`} />
                         </button>
                     )) : (
                         <div className="p-8 text-center">
@@ -387,16 +432,28 @@ export default function ReportsSection({ recordId, record, token, user, condense
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={exportSelectedToPDF} className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Exportar PDF">
-                                <FileText className="w-4 h-4" />
+                            <button 
+                                onClick={exportSelectedToPDF} 
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold hover:bg-rose-100 transition-colors border border-rose-100 shadow-sm" 
+                                title="Descargar como PDF"
+                            >
+                                <FileText className="w-3.5 h-3.5" /> PDF
                             </button>
-                            <button onClick={exportSelectedToWord} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Exportar Word">
-                                <FileEdit className="w-4 h-4" />
+                            <button 
+                                onClick={exportSelectedToWord} 
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition-colors border border-blue-100 shadow-sm" 
+                                title="Descargar como Word"
+                            >
+                                <FileEdit className="w-3.5 h-3.5" /> Word
                             </button>
+                            
                             {canEditReport(selected) && (
-                                <button onClick={() => remove(selected.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                <>
+                                    <div className="w-px h-5 bg-slate-200 mx-1"></div>
+                                    <button onClick={() => remove(selected.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar Informe">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
