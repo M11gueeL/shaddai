@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Clock, Stethoscope } from 'lucide-react';
+import { Calendar, Clock, Stethoscope, FileText, Activity, ClipboardList, Paperclip, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import medicalRecordsApi from '../../api/medicalRecords';
@@ -156,175 +156,222 @@ export default function MedicalRecordsPanel() {
     };
 
     const tabs = useMemo(() => ([
-        { key: 'summary', label: 'Resumen' },
-        { key: 'encounters', label: 'Consultas' },
-        { key: 'history', label: 'Antecedentes' },
-        { key: 'vitals', label: 'Signos' },
-        { key: 'reports', label: 'Informes' },
-        { key: 'attachments', label: 'Adjuntos' },
+        { key: 'summary', label: 'Resumen', icon: Activity },
+        { key: 'encounters', label: 'Consultas', icon: Stethoscope },
+        { key: 'history', label: 'Antecedentes', icon: ClipboardList },
+        { key: 'vitals', label: 'Signos Vitales', icon: Activity },
+        { key: 'reports', label: 'Informes', icon: FileText },
+        { key: 'attachments', label: 'Adjuntos', icon: Paperclip },
     ]), []);
     const [activeTab, setActiveTab] = useState('summary');
 
     return (
-        <div className="p-4 sm:p-6 space-y-4 overflow-x-hidden">
-            <ElegantHeader 
-                icon={Stethoscope}
-                sectionName="Historias Clínicas"
-                title="Gestión de"
-                highlightText="Pacientes"
-                description="Consulta, edita y gestiona las historias clínicas de tus pacientes de manera eficiente y segura."
-            />
-
-            <SearchPatientBar onSearchByCedula={handleSearchByCedula} onSearchByPatientId={handleSearchByPatientId} loading={loading} />
-
-                    {record ? (
-                <div className="space-y-4">
-                    <RecordHeader
-                        record={record}
-                        onNewEncounter={() => setShowNewEncounter(true)}
-                        onNewReport={() => setActiveTab('reports')}
-                        onEditPatient={async (patientId) => {
-                            if (!patientId) return;
-                            try {
-                                const res = await PatientsApi.getById(patientId, token);
-                                setPatientForEdit(res.data);
-                                setShowEditPatient(true);
-                            } catch {}
-                        }}
-                        refreshKey={patientRefreshKey}
+        <div className="min-h-screen bg-slate-50/50 p-6 space-y-8 animate-in fade-in duration-500">
+            <div className="max-w-7xl mx-auto space-y-8">
+                <div className="space-y-6">
+                    <ElegantHeader 
+                        icon={Stethoscope}
+                        sectionName="Historias Clínicas"
+                        title="Gestión de"
+                        highlightText="Pacientes"
+                        description="Consulta, edita y gestiona las historias clínicas de tus pacientes de manera eficiente y segura."
                     />
 
-                    <div className="border-b border-gray-200" />
-
-                    {/* Tabs */}
-                    <div className="flex flex-wrap gap-2 overflow-x-auto md:overflow-visible pb-1">
-                        {tabs.map(t => (
-                            <button
-                                key={t.key}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeTab === t.key ? 'bg-blue-600 text-white shadow' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
-                                onClick={() => setActiveTab(t.key)}
-                                title={`Ir a ${t.label}`}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
+                    <div className="relative z-20">
+                        <SearchPatientBar onSearchByCedula={handleSearchByCedula} onSearchByPatientId={handleSearchByPatientId} loading={loading} />
                     </div>
-
-                    {activeTab === 'summary' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                            <EncountersList
-                                recordId={record.id}
-                                encounters={record.recent_encounters || []}
-                                onOpenEncounter={(id) => setSelectedEncounterId(id)}
-                            />
-                            <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <div className="text-sm text-slate-500">Informes y constancias recientes</div>
-                                    <button className="text-xs text-blue-600 hover:underline" onClick={() => setActiveTab('reports')}>Ir a informes</button>
-                                </div>
-                                <ReportsSection recordId={record.id} record={record} token={token} user={user} condensed />
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'encounters' && (
-                        <EncountersList
-                            recordId={record.id}
-                            encounters={record.recent_encounters || []}
-                            onOpenEncounter={(id) => setSelectedEncounterId(id)}
-                            allowCreate
-                            onCreate={() => setShowNewEncounter(true)}
-                        />
-                    )}
-
-                    {activeTab === 'history' && (
-                        <HistorySection recordId={record.id} token={token} />
-                    )}
-
-                    {activeTab === 'vitals' && (
-                        <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
-                            <div className="text-sm text-slate-500 mb-2">Registrar y revisar signos vitales</div>
-                            <VitalsSection recordId={record.id} token={token} />
-                        </div>
-                    )}
-
-                                {activeTab === 'reports' && (
-                                    <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
-                                        <div className="text-sm text-slate-500 mb-2">Informes y constancias</div>
-                                        <ReportsSection recordId={record.id} record={record} token={token} user={user} />
-                                    </div>
-                                )}
-
-                    {activeTab === 'attachments' && (
-                        <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
-                            <div className="text-sm text-slate-500 mb-2">Documentos y archivos adjuntos</div>
-                            <AttachmentsSection recordId={record.id} token={token} />
-                        </div>
-                    )}
                 </div>
-                    ) : pendingPatient ? (
-                        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                            <div className="text-gray-900 font-semibold">No hay historia clínica para este paciente</div>
-                            <div className="text-sm text-gray-600 mt-1">Paciente: {pendingPatient.full_name} · C.I: {pendingPatient.cedula}</div>
-                            <div className="mt-4 flex gap-3">
-                                <button disabled={loading} onClick={handleCreateRecord} className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50">Crear historia clínica</button>
-                                <button disabled={loading} onClick={() => setPendingPatient(null)} className="px-4 py-2 border rounded-lg">Cancelar</button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="h-[calc(80vh-100px)] overflow-y-hidden">
-                            <MedicalRecordWelcome />
-                        </div>
-                    )
-            }
 
-            {showNewEncounter && record && (
-                <EncounterEditor
-                    record={record}
-                    token={token}
-                    user={user}
-                    doctors={doctors}
-                    specialties={specialties}
-                    onClose={() => setShowNewEncounter(false)}
-                    onCreated={onEncounterCreated}
-                />
-            )}
-
-            {selectedEncounterId && (
-                <EncounterDetailModal
-                    encounterId={selectedEncounterId}
-                    token={token}
-                    onClose={() => setSelectedEncounterId(null)}
-                    onChanged={reloadEncounters}
-                />
-            )}
-
-            {showEditPatient && patientForEdit && (
-                <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-2 sm:p-4">
-                    <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl overflow-hidden max-h-[90vh] h-[90vh]">
-                        <PatientDetail
-                            patient={patientForEdit}
-                            onClose={() => { setShowEditPatient(false); setPatientForEdit(null); }}
-                            onPatientUpdated={async () => {
-                                // Refresca datos del record y fuerza refetch del header
+                {record ? (
+                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                        <RecordHeader
+                            record={record}
+                            onNewEncounter={() => setShowNewEncounter(true)}
+                            onNewReport={() => setActiveTab('reports')}
+                            onEditPatient={async (patientId) => {
+                                if (!patientId) return;
                                 try {
-                                    if (record?.id) {
-                                        const r = await medicalRecordsApi.getById(record.id, token);
-                                        // Preserva encuentros recientes para no vaciar la UI
-                                        setRecord((prev) => ({ ...r.data, recent_encounters: prev?.recent_encounters || [] }));
-                                        // Recarga lista de encuentros para sincronizar
-                                        try { await reloadEncounters(); } catch {}
-                                    }
+                                    const res = await PatientsApi.getById(patientId, token);
+                                    setPatientForEdit(res.data);
+                                    setShowEditPatient(true);
                                 } catch {}
-                                setPatientRefreshKey(Date.now());
-                                setShowEditPatient(false);
-                                setPatientForEdit(null);
                             }}
-                            initialEditing={true}
+                            refreshKey={patientRefreshKey}
                         />
+
+                        {/* Navigation Tabs */}
+                        <div className="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-100 inline-flex flex-wrap gap-1 w-full md:w-auto">
+                            {tabs.map(t => {
+                                const Icon = t.icon;
+                                const isActive = activeTab === t.key;
+                                return (
+                                    <button
+                                        key={t.key}
+                                        onClick={() => setActiveTab(t.key)}
+                                        className={`
+                                            flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative overflow-hidden
+                                            ${isActive 
+                                                ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-100' 
+                                                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                            }
+                                        `}
+                                    >
+                                        <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                                        {t.label}
+                                        {isActive && (
+                                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/3 h-0.5 bg-indigo-500 rounded-t-full opacity-50"></span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Content Area */}
+                        <div className="min-h-[400px]">
+                            {activeTab === 'summary' && (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+                                    <div className="lg:col-span-2 space-y-6">
+                                        <EncountersList
+                                            recordId={record.id}
+                                            encounters={record.recent_encounters || []}
+                                            onOpenEncounter={(id) => setSelectedEncounterId(id)}
+                                        />
+                                    </div>
+                                    <div className="space-y-6">
+                                        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow duration-300">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                                                    <FileText className="w-4 h-4 text-blue-500" />
+                                                    Informes Recientes
+                                                </h3>
+                                                <button onClick={() => setActiveTab('reports')} className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                                                    Ver todos
+                                                </button>
+                                            </div>
+                                            <ReportsSection recordId={record.id} record={record} token={token} user={user} condensed />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'encounters' && (
+                                <div className="animate-in fade-in duration-300">
+                                    <EncountersList
+                                        recordId={record.id}
+                                        encounters={record.recent_encounters || []}
+                                        onOpenEncounter={(id) => setSelectedEncounterId(id)}
+                                        allowCreate
+                                        onCreate={() => setShowNewEncounter(true)}
+                                    />
+                                </div>
+                            )}
+
+                            {activeTab === 'history' && (
+                                <div className="animate-in fade-in duration-300">
+                                    <HistorySection recordId={record.id} token={token} />
+                                </div>
+                            )}
+
+                            {activeTab === 'vitals' && (
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-in fade-in duration-300">
+                                    <VitalsSection recordId={record.id} token={token} />
+                                </div>
+                            )}
+
+                            {activeTab === 'reports' && (
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-in fade-in duration-300">
+                                    <ReportsSection recordId={record.id} record={record} token={token} user={user} />
+                                </div>
+                            )}
+
+                            {activeTab === 'attachments' && (
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 animate-in fade-in duration-300">
+                                    <AttachmentsSection recordId={record.id} token={token} />
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                ) : pendingPatient ? (
+                    <div className="max-w-2xl mx-auto mt-12 animate-in fade-in zoom-in duration-300">
+                        <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-8 text-center space-y-6">
+                            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto">
+                                <AlertCircle className="w-8 h-8 text-amber-500" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-semibold text-slate-800">Historia Clínica No Encontrada</h3>
+                                <p className="text-slate-500">
+                                    El paciente <span className="font-medium text-slate-900">{pendingPatient.full_name}</span> (C.I: {pendingPatient.cedula}) no tiene una historia clínica activa.
+                                </p>
+                            </div>
+                            <div className="flex items-center justify-center gap-3 pt-2">
+                                <button 
+                                    disabled={loading} 
+                                    onClick={() => setPendingPatient(null)} 
+                                    className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    disabled={loading} 
+                                    onClick={handleCreateRecord} 
+                                    className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-medium shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 hover:-translate-y-0.5 transition-all"
+                                >
+                                    Crear Historia Clínica
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="mt-8">
+                        <MedicalRecordWelcome />
+                    </div>
+                )}
+
+                {showNewEncounter && record && (
+                    <EncounterEditor
+                        record={record}
+                        token={token}
+                        user={user}
+                        doctors={doctors}
+                        specialties={specialties}
+                        onClose={() => setShowNewEncounter(false)}
+                        onCreated={onEncounterCreated}
+                    />
+                )}
+
+                {selectedEncounterId && (
+                    <EncounterDetailModal
+                        encounterId={selectedEncounterId}
+                        token={token}
+                        onClose={() => setSelectedEncounterId(null)}
+                        onChanged={reloadEncounters}
+                    />
+                )}
+
+                {showEditPatient && patientForEdit && (
+                    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/20 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="w-full max-w-3xl rounded-2xl bg-white shadow-2xl overflow-hidden max-h-[90vh] h-[90vh] animate-in zoom-in-95 duration-200">
+                            <PatientDetail
+                                patient={patientForEdit}
+                                onClose={() => { setShowEditPatient(false); setPatientForEdit(null); }}
+                                onPatientUpdated={async () => {
+                                    try {
+                                        if (record?.id) {
+                                            const r = await medicalRecordsApi.getById(record.id, token);
+                                            setRecord((prev) => ({ ...r.data, recent_encounters: prev?.recent_encounters || [] }));
+                                            try { await reloadEncounters(); } catch {}
+                                        }
+                                    } catch {}
+                                    setPatientRefreshKey(Date.now());
+                                    setShowEditPatient(false);
+                                    setPatientForEdit(null);
+                                }}
+                                initialEditing={true}
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

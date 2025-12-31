@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FilePlus2, Stethoscope, User2, Calendar, Phone, Mail, MapPin, IdCard } from 'lucide-react';
+import { FilePlus2, Stethoscope, User2, Calendar, Phone, Mail, MapPin, IdCard, Edit2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import PatientsApi from '../../api/PatientsApi';
 
@@ -15,7 +15,6 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport, onEd
           const res = await PatientsApi.getById(record.patient_id, token);
           if (!cancelled) setPatient(res.data);
         } else {
-          // Fallback: build from record when full patient not available
           setPatient({
             id: record?.patient_id,
             full_name: record?.patient_name,
@@ -53,47 +52,69 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport, onEd
   }, [patient?.full_name, record?.patient_name]);
 
   return (
-    <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-xl p-4 shadow-sm">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-blue-50 text-blue-700">
-            {initials ? <span className="font-semibold">{initials}</span> : <User2 className="h-6 w-6" />}
+    <div className="bg-white rounded-3xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+      <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+        
+        {/* Patient Identity */}
+        <div className="flex items-start gap-5">
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-br from-blue-100 to-slate-100 rounded-2xl blur opacity-50 group-hover:opacity-75 transition duration-500"></div>
+            <div className="relative grid h-16 w-16 place-items-center rounded-2xl bg-white text-blue-600 shadow-sm border border-slate-100">
+              {initials ? <span className="text-xl font-bold tracking-tight">{initials}</span> : <User2 className="h-8 w-8" />}
+            </div>
           </div>
-          <div className="min-w-0">
-            <div className="truncate text-lg font-semibold text-slate-900">{patient?.full_name || record?.patient_name}</div>
-            <div className="text-sm text-slate-600 flex flex-wrap gap-x-3 gap-y-1">
-              <span className="inline-flex items-center gap-1"><IdCard className="h-3.5 w-3.5" /> C.I: {patient?.cedula || record?.patient_cedula}</span>
-              <span>HC #{record?.record_number || record?.id}</span>
+          
+          <div className="pt-1">
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight leading-tight">
+                {patient?.full_name || record?.patient_name}
+            </h1>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-slate-500 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-100">
+                <IdCard className="h-3.5 w-3.5 text-slate-400" /> 
+                {patient?.cedula || record?.patient_cedula}
+              </span>
+              <span className="text-slate-300">|</span>
+              <span className="text-slate-400">HC #{record?.record_number || record?.id}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 flex-wrap md:justify-end">
           {onEditPatient && (
-            <button onClick={() => onEditPatient(patient?.id || record?.patient_id)} className="w-full sm:w-auto justify-center flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-700 shadow-sm hover:bg-slate-50">
-              Editar paciente
+            <button 
+                onClick={() => onEditPatient(patient?.id || record?.patient_id)} 
+                className="group flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-medium shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 active:scale-95"
+            >
+              <Edit2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+              <span className="hidden sm:inline">Editar</span>
             </button>
           )}
-          <button onClick={onNewEncounter} className="w-full sm:w-auto justify-center flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-white shadow hover:bg-blue-700">
-            <Stethoscope className="h-4 w-4" />
-            Nueva consulta
-          </button>
-          <button onClick={onNewReport} className="w-full sm:w-auto justify-center flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-white shadow hover:bg-slate-900">
+          <button 
+            onClick={onNewReport} 
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-medium shadow-lg shadow-slate-200 hover:bg-slate-900 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
+          >
             <FilePlus2 className="h-4 w-4" />
-            Nuevo informe
+            <span>Informe</span>
+          </button>
+          <button 
+            onClick={onNewEncounter} 
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-blue-300 hover:-translate-y-0.5 transition-all duration-200 active:scale-95"
+          >
+            <Stethoscope className="h-4 w-4" />
+            <span>Nueva Consulta</span>
           </button>
         </div>
       </div>
 
-      {/* Ficha del paciente */}
-      <div className="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
-        <InfoChip icon={Calendar} label="Edad" value={age != null ? `${age} años` : '—'} />
-        <InfoChip icon={Calendar} label="Nacimiento" value={patient?.birth_date ? new Date(patient.birth_date).toLocaleDateString() : '—'} />
-        <InfoChip icon={User2} label="Sexo" value={patient?.gender || '—'} />
-        <InfoChip icon={Phone} label="Teléfono" value={patient?.phone || '—'} />
-        <InfoChip icon={Mail} label="Email" value={patient?.email || '—'} />
-        <InfoChip icon={MapPin} label="Dirección" value={patient?.address || '—'} />
-        <InfoChip icon={User2} label="Estado civil" value={patient?.marital_status || '—'} />
-        <InfoChip icon={IdCard} label="Paciente ID" value={patient?.id || record?.patient_id || '—'} />
+      {/* Patient Details Grid */}
+      <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <InfoChip icon={Calendar} label="Edad" value={age != null ? `${age} años` : null} />
+        <InfoChip icon={Calendar} label="Nacimiento" value={patient?.birth_date ? new Date(patient.birth_date).toLocaleDateString() : null} />
+        <InfoChip icon={User2} label="Sexo" value={patient?.gender} />
+        <InfoChip icon={Phone} label="Teléfono" value={patient?.phone} />
+        <InfoChip icon={Mail} label="Email" value={patient?.email} />
+        <InfoChip icon={MapPin} label="Dirección" value={patient?.address} />
       </div>
     </div>
   );
@@ -101,12 +122,14 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport, onEd
 
 function InfoChip({ icon: Icon, label, value }) {
   return (
-    <div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-      <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-600">
+    <div className="group flex flex-col gap-1 p-3 rounded-xl hover:bg-slate-50 transition-colors duration-200 border border-transparent hover:border-slate-100">
+      <div className="flex items-center gap-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
         <Icon className="h-3.5 w-3.5" />
         {label}
       </div>
-      <div className="mt-0.5 truncate text-sm text-slate-800">{value || '—'}</div>
+      <div className="text-sm font-semibold text-slate-700 truncate pl-5.5">
+        {value || <span className="text-slate-300 font-normal italic">No registrado</span>}
+      </div>
     </div>
   );
 }

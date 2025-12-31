@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, User, X, Loader2, Mail, CreditCard, Hash, Phone } from 'lucide-react';
+import { Search, User, X, Loader2, Mail, CreditCard, Hash, Phone, ChevronRight } from 'lucide-react';
 import PatientsApi from '../../api/PatientsApi';
 import { useAuth } from '../../context/AuthContext';
 
@@ -87,19 +87,28 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto" ref={containerRef}>
-      <div className={`relative group transition-all duration-300 ${isOpen ? 'scale-[1.02]' : ''}`}>
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+    <div className="relative w-full max-w-3xl mx-auto z-50" ref={containerRef}>
+      <div className={`relative group transition-all duration-500 ease-out ${isOpen ? 'scale-[1.01]' : ''}`}>
+        <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
           {loading ? (
             <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
           ) : (
-            <Search className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors duration-300" />
+            <Search className={`h-5 w-5 transition-colors duration-300 ${isOpen ? 'text-blue-500' : 'text-slate-400'}`} />
           )}
         </div>
         <input
           type="text"
-          className="block w-full pl-12 pr-10 py-4 bg-white border-0 ring-1 ring-gray-200 rounded-2xl text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:shadow-lg transition-all duration-300 ease-out text-base"
-          placeholder="Buscar paciente por nombre, cédula, teléfono o email.."
+          className={`
+            block w-full pl-12 pr-12 py-4 
+            bg-white border-0
+            text-slate-700 placeholder:text-slate-400
+            shadow-[0_8px_30px_rgb(0,0,0,0.04)] 
+            rounded-2xl
+            focus:ring-2 focus:ring-blue-500/10 focus:shadow-[0_8px_30px_rgb(0,0,0,0.08)]
+            transition-all duration-300 ease-out
+            text-base font-medium
+          `}
+          placeholder="Buscar paciente por nombre, cédula, email..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={handleFocus}
@@ -109,76 +118,78 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
             onClick={() => { setQuery(''); setIsOpen(false); }}
             className="absolute inset-y-0 right-0 pr-4 flex items-center"
           >
-            <X className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+            <div className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="h-4 w-4" />
+            </div>
           </button>
         )}
       </div>
 
-      {/* Dropdown */}
-      <div className={`absolute left-0 right-0 mt-2 w-full bg-white rounded-2xl shadow-xl ring-1 ring-black/5 overflow-hidden origin-top transition-all duration-300 ease-in-out z-50 ${isOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'}`}>
-          {isLoadingPatients ? (
-            <div className="p-8 text-center text-gray-500 flex flex-col items-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      {/* Dropdown de resultados */}
+      {isOpen && (
+        <div className="absolute mt-3 w-full bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-2">
+          
+          {isLoadingPatients && !hasLoaded && (
+            <div className="p-8 text-center text-slate-500">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-blue-500" />
               <p className="text-sm font-medium">Cargando directorio de pacientes...</p>
             </div>
-          ) : filteredPatients.length > 0 ? (
-            <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50/50 sticky top-0 backdrop-blur-sm">
-                Resultados ({filteredPatients.length})
+          )}
+
+          {!isLoadingPatients && filteredPatients.length === 0 && (
+            <div className="p-12 text-center">
+              <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <User className="h-6 w-6 text-slate-300" />
               </div>
-              {filteredPatients.map((patient) => (
-                <button
-                  key={patient.id}
-                  onClick={() => handleSelect(patient)}
-                  className="w-full text-left px-4 py-3 hover:bg-blue-50/50 transition-colors duration-200 border-b border-gray-50 last:border-0 group"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform duration-300">
-                        {patient.full_name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">
-                          {patient.full_name}
-                        </h4>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-                          <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full">
-                            <CreditCard className="h-3 w-3" />
-                            {patient.cedula || 'S/C'}
-                          </span>
-                          {patient.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {patient.email}
-                            </span>
-                          )}
-                          {patient.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {patient.phone}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="flex items-center gap-1 text-xs font-mono text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
-                        <Hash className="h-3 w-3" />
-                        {patient.id}
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              <User className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-              <p className="font-medium">No se encontraron pacientes</p>
-              <p className="text-sm text-gray-400 mt-1">Intenta con otros términos de búsqueda</p>
+              <p className="text-slate-600 font-medium">No se encontraron pacientes</p>
+              <p className="text-slate-400 text-sm mt-1">Intenta con otro término de búsqueda</p>
             </div>
           )}
+
+          <div className="max-h-[400px] overflow-y-auto scrollbar-hide py-2">
+            {filteredPatients.map((patient) => (
+              <button
+                key={patient.id}
+                onClick={() => handleSelect(patient)}
+                className="w-full px-4 py-3 flex items-center gap-4 hover:bg-blue-50/50 transition-colors duration-200 group border-b border-slate-50 last:border-0"
+              >
+                <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center text-blue-600 font-semibold shadow-sm group-hover:scale-110 transition-transform duration-300">
+                        {patient.full_name?.charAt(0).toUpperCase()}
+                    </div>
+                </div>
+                
+                <div className="flex-1 text-left min-w-0">
+                  <div className="font-semibold text-slate-800 truncate group-hover:text-blue-700 transition-colors">
+                    {patient.full_name}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                    {patient.cedula && (
+                        <span className="flex items-center gap-1">
+                            <CreditCard className="h-3 w-3" /> {patient.cedula}
+                        </span>
+                    )}
+                    {patient.phone && (
+                        <span className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" /> {patient.phone}
+                        </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-slate-300 group-hover:text-blue-400 transition-colors">
+                    <ChevronRight className="h-5 w-5" />
+                </div>
+              </button>
+            ))}
+          </div>
+          
+          <div className="bg-slate-50/80 px-4 py-2 text-xs text-slate-400 border-t border-slate-100 flex justify-between items-center">
+            <span>{filteredPatients.length} pacientes encontrados</span>
+            <span className="hidden sm:inline">Presiona ESC para cerrar</span>
+          </div>
         </div>
+      )}
     </div>
   );
 }

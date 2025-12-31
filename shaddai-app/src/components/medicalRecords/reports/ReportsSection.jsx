@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FileText, Plus, Download, Trash2, Edit3, Save, X, Printer, FileCheck, FileEdit, ChevronRight } from 'lucide-react';
 import medicalRecordsApi from '../../../api/medicalRecords';
 import { useToast } from '../../../context/ToastContext';
 import RichTextEditor from '../../common/RichTextEditor';
@@ -17,6 +18,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
   const [newContent, setNewContent] = useState('');
   const isDoctorOrAdmin = Array.isArray(user?.roles) && (user.roles.includes('medico') || user.roles.includes('admin'));
   const [doctorExtras, setDoctorExtras] = useState({ specialties: '', mpps: '', college: '' });
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'create', 'view'
 
   const load = async () => {
     try {
@@ -56,6 +58,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
     try {
       const res = await medicalRecordsApi.getReport(id, token);
       setSelected(res.data);
+      setViewMode('view');
     } catch (e) { toast.error('No se pudo abrir el informe'); }
   };
 
@@ -72,6 +75,7 @@ export default function ReportsSection({ recordId, record, token, user, condense
       setForm({ report_type: form.report_type, content: '', status: 'draft' });
       setNewContent('');
       load();
+      setViewMode('list');
     } catch (e) { toast.error('No se pudo crear'); }
   };
 
@@ -97,14 +101,13 @@ export default function ReportsSection({ recordId, record, token, user, condense
     try {
       await medicalRecordsApi.deleteReport(id, token);
       toast.success('Informe eliminado');
-      if (selected?.id === id) setSelected(null);
+      if (selected?.id === id) {
+        setSelected(null);
+        setViewMode('list');
+      }
       load();
     } catch (e) { toast.error('No se pudo eliminar'); }
   };
-
-  // Using a custom Quill wrapper (RichTextEditor)
-
-  // no ref needed; we render to a temporary container for exports
 
   const buildExportHtml = (contentHtml, reportForHeader = null) => {
     const p = record || {};
@@ -134,7 +137,6 @@ export default function ReportsSection({ recordId, record, token, user, condense
 
   const exportSelectedToPDF = async () => {
     if (!selected) return;
-    // Render export HTML into a hidden container for accurate layout
     const html = buildExportHtml(selected.content || '');
     const container = document.createElement('div');
     container.style.position = 'fixed';
@@ -149,13 +151,12 @@ export default function ReportsSection({ recordId, record, token, user, condense
       const pdf = new jsPDF('p', 'pt', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 40; // margins
+      const imgWidth = pageWidth - 40;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let y = 20;
       if (imgHeight < pageHeight) {
         pdf.addImage(imgData, 'PNG', 20, y, imgWidth, imgHeight);
       } else {
-        // paginate
         let heightLeft = imgHeight;
         let position = 20;
         pdf.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
@@ -178,7 +179,6 @@ export default function ReportsSection({ recordId, record, token, user, condense
   const exportSelectedToWord = () => {
     if (!selected) return;
     try {
-      // Export as legacy .doc (HTML-based) which Word opens natively
       const content = buildExportHtml(selected.content || '');
       const wordHtml = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -195,7 +195,6 @@ export default function ReportsSection({ recordId, record, token, user, condense
     }
   };
 
-  // Generic exporters for arbitrary HTML (used in creation flow)
   const exportHtmlToPDF = async (html) => {
     try {
       const container = document.createElement('div');
@@ -234,41 +233,6 @@ export default function ReportsSection({ recordId, record, token, user, condense
     }
   };
 
-  const exportHtmlToWord = (html, name = 'informe') => {
-    try {
-      const wordHtml = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office"
-              xmlns:w="urn:schemas-microsoft-com:office:word"
-              xmlns="http://www.w3.org/TR/REC-html40">
-          <head><meta charset="utf-8" /></head>
-          <body>${html}</body>
-        </html>`;
-      const blob = new Blob([wordHtml], { type: 'application/msword' });
-      saveAs(blob, `${name}.doc`);
-    } catch (e) {
-      toast.error('Error al exportar a Word');
-    }
-  };
-
-  // Create and immediately export
-  const createAndExport = async (format) => {
-    try {
-      const res = await medicalRecordsApi.createReportForRecord(recordId, { report_type: form.report_type, content: newContent, status: 'final' }, token);
-      // Determine created report for consistent export naming
-      const created = res?.data?.report || res?.data || null;
-      const html = buildExportHtml(newContent, created || undefined);
-      if (format === 'pdf') await exportHtmlToPDF(html);
-      else exportHtmlToWord(html, created?.report_type || form.report_type || 'informe');
-      toast.success('Informe guardado como final y exportado');
-      setForm({ report_type: form.report_type, content: '', status: 'draft' });
-      setNewContent('');
-      load();
-    } catch (e) {
-      toast.error('No se pudo crear y exportar');
-    }
-  };
-
-  // From condensed view or list: fetch report and export directly
   const viewReportAsPDF = async (id) => {
     try {
       const res = await medicalRecordsApi.getReport(id, token);
@@ -277,33 +241,6 @@ export default function ReportsSection({ recordId, record, token, user, condense
       await exportHtmlToPDF(html);
     } catch (e) {
       toast.error('No se pudo generar el PDF');
-    }
-  };
-
-  const openReportForEdit = async (r) => {
-    try {
-      const res = await medicalRecordsApi.getReport(r.id, token);
-      const full = res.data;
-      if (canEditReport(full)) {
-        setSelected(full);
-        return;
-      }
-      if (full.status !== 'draft') {
-        await viewReportAsPDF(full.id);
-      } else {
-        toast.warning('Solo el creador puede editar o eliminar este borrador');
-      }
-    } catch (e) {
-      // Si falla el fetch, intenta último recurso con dato de lista
-      if (canEditReport(r)) {
-        openReport(r.id);
-        return;
-      }
-      if (r.status !== 'draft') {
-        await viewReportAsPDF(r.id);
-      } else {
-        toast.warning('No se pudo abrir el informe');
-      }
     }
   };
 
@@ -326,118 +263,179 @@ export default function ReportsSection({ recordId, record, token, user, condense
     );
   }
 
-  const formatStatus = (status) => {
-    switch (status) {
-      case 'draft': return 'borrador';
-      case 'final': return 'final';
-      case 'signed': return 'firmado';
-      default: return status || '';
-    }
-  };
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      {/* Historial */}
-      <div className="lg:col-span-5 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-sm transition">
-        <div className="p-4 text-slate-900 font-medium">Historial de informes</div>
-        <div className="divide-y">
-          {items?.length ? items.map(r => (
-            <div key={r.id} className="px-4 py-3 text-sm text-slate-700 flex items-center justify-between hover:bg-slate-50/80 transition">
-              <div className="min-w-0">
-                <div className="font-medium truncate">{r.report_type || 'Informe'}</div>
-                <div className="text-xs text-slate-500 truncate">{r.doctor_name} · {r.report_date} · {formatStatus(r.status)}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                {canEditReport(r) ? (
-                  <>
-                    <button className="text-xs text-blue-600 hover:underline" onClick={() => openReportForEdit(r)}>Editar</button>
-                    <button className="text-xs text-red-600 hover:underline" onClick={() => remove(r.id)}>Eliminar</button>
-                  </>
-                ) : (
-                  r.status !== 'draft' ? (
-                    <button className="text-xs text-slate-600 hover:underline" onClick={() => viewReportAsPDF(r.id)}>Ver PDF</button>
-                  ) : (
-                    <span className="text-xs text-slate-400">Borrador</span>
-                  )
-                )}
-              </div>
-            </div>
-          )) : <div className="px-4 py-6 text-sm text-gray-500">Sin informes</div>}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Card */}
+      <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100 flex items-start gap-4">
+        <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+            <FileText className="w-6 h-6" />
         </div>
+        <div className="flex-1">
+            <h3 className="text-lg font-bold text-slate-800">Informes Médicos</h3>
+            <p className="text-slate-500 text-sm mt-1 leading-relaxed">
+                Genere, edite y exporte informes médicos, constancias y referencias.
+            </p>
+        </div>
+        {viewMode === 'list' && isDoctorOrAdmin && (
+            <button 
+                onClick={() => setViewMode('create')}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+            >
+                <Plus className="w-4 h-4" /> Nuevo Informe
+            </button>
+        )}
       </div>
 
-      {/* Editor / Creador */}
-      <div className="lg:col-span-7 space-y-4">
-        {isDoctorOrAdmin && !selected && (
-          <div className="rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-sm p-4">
-            <div className="text-slate-900 font-medium">Nuevo informe</div>
-            <div className="mt-3 grid grid-cols-1 gap-3">
-              <div>
-                <label className="text-sm text-slate-600">Tipo</label>
-                <select className="w-full mt-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 pr-8 appearance-none focus:border-blue-300 focus:outline-none focus:ring-4 focus:ring-blue-500/15" value={form.report_type} onChange={(e)=>setForm({...form, report_type:e.target.value})}>
-                  <option>Informe médico</option>
-                  <option>Reposo médico</option>
-                  <option>Referencia</option>
-                  <option>Interconsulta</option>
-                  <option>Constancia</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-600">Contenido</label>
-                <RichTextEditor value={newContent} onChange={setNewContent} />
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="text-xs text-slate-500 text-center">Elige cómo guardar o exporta directamente.</div>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex gap-2 justify-center">
-                    <button onClick={() => createWithStatus('draft')} className="rounded-lg border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50 transition">Guardar borrador</button>
-                    <button onClick={() => createWithStatus('final')} className="rounded-lg bg-blue-600 px-3 py-2 text-white shadow hover:bg-blue-700 transition">Guardar final</button>
-                  </div>
-                  <div className="flex gap-2 justify-center">
-                    <button onClick={() => createAndExport('pdf')} className="rounded-lg bg-gray-800 px-4 py-2 text-white shadow hover:bg-gray-900 transition">Guardar y exportar PDF</button>
-                    <button onClick={() => createAndExport('word')} className="rounded-lg bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700 transition">Guardar y exportar Word</button>
-                  </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* List Column */}
+        <div className={`lg:col-span-1 ${viewMode !== 'list' ? 'hidden lg:block' : ''}`}>
+            <div className="rounded-2xl bg-white shadow-sm border border-slate-100 overflow-hidden sticky top-6">
+                <div className="p-4 border-b border-slate-100 bg-slate-50/50">
+                    <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Historial de Informes</h4>
                 </div>
-              </div>
+                <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+                    {items?.length ? items.map(r => (
+                        <button 
+                            key={r.id} 
+                            onClick={() => openReport(r.id)}
+                            className={`w-full text-left p-4 hover:bg-slate-50 transition-colors flex items-start gap-3 ${selected?.id === r.id ? 'bg-indigo-50/50 border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}
+                        >
+                            <div className={`p-2 rounded-lg shrink-0 ${r.status === 'final' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                {r.status === 'final' ? <FileCheck className="w-5 h-5" /> : <FileEdit className="w-5 h-5" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h5 className="font-bold text-slate-800 text-sm truncate">{r.report_type}</h5>
+                                <p className="text-xs text-slate-500 mt-0.5">{new Date(r.created_at).toLocaleDateString()}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${r.status === 'final' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                        {r.status === 'final' ? 'Finalizado' : 'Borrador'}
+                                    </span>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-slate-300 mt-2" />
+                        </button>
+                    )) : (
+                        <div className="p-8 text-center">
+                            <FileText className="w-10 h-10 mx-auto text-slate-300 mb-2" />
+                            <p className="text-sm text-slate-500">No hay informes registrados</p>
+                        </div>
+                    )}
+                </div>
             </div>
-          </div>
-        )}
+        </div>
 
-        {selected && (
-          <div className="rounded-2xl border border-slate-200 bg-white/90 backdrop-blur shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-slate-900 font-medium">Editar informe</div>
-              <button className="text-xs text-blue-600 hover:underline" onClick={() => setSelected(null)}>Crear uno nuevo</button>
-            </div>
-            <div className="mt-3 grid grid-cols-1 gap-3">
-              <div>
-                <label className="text-sm text-slate-600">Tipo</label>
-                <select className="w-full mt-1 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 pr-8 appearance-none focus:border-blue-300 focus:outline-none focus:ring-4 focus:ring-blue-500/15" value={selected.report_type || ''} onChange={(e)=>setSelected({...selected, report_type:e.target.value})}>
-                  <option>Informe médico</option>
-                  <option>Reposo médico</option>
-                  <option>Referencia</option>
-                  <option>Interconsulta</option>
-                  <option>Constancia</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-slate-600">Contenido</label>
-                <RichTextEditor value={selected.content || ''} onChange={(v)=>setSelected({...selected, content:v})} />
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex gap-2 justify-center">
-                  <button onClick={() => update('draft')} className="rounded-lg border border-slate-300 px-4 py-2 text-slate-700 hover:bg-slate-50 transition">Guardar borrador</button>
-                  <button onClick={() => update('final')} className="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700 transition">Guardar final</button>
+        {/* Editor/Viewer Column */}
+        <div className="lg:col-span-2">
+            {viewMode === 'create' && (
+                <div className="rounded-2xl bg-white shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-right-4">
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <Plus className="w-4 h-4 text-indigo-600" /> Nuevo Informe
+                        </h4>
+                        <button onClick={() => setViewMode('list')} className="p-1.5 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <div className="p-6 space-y-4">
+                        <div>
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Tipo de Informe</label>
+                            <select 
+                                className="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
+                                value={form.report_type}
+                                onChange={(e) => setForm({...form, report_type: e.target.value})}
+                            >
+                                <option>Informe médico</option>
+                                <option>Constancia médica</option>
+                                <option>Referencia</option>
+                                <option>Epicrisis</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Contenido</label>
+                            <div className="rounded-xl border border-slate-200 overflow-hidden ring-1 ring-slate-200 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+                                <RichTextEditor value={newContent} onChange={setNewContent} placeholder="Escriba el contenido del informe aquí..." />
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button 
+                                onClick={() => createWithStatus('draft')}
+                                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors text-sm"
+                            >
+                                Guardar Borrador
+                            </button>
+                            <button 
+                                onClick={() => createWithStatus('final')}
+                                className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-medium shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 text-sm flex items-center gap-2"
+                            >
+                                <Save className="w-4 h-4" /> Finalizar
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex gap-2 justify-center">
-                  <button onClick={exportSelectedToPDF} className="rounded-lg bg-gray-800 px-4 py-2 text-white shadow hover:bg-gray-900 transition">Exportar PDF</button>
-                  <button onClick={exportSelectedToWord} className="rounded-lg bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-700 transition">Exportar Word</button>
+            )}
+
+            {viewMode === 'view' && selected && (
+                <div className="rounded-2xl bg-white shadow-sm border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-right-4">
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => setViewMode('list')} className="lg:hidden p-1.5 text-slate-400 hover:bg-slate-200 rounded-lg transition-colors">
+                                <ChevronRight className="w-4 h-4 rotate-180" />
+                            </button>
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-800 uppercase tracking-wider">{selected.report_type}</h4>
+                                <p className="text-xs text-slate-500">Por: {selected.doctor_name || 'Desconocido'} · {new Date(selected.created_at).toLocaleString()}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={exportSelectedToPDF} className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Exportar PDF">
+                                <FileText className="w-4 h-4" />
+                            </button>
+                            <button onClick={exportSelectedToWord} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Exportar Word">
+                                <FileEdit className="w-4 h-4" />
+                            </button>
+                            {canEditReport(selected) && (
+                                <button onClick={() => remove(selected.id)} className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className="p-8 bg-white min-h-[500px]">
+                        {canEditReport(selected) && selected.status !== 'final' ? (
+                            <div className="space-y-4">
+                                <RichTextEditor 
+                                    value={selected.content} 
+                                    onChange={(val) => setSelected({...selected, content: val})} 
+                                />
+                                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                                    <button onClick={() => update('draft')} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">
+                                        Guardar Cambios
+                                    </button>
+                                    <button onClick={() => update('final')} className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-lg shadow-emerald-200 hover:bg-emerald-700">
+                                        Finalizar Informe
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: selected.content }} />
+                        )}
+                    </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
+            )}
+
+            {viewMode === 'list' && !selected && (
+                <div className="hidden lg:flex flex-col items-center justify-center h-full min-h-[400px] rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center p-8">
+                    <FileText className="w-16 h-16 text-slate-300 mb-4" />
+                    <h3 className="text-lg font-medium text-slate-900">Seleccione un informe</h3>
+                    <p className="text-slate-500 max-w-xs mx-auto mt-2">
+                        Seleccione un informe de la lista para ver sus detalles o cree uno nuevo si tiene los permisos necesarios.
+                    </p>
+                </div>
+            )}
+        </div>
       </div>
     </div>
   );
 }
+
