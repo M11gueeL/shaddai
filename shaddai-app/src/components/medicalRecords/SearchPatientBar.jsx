@@ -65,15 +65,27 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
     setFilteredPatients(filtered);
   }, [query, allPatients, hasLoaded]);
 
-  // Click outside
+  // Click outside & Escape key
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleSelect = (patient) => {
@@ -112,6 +124,12 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={handleFocus}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsOpen(false);
+              e.currentTarget.blur();
+            }
+          }}
         />
         {query && (
           <button

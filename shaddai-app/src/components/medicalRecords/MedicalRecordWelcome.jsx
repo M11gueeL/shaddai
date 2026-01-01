@@ -7,7 +7,7 @@ import {
 
 export default function MedicalRecordWelcome() {
     return (
-        <div className="h-full flex flex-col items-center justify-center p-8 rounded-3xl bg-gradient-to-b from-white to-slate-50/50 border border-slate-100 shadow-sm min-h-[600px]">
+        <div className="h-full flex flex-col items-center justify-center p-8 min-h-[600px]">
             <div className="max-w-lg w-full text-center space-y-10 animate-in fade-in zoom-in duration-700 slide-in-from-bottom-4">
                 
                 {/* Hero Icon Section */}
@@ -35,12 +35,6 @@ export default function MedicalRecordWelcome() {
                             Gestione consultas, antecedentes y reportes de forma integral.
                         </span>
                     </p>
-                </div>
-
-                {/* Visual Cue */}
-                <div className="pt-8 flex flex-col items-center gap-3 opacity-40 animate-bounce duration-[2000ms]">
-                    <ArrowUp className="w-5 h-5 text-slate-400" />
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-widest">Buscar arriba</span>
                 </div>
             </div>
         </div>

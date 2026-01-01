@@ -163,6 +163,34 @@ class MedicalRecordsController {
     }
 
     /**
+     * Wrapper para añadir signos vitales desde una ruta de encuentro.
+     * POST /medicalrecords/encounters/{encounterId}/vitalsigns
+     */
+    public function addVitalSignsFromEncounter($encounterId) {
+        try {
+            // 1. Buscamos el encuentro para saber a qué historia pertenece
+            $encounter = $this->model->getClinicalEncounterById($encounterId);
+            
+            if (!$encounter) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Encuentro clínico no encontrado.']);
+                return;
+            }
+
+            // 2. Extraemos el ID real de la historia clínica
+            $realRecordId = $encounter['medical_record_id'];
+
+            // 3. Llamamos a la función principal con los parámetros en el orden CORRECTO
+            // ($recordId, $encounterId)
+            $this->addVitalSignsRecord($realRecordId, $encounterId);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Obtiene los detalles completos de un encuentro clínico por ID.
      * GET /medicalrecords/encounters/{id}
      */

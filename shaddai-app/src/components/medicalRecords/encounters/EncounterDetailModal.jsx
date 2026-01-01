@@ -39,7 +39,24 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
   const [note, setNote] = useState({ note_type: 'Evolución', note_content: '' });
 
   useEffect(() => {
-    if (encounter?.physical_exam) setExam(encounter.physical_exam);
+    if (encounter) {
+       if (encounter.physical_exam) {
+          // Si por casualidad llega como array, tomamos el primero [0]
+          const examData = Array.isArray(encounter.physical_exam) 
+              ? encounter.physical_exam[0] 
+              : encounter.physical_exam;
+          setExam(examData || {});
+       }
+
+       if (encounter.vital_signs) {
+          // Detectamos si viene como lista ([...]) o como objeto ({...})
+          const vitalsData = Array.isArray(encounter.vital_signs) 
+              ? encounter.vital_signs[0] 
+              : encounter.vital_signs;
+              
+          setVitals(vitalsData || {});
+       }
+    }
   }, [encounter]);
 
   const saveExam = async (e) => {
@@ -290,7 +307,7 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
                                     ['temperature','Temperatura','°C','0.1'],
                                     ['oxygen_saturation','Sat. de oxígeno','%','1'],
                                     ['weight','Peso','kg','0.1'],
-                                    ['height','Talla','m','0.01'],
+                                    ['height','Altura','m','0.01'],
                                 ].map(([k, lbl, unit, step]) => (
                                     <div key={k}>
                                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">{lbl}</label>

@@ -144,11 +144,12 @@ class MedicalRecordsModel {
      * @return array|null Detalles del encuentro o null
      */
     public function getFullEncounterDetails($encounterId) {
+        $vitalsList = $this->db->query("SELECT * FROM vital_signs WHERE encounter_id = :id ORDER BY recorded_at DESC LIMIT 1", [':id' => $encounterId]);
         $encounter = $this->getClinicalEncounterById($encounterId);
         if (!$encounter) return null;
 
         $encounter['physical_exam'] = $this->db->query("SELECT * FROM physical_exams WHERE encounter_id = :id", [':id' => $encounterId])[0] ?? null;
-        $encounter['vital_signs'] = $this->db->query("SELECT * FROM vital_signs WHERE encounter_id = :id ORDER BY recorded_at DESC", [':id' => $encounterId]); // Pueden ser varios
+        $encounter['vital_signs'] = $vitalsList[0] ?? null;
         $encounter['diagnoses'] = $this->db->query("SELECT * FROM diagnoses WHERE encounter_id = :id ORDER BY diagnosis_type", [':id' => $encounterId]);
         $encounter['treatment_plans'] = $this->db->query("SELECT * FROM treatment_plans WHERE encounter_id = :id ORDER BY plan_type", [':id' => $encounterId]);
         $encounter['progress_notes'] = $this->db->query(

@@ -11,13 +11,13 @@ class MedicalRecordsRoutes {
 
         // --- Rutas Principales de Historia Clínica ---
         // Obtener HC por ID de paciente (ruta preferida para buscar)
-        $router->add('GET', 'medicalrecords/patient/{patientId}', [$controller, 'getMedicalRecordByPatient'], ['auth', 'role:admin,medico,recepcionista']);
+        $router->add('GET', 'medicalrecords/patient/{patientId}', [$controller, 'getMedicalRecordByPatient'], ['auth']);
         // Obtener HC por Cédula de paciente
-        $router->add('GET', 'medicalrecords/patient/cedula/{cedula}', [$controller, 'getMedicalRecordByPatientCedula'], ['auth', 'role:admin,medico,recepcionista']);
+        $router->add('GET', 'medicalrecords/patient/cedula/{cedula}', [$controller, 'getMedicalRecordByPatientCedula'], ['auth']);
         // Obtener HC por ID de HC (menos común para buscar, más para acceder directo)
         $router->add('GET', 'medicalrecords/{id}', [$controller, 'getMedicalRecord'], ['auth', 'role:admin,medico']);
-    // Crear (asegurar) HC para un paciente explícitamente (solo médico/admin)
-    $router->add('POST', 'medicalrecords/patient/{patientId}', [$controller, 'createMedicalRecordForPatient'], ['auth', 'role:admin,medico']);
+        // Crear (asegurar) HC para un paciente explícitamente (solo médico/admin)
+        $router->add('POST', 'medicalrecords/patient/{patientId}', [$controller, 'createMedicalRecordForPatient'], ['auth', 'role:admin,medico']);
 
 
         // --- Rutas para Encuentros Clínicos ---
@@ -33,7 +33,7 @@ class MedicalRecordsRoutes {
         // Añadir un antecedente a una historia
         $router->add('POST', 'medicalrecords/{recordId}/history', [$controller, 'addHistoryItem'], ['auth', 'role:admin,medico']);
         // Obtener los antecedentes de una historia (opcionalmente filtrado por tipo)
-        $router->add('GET', 'medicalrecords/{recordId}/history', [$controller, 'getHistoryItems'], ['auth', 'role:admin,medico,recepcionista']); // Recepcionista podría verlos
+        $router->add('GET', 'medicalrecords/{recordId}/history', [$controller, 'getHistoryItems'], ['auth']); // Recepcionista podría verlos
         // Actualizar un antecedente específico
         $router->add('PUT', 'medicalrecords/history/{historyId}', [$controller, 'updateHistoryItem'], ['auth', 'role:admin,medico']);
         // Eliminar un antecedente específico
@@ -48,14 +48,13 @@ class MedicalRecordsRoutes {
 
         // --- Rutas para Signos Vitales ---
         // Añadir signos vitales (preferiblemente ligado a un encuentro)
-        $router->add('POST', 'medicalrecords/encounters/{encounterId}/vitalsigns', [$controller, 'addVitalSignsRecord'], ['auth', 'role:admin,medico,recepcionista']); // Recepcionista puede tomarlos
+        $router->add('POST', 'medicalrecords/encounters/{encounterId}/vitalsigns', [$controller, 'addVitalSignsFromEncounter'], ['auth']);
         // Añadir signos vitales directamente a la historia (menos común)
-        $router->add('POST', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'addVitalSignsRecord'], ['auth', 'role:admin,medico,recepcionista']);
-    // Listar signos vitales de una HC (timeline)
-    $router->add('GET', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'getVitalSignsForRecord'], ['auth', 'role:admin,medico,recepcionista']);
-    // Listar signos vitales por historia clínica (timeline)
-    $router->add('GET', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'getVitalSignsForRecord'], ['auth', 'role:admin,medico,recepcionista']);
-
+        $router->add('POST', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'addVitalSignsRecord'], ['auth']);
+        // Listar signos vitales de una HC (timeline)
+        $router->add('GET', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'getVitalSignsForRecord'], ['auth']);
+        // Listar signos vitales por historia clínica (timeline)
+        $router->add('GET', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'getVitalSignsForRecord'], ['auth']);
 
         // --- Rutas para Diagnósticos ---
         // Añadir diagnóstico a un encuentro
@@ -79,15 +78,15 @@ class MedicalRecordsRoutes {
 
         // --- Rutas para Archivos Adjuntos ---
         // Registrar info de un adjunto para una historia
-        $router->add('POST', 'medicalrecords/{recordId}/attachments', [$controller, 'registerAttachment'], ['auth', 'role:admin,medico,recepcionista']);
+        $router->add('POST', 'medicalrecords/{recordId}/attachments', [$controller, 'registerAttachment'], ['auth']);
         // Registrar info de un adjunto ligado a un encuentro
-        $router->add('POST', 'medicalrecords/encounters/{encounterId}/attachments', [$controller, 'registerAttachment'], ['auth', 'role:admin,medico,recepcionista']);
+        $router->add('POST', 'medicalrecords/encounters/{encounterId}/attachments', [$controller, 'registerAttachment'], ['auth']);
         // Listar adjuntos de una historia
-        $router->add('GET', 'medicalrecords/{recordId}/attachments', [$controller, 'getAttachmentsForRecord'], ['auth', 'role:admin,medico,recepcionista']);
+        $router->add('GET', 'medicalrecords/{recordId}/attachments', [$controller, 'getAttachmentsForRecord'], ['auth']);
         // Eliminar el registro de un adjunto (no el archivo físico)
         $router->add('DELETE', 'medicalrecords/attachments/{attachmentId}', [$controller, 'deleteAttachment'], ['auth', 'role:admin,medico']);
         // Descargar archivo adjunto
-        $router->add('GET', 'medicalrecords/attachments/{attachmentId}/download', [$controller, 'downloadAttachment'], ['auth', 'role:admin,medico,recepcionista']);
+        $router->add('GET', 'medicalrecords/attachments/{attachmentId}/download', [$controller, 'downloadAttachment'], ['auth']);
 
 
         // --- Rutas para Informes Médicos ---
@@ -103,7 +102,6 @@ class MedicalRecordsRoutes {
         $router->add('PUT', 'medicalrecords/reports/{reportId}', [$controller, 'updateReport'], ['auth', 'role:admin,medico']);
         // Eliminar un informe
         $router->add('DELETE', 'medicalrecords/reports/{reportId}', [$controller, 'deleteReport'], ['auth', 'role:admin,medico']);
-         // Nota: Necesitarás una ruta para *exportar/imprimir* el informe, ej. GET /medicalrecords/reports/{reportId}/export[?format=pdf]
 
     }
 }
