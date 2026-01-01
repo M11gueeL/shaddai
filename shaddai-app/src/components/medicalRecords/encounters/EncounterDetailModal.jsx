@@ -21,7 +21,15 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
     }
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [encounterId]);
+  useEffect(() => { 
+    setExam({});
+    setVitals({});
+    setDiag({ diagnosis_description: '', diagnosis_type: 'principal', notes: '' });
+    setPlan({ plan_type: 'Receta', description: '', status: 'active' });
+    setNote({ note_type: 'Evolución', note_content: '' });
+    load(); 
+    /* eslint-disable-next-line */ 
+  }, [encounterId]);
 
   const tabs = useMemo(() => ([
     { key: 'overview', label: 'Resumen', icon: FileText },
@@ -45,7 +53,8 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
           const examData = Array.isArray(encounter.physical_exam) 
               ? encounter.physical_exam[0] 
               : encounter.physical_exam;
-          setExam(examData || {});
+          
+          if (examData) setExam(examData);
        }
 
        if (encounter.vital_signs) {
@@ -54,13 +63,22 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
               ? encounter.vital_signs[0] 
               : encounter.vital_signs;
               
-          setVitals(vitalsData || {});
+          if (vitalsData) setVitals(vitalsData);
        }
     }
   }, [encounter]);
 
   const saveExam = async (e) => {
     e.preventDefault();
+
+    const examFields = ['vitals_summary','general_appearance','head_neck','chest_lungs','cardiovascular','abdomen','extremities','neurological','skin','specialty_specific_exam','notes'];
+    const hasData = examFields.some(key => exam[key] && String(exam[key]).trim().length > 0);
+
+    if (!hasData) {
+        toast.error('Debe completar al menos un campo del examen físico');
+        return;
+    }
+
     try {
       await medicalRecordsApi.savePhysicalExam(encounterId, exam, token);
       toast.success('Examen guardado');
@@ -70,11 +88,19 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
 
   const addVitals = async (e) => {
     e.preventDefault();
+
+    const vitalFields = ['systolic_bp','diastolic_bp','heart_rate','respiratory_rate','temperature','oxygen_saturation','weight','height', 'notes'];
+    const hasData = vitalFields.some(key => vitals[key] && String(vitals[key]).trim().length > 0);
+
+    if (!hasData) {
+        toast.error('Debe registrar al menos un signo vital o nota');
+        return;
+    }
+
     try {
       await medicalRecordsApi.addVitalSignsForEncounter(encounterId, vitals, token);
       toast.success('Signos registrados');
       await load();
-      setVitals({});
       onChanged?.();
     } catch (e) { toast.error('No se pudo registrar signos'); }
   };
@@ -101,6 +127,12 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
 
   const addPlan = async (e) => {
     e.preventDefault();
+
+    if (!plan.description?.trim()) {
+        toast.error('La descripción del tratamiento es obligatoria');
+        return;
+    }
+
     try {
       await medicalRecordsApi.addTreatmentPlan(encounterId, plan, token);
       toast.success('Plan añadido');
@@ -165,8 +197,8 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
           encounter ? (
             <div className="flex flex-col flex-1 overflow-hidden">
               {/* Tabs */}
-              <div className="px-6 pt-4 pb-2 border-b border-slate-50 overflow-x-auto">
-                <div className="flex gap-1 min-w-max">
+              <div className="px-6 pt-4 pb-2 border-b border-slate-50">
+                <div className="flex gap-1 flex-wrap">
                     {tabs.map(t => {
                         const Icon = t.icon;
                         const isActive = tab === t.key;
@@ -480,6 +512,7 @@ export default function EncounterDetailModal({ encounterId, token, onClose, onCh
                                         placeholder="Detalle del plan: fármacos, dosis, duración o indicaciones específicas." 
                                         value={plan.description} 
                                         onChange={(e)=>setPlan({...plan, description:e.target.value})} 
+                                        required
                                     />
                                 </div>
                                 <div className="pt-2 flex justify-end">
