@@ -195,6 +195,34 @@ export default function MedicalRecordsPanel() {
         setSelectedEncounterId(encounter?.id);
     };
 
+    // Persistence Logic
+    useEffect(() => {
+        if (token && user?.id) {
+            const key = `shaddai_active_patient_id_${user.id}`;
+            const savedPatientId = localStorage.getItem(key);
+            if (savedPatientId && !record && !pendingPatient) {
+                handleSearchByPatientId(savedPatientId);
+            }
+        }
+    }, [token, user?.id]);
+
+    useEffect(() => {
+        if (record?.patient_id && user?.id) {
+            const key = `shaddai_active_patient_id_${user.id}`;
+            localStorage.setItem(key, record.patient_id);
+        }
+    }, [record, user?.id]);
+
+    const handleCloseRecord = () => {
+        setRecord(null);
+        setPendingPatient(null);
+        if (user?.id) {
+            const key = `shaddai_active_patient_id_${user.id}`;
+            localStorage.removeItem(key);
+        }
+        setActiveTab('summary');
+    };
+
     const tabs = useMemo(() => ([
         { key: 'summary', label: 'Resumen', icon: Activity },
         { key: 'encounters', label: 'Consultas', icon: Stethoscope },
@@ -228,6 +256,7 @@ export default function MedicalRecordsPanel() {
                             record={record}
                             onNewEncounter={() => setShowNewEncounter(true)}
                             onNewReport={() => setActiveTab('reports')}
+                            onClose={handleCloseRecord}
                             onEditPatient={async (patientId) => {
                                 if (!patientId) return;
                                 try {

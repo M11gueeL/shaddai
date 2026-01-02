@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FilePlus2, Stethoscope, User2, Calendar, Phone, Mail, MapPin, IdCard, Edit2 } from 'lucide-react';
+import { FilePlus2, Stethoscope, User2, Calendar, Phone, Mail, MapPin, IdCard, Edit2, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import PatientsApi from '../../api/PatientsApi';
 
-export default function RecordHeader({ record, onNewEncounter, onNewReport, onEditPatient, refreshKey }) {
+export default function RecordHeader({ record, onNewEncounter, onNewReport, onEditPatient, onClose, refreshKey }) {
   const { token } = useAuth();
   const [patient, setPatient] = useState(null);
 
@@ -81,13 +81,21 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport, onEd
 
         {/* Actions */}
         <div className="flex items-center gap-3 flex-wrap md:justify-end">
+          {onClose && (
+            <button 
+                onClick={onClose} 
+                className="group flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-100 bg-rose-50 text-rose-600 text-sm font-medium shadow-sm hover:bg-rose-100 hover:border-rose-200 transition-all duration-200 active:scale-95 mr-auto md:mr-0"
+                title="Cerrar Historia Clínica"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           {onEditPatient && (
             <button 
                 onClick={() => onEditPatient(patient?.id || record?.patient_id)} 
                 className="group flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-sm font-medium shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 active:scale-95"
             >
               <Edit2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-              <span className="hidden sm:inline">Editar</span>
             </button>
           )}
           <button 
