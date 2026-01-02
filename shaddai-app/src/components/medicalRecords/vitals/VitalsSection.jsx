@@ -70,10 +70,11 @@ export default function VitalsSection({ recordId, token }) {
         </div>
         <button 
             onClick={() => setShowReportModal(true)}
-            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800 rounded-xl transition-all duration-200 font-medium text-sm shadow-sm border border-rose-100"
             title="Exportar Ficha de Evolución"
         >
-            <FileText className="w-5 h-5" />
+            <FileText className="w-4 h-4" />
+            <span>Exportar Ficha</span>
         </button>
       </div>
 

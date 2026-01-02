@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom'; 
 import { X, FileText, Calendar, Clock, Download } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
@@ -6,7 +7,7 @@ import { useToast } from '../../../context/ToastContext';
 export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
   const { token } = useAuth();
   const toast = useToast();
-  const [type, setType] = useState('day'); // day, range
+  const [type, setType] = useState('day');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState('');
@@ -23,14 +24,12 @@ export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
       if (type === 'range') {
         params.append('end_date', endDate);
       } else {
-        params.append('end_date', startDate); // Same day
+        params.append('end_date', startDate);
       }
       
       if (startTime) params.append('start_time', startTime);
       if (endTime) params.append('end_time', endTime);
 
-      // Construct URL directly since it's a download
-      // Usar la URL hardcodeada temporalmente si no hay variable de entorno, para coincidir con el resto de la app
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/shaddai/shaddai-api/public';
       const url = `${API_URL}/medicalrecords/${recordId}/reports/evolution?${params.toString()}`;
       
@@ -40,11 +39,10 @@ export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
         }
       });
 
-      // Verificar que sea un PDF real
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.indexOf('application/pdf') === -1) {
           console.error('Respuesta no es PDF:', await response.text());
-          throw new Error('El servidor no devolvió un PDF válido. Posible error de ruta.');
+          throw new Error('El servidor no devolvió un PDF válido.');
       }
 
       if (!response.ok) throw new Error('Error al generar reporte');
@@ -67,10 +65,10 @@ export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="p-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-rose-50 rounded-xl text-rose-600">
               <FileText className="w-5 h-5" />
@@ -85,7 +83,7 @@ export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
           {/* Type Selection */}
           <div className="flex p-1 bg-slate-100 rounded-xl">
             <button 
@@ -167,7 +165,7 @@ export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
           </div>
         </div>
 
-        <div className="p-5 bg-slate-50 flex justify-end gap-3">
+        <div className="p-5 bg-slate-50 flex justify-end gap-3 border-t border-slate-100">
           <button 
             onClick={onClose}
             className="px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-200 rounded-xl transition-colors"
@@ -187,6 +185,7 @@ export default function EvolutionReportModal({ isOpen, onClose, recordId }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body 
   );
 }
