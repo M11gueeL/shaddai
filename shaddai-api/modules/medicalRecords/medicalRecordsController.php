@@ -276,7 +276,8 @@ class MedicalRecordsController {
              if (empty($data['description'])) {
                  throw new Exception('La descripción es requerida.');
              }
-             $result = $this->model->updateMedicalHistory($historyId, $data['description'], $data['recorded_at'] ?? null);
+             $historyType = $data['history_type'] ?? 'other';
+             $result = $this->model->updateMedicalHistory($historyId, $historyType, $data['description'], $data['recorded_at'] ?? null);
              if ($result) {
                  echo json_encode(['message' => 'Antecedente actualizado']);
              } else {

@@ -175,7 +175,23 @@ export default function VitalsSection({ recordId, token }) {
         </div>
 
         {/* List Column */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2">
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                  width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: #f8fafc;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: #cbd5e1;
+                  border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: #94a3b8;
+                }
+            `}</style>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
             {items?.length ? items.map(v => (
                 <div key={v.id} className="group rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all">
                     <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-50">
@@ -214,6 +230,7 @@ export default function VitalsSection({ recordId, token }) {
                     <p className="text-slate-500 text-sm mt-1">Utilice el formulario para añadir una nueva medición.</p>
                 </div>
             )}
+            </div>
         </div>
       </div>
     </div>

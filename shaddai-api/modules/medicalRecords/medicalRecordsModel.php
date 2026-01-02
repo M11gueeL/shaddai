@@ -207,13 +207,15 @@ class MedicalRecordsModel {
      * Actualiza un antecedente específico.
      * @param int $historyId ID del antecedente.
      * @param string $description Nueva descripción.
+     * @param string $historyType Tipo de antecedente.
+     * @param string $description Descripción.
      * @param string|null $recordedAt Nueva fecha opcional.
      * @return bool Éxito o fracaso.
      */
-    public function updateMedicalHistory($historyId, $description, $recordedAt = null) {
-        $sql = "UPDATE medical_history SET description = :desc, recorded_at = :date, updated_at = NOW()
+    public function updateMedicalHistory($historyId, $historyType, $description, $recordedAt = null) {
+        $sql = "UPDATE medical_history SET history_type = :type, description = :desc, recorded_at = :date, updated_at = NOW()
                 WHERE id = :id";
-        $params = [':desc' => $description, ':date' => $recordedAt, ':id' => $historyId];
+        $params = [':type' => $historyType, ':desc' => $description, ':date' => $recordedAt, ':id' => $historyId];
         return $this->db->execute($sql, $params);
     }
 

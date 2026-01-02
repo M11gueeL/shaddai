@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { History, AlertTriangle, Pill, Scissors, Users, Baby, FileText, Calendar, Save, Trash2, Edit2, Plus, X } from 'lucide-react';
 import medicalRecordsApi from '../../../api/medicalRecords';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 
 export default function HistorySection({ recordId, token }) {
   const toast = useToast();
+  const { confirm } = useConfirm();
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ history_type: 'Antecedente', description: '', recorded_at: '' });
+  const [form, setForm] = useState({ history_type: 'other', description: '', recorded_at: '' });
 
   const load = async () => {
     try {
@@ -29,20 +31,28 @@ export default function HistorySection({ recordId, token }) {
     } catch (e) { toast.error('No se pudo añadir'); }
   };
 
-  const update = async (id, description, recorded_at) => {
+  const update = async (id, description, recorded_at, history_type) => {
     try {
-      await medicalRecordsApi.updateHistory(id, { description, recorded_at }, token);
+      await medicalRecordsApi.updateHistory(id, { description, recorded_at, history_type }, token);
       toast.success('Actualizado');
       load();
     } catch (e) { toast.error('No se pudo actualizar'); }
   };
 
   const remove = async (id) => {
-    try {
-      await medicalRecordsApi.deleteHistory(id, token);
-      toast.success('Eliminado');
-      load();
-    } catch (e) { toast.error('No se pudo eliminar'); }
+    if (await confirm({ 
+        title: 'Eliminar antecedente', 
+        message: '¿Está seguro de eliminar este registro del historial médico?',
+        tone: 'danger',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar'
+    })) {
+        try {
+            await medicalRecordsApi.deleteHistory(id, token);
+            toast.success('Eliminado');
+            load();
+        } catch (e) { toast.error('No se pudo eliminar'); }
+    }
   };
 
   return (
@@ -76,14 +86,14 @@ export default function HistorySection({ recordId, token }) {
                                 value={form.history_type} 
                                 onChange={(e)=>setForm({...form, history_type:e.target.value})}
                             >
-                                <option>Antecedente</option>
-                                <option>Patológico</option>
-                                <option>No patológico</option>
-                                <option>Quirúrgico</option>
-                                <option>Farmacológico</option>
-                                <option>Alérgico</option>
-                                <option>Familiar</option>
-                                <option>Gineco-obstétrico</option>
+                                <option value="other">Antecedente</option>
+                                <option value="personal_pathological">Patológico</option>
+                                <option value="personal_non_pathological">No patológico</option>
+                                <option value="surgical">Quirúrgico</option>
+                                <option value="medications">Farmacológico</option>
+                                <option value="allergies">Alérgico</option>
+                                <option value="family">Familiar</option>
+                                <option value="gynecological">Gineco-obstétrico</option>
                             </select>
                         </div>
                     </div>
@@ -117,7 +127,23 @@ export default function HistorySection({ recordId, token }) {
         </div>
 
         {/* List Column */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2">
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                  width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: #f8fafc;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: #cbd5e1;
+                  border-radius: 10px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: #94a3b8;
+                }
+            `}</style>
+            <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
             {items?.length ? items.map(h => (
                 <HistoryItem key={h.id} item={h} onSave={update} onDelete={remove} />
             )) : (
@@ -127,28 +153,60 @@ export default function HistorySection({ recordId, token }) {
                     <p className="text-slate-500 text-sm mt-1">Utilice el formulario para añadir información al historial.</p>
                 </div>
             )}
+            </div>
         </div>
       </div>
     </div>
   );
 }
 
+const getHistoryTypeLabel = (type) => {
+    const map = {
+        'personal_pathological': 'Patológico',
+        'personal_non_pathological': 'No patológico',
+        'surgical': 'Quirúrgico',
+        'medications': 'Farmacológico',
+        'allergies': 'Alérgico',
+        'family': 'Familiar',
+        'gynecological': 'Gineco-obstétrico',
+        'other': 'Antecedente',
+        'habits': 'Hábitos',
+        'vaccinations': 'Vacunación',
+        // Fallback for legacy or direct spanish values if any
+        'Patológico': 'Patológico',
+        'No patológico': 'No patológico',
+        'Quirúrgico': 'Quirúrgico',
+        'Farmacológico': 'Farmacológico',
+        'Alérgico': 'Alérgico',
+        'Familiar': 'Familiar',
+        'Gineco-obstétrico': 'Gineco-obstétrico',
+        'Antecedente': 'Antecedente'
+    };
+    return map[type] || type || 'Antecedente';
+};
+
 function HistoryItem({ item, onSave, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(item.description);
   const [date, setDate] = useState(item.recorded_at?.substring(0,10) || '');
+  const [type, setType] = useState(item.history_type || 'other');
 
   const save = async () => {
-    await onSave(item.id, desc, date);
+    await onSave(item.id, desc, date, type);
     setEditing(false);
   };
 
   const getIcon = (type) => {
     switch(type) {
+        case 'allergies':
         case 'Alérgico': return <AlertTriangle className="w-5 h-5 text-amber-500" />;
+        case 'medications':
         case 'Farmacológico': return <Pill className="w-5 h-5 text-blue-500" />;
+        case 'surgical':
         case 'Quirúrgico': return <Scissors className="w-5 h-5 text-rose-500" />;
+        case 'family':
         case 'Familiar': return <Users className="w-5 h-5 text-purple-500" />;
+        case 'gynecological':
         case 'Gineco-obstétrico': return <Baby className="w-5 h-5 text-pink-500" />;
         default: return <FileText className="w-5 h-5 text-slate-500" />;
     }
@@ -156,10 +214,15 @@ function HistoryItem({ item, onSave, onDelete }) {
 
   const getBgColor = (type) => {
     switch(type) {
+        case 'allergies':
         case 'Alérgico': return 'bg-amber-50 border-amber-100';
+        case 'medications':
         case 'Farmacológico': return 'bg-blue-50 border-blue-100';
+        case 'surgical':
         case 'Quirúrgico': return 'bg-rose-50 border-rose-100';
+        case 'family':
         case 'Familiar': return 'bg-purple-50 border-purple-100';
+        case 'gynecological':
         case 'Gineco-obstétrico': return 'bg-pink-50 border-pink-100';
         default: return 'bg-white border-slate-100';
     }
@@ -167,26 +230,63 @@ function HistoryItem({ item, onSave, onDelete }) {
 
   if (editing) {
     return (
-        <div className="rounded-2xl bg-white p-4 shadow-lg ring-2 ring-indigo-500/20 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">{item.history_type}</span>
-                <button onClick={() => setEditing(false)} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full"><X className="w-4 h-4" /></button>
+        <div className="rounded-2xl bg-white p-5 shadow-lg ring-2 ring-indigo-500/20 animate-in zoom-in-95 duration-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+                <h5 className="text-sm font-bold text-indigo-700 flex items-center gap-2">
+                    <Edit2 className="w-4 h-4" /> Editar Antecedente
+                </h5>
+                <button onClick={() => setEditing(false)} className="p-1 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+                    <X className="w-4 h-4" />
+                </button>
             </div>
-            <textarea 
-                className="w-full rounded-xl border-0 bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none mb-3 resize-none"
-                rows={3}
-                value={desc}
-                onChange={(e) => setDesc(e.target.value)}
-            />
-            <div className="flex items-center gap-3">
-                <input 
-                    type="date" 
-                    className="flex-1 rounded-xl border-0 bg-slate-50 px-3 py-2 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Tipo de Antecedente</label>
+                    <div className="relative">
+                        <select 
+                            className="w-full appearance-none rounded-xl border-0 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none" 
+                            value={type} 
+                            onChange={(e)=>setType(e.target.value)}
+                        >
+                            <option value="other">Antecedente</option>
+                            <option value="personal_pathological">Patológico</option>
+                            <option value="personal_non_pathological">No patológico</option>
+                            <option value="surgical">Quirúrgico</option>
+                            <option value="medications">Farmacológico</option>
+                            <option value="allergies">Alérgico</option>
+                            <option value="family">Familiar</option>
+                            <option value="gynecological">Gineco-obstétrico</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Fecha (Opcional)</label>
+                    <input 
+                        type="date" 
+                        className="w-full rounded-xl border-0 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Descripción</label>
+                <textarea 
+                    className="w-full rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none resize-none"
+                    rows={3}
+                    value={desc}
+                    onChange={(e) => setDesc(e.target.value)}
                 />
-                <button onClick={save} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
-                    Guardar
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+                <button onClick={() => setEditing(false)} className="px-4 py-2 text-slate-500 text-sm font-medium hover:bg-slate-50 rounded-xl transition-colors">
+                    Cancelar
+                </button>
+                <button onClick={save} className="px-6 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+                    Guardar Cambios
                 </button>
             </div>
         </div>
@@ -201,7 +301,7 @@ function HistoryItem({ item, onSave, onDelete }) {
         </div>
         <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-                <h5 className="font-bold text-slate-800 text-sm">{item.history_type}</h5>
+                <h5 className="font-bold text-slate-800 text-sm">{getHistoryTypeLabel(item.history_type)}</h5>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => setEditing(true)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                         <Edit2 className="w-3.5 h-3.5" />
