@@ -330,6 +330,42 @@ class MedicalRecordsModel {
         return $this->db->query($sql, [':record_id' => $medicalRecordId]);
     }
 
+    /**
+     * Obtiene signos vitales filtrados para reporte.
+     * @param int $recordId
+     * @param string|null $startDate
+     * @param string|null $endDate
+     * @param string|null $startTime
+     * @param string|null $endTime
+     * @return array
+     */
+    public function getVitalSignsForReport($recordId, $startDate = null, $endDate = null, $startTime = null, $endTime = null) {
+        $sql = "SELECT * FROM vital_signs WHERE medical_record_id = :record_id";
+        $params = [':record_id' => $recordId];
+
+        if ($startDate) {
+            $sql .= " AND DATE(recorded_at) >= :start_date";
+            $params[':start_date'] = $startDate;
+        }
+        if ($endDate) {
+            $sql .= " AND DATE(recorded_at) <= :end_date";
+            $params[':end_date'] = $endDate;
+        }
+        
+        if ($startTime) {
+            $sql .= " AND TIME(recorded_at) >= :start_time";
+            $params[':start_time'] = $startTime;
+        }
+        if ($endTime) {
+            $sql .= " AND TIME(recorded_at) <= :end_time";
+            $params[':end_time'] = $endTime;
+        }
+
+        $sql .= " ORDER BY recorded_at ASC";
+
+        return $this->db->query($sql, $params);
+    }
+
     // --- Métodos para Diagnósticos (diagnoses) ---
 
     /**
@@ -604,4 +640,3 @@ class MedicalRecordsModel {
     }
 
 }
-?>

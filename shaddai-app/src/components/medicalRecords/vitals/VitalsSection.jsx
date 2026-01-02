@@ -2,11 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Activity, Heart, Thermometer, Wind, Scale, Ruler, FileText, Plus, Clock, ArrowRight } from 'lucide-react';
 import medicalRecordsApi from '../../../api/medicalRecords';
 import { useToast } from '../../../context/ToastContext';
+import EvolutionReportModal from './EvolutionReportModal';
 
 export default function VitalsSection({ recordId, token }) {
   const toast = useToast();
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({});
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const load = async () => {
     try {
@@ -54,17 +56,32 @@ export default function VitalsSection({ recordId, token }) {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header Card */}
-      <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100 flex items-start gap-4">
-        <div className="p-3 bg-rose-50 rounded-xl text-rose-600">
-            <Activity className="w-6 h-6" />
+      <div className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100 flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+            <div className="p-3 bg-rose-50 rounded-xl text-rose-600">
+                <Activity className="w-6 h-6" />
+            </div>
+            <div>
+                <h3 className="text-lg font-bold text-slate-800">Signos Vitales</h3>
+                <p className="text-slate-500 text-sm mt-1 leading-relaxed">
+                    Registre y monitoree los indicadores fisiológicos del paciente. El IMC se calculará automáticamente.
+                </p>
+            </div>
         </div>
-        <div>
-            <h3 className="text-lg font-bold text-slate-800">Signos Vitales</h3>
-            <p className="text-slate-500 text-sm mt-1 leading-relaxed">
-                Registre y monitoree los indicadores fisiológicos del paciente. El IMC se calculará automáticamente.
-            </p>
-        </div>
+        <button 
+            onClick={() => setShowReportModal(true)}
+            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+            title="Exportar Ficha de Evolución"
+        >
+            <FileText className="w-5 h-5" />
+        </button>
       </div>
+
+      <EvolutionReportModal 
+        isOpen={showReportModal} 
+        onClose={() => setShowReportModal(false)} 
+        recordId={recordId} 
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Column */}

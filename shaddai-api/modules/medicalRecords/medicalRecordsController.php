@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/MedicalRecordsModel.php';
 require_once __DIR__ . '/../patients/PatientsModel.php';
+require_once __DIR__ . '/../../services/ReportGeneratorService.php';
 
 class MedicalRecordsController {
     private $model;
@@ -862,5 +863,35 @@ class MedicalRecordsController {
         }
      }
 
+    /**
+     * Genera reporte de evolución (signos vitales).
+     * GET /medicalrecords/{recordId}/reports/evolution
+     */
+    public function generateEvolutionReport($recordId) {
+        try {
+            $startDate = $_GET['start_date'] ?? null;
+            $endDate = $_GET['end_date'] ?? null;
+            $startTime = $_GET['start_time'] ?? null;
+            $endTime = $_GET['end_time'] ?? null;
+            
+            $vitals = $this->model->getVitalSignsForReport($recordId, $startDate, $endDate, $startTime, $endTime);
+            $record = $this->model->getMedicalRecordById($recordId);
+            
+            if (!$record) {
+                throw new Exception('Historia clínica no encontrada');
+            }
+
+            $reportService = new ReportGeneratorService();
+            $filename = 'Evolucion_' . ($record['patient_cedula'] ?? 'NA') . '_' . date('YmdHis');
+            
+            $generatedBy = 'Sistema'; // Podría mejorarse con info del token
+            
+            $reportService->generateEvolutionSheetPdf($vitals, $record, $startDate, $endDate, $startTime, $endTime, $filename, $generatedBy);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
 }
-?>

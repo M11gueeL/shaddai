@@ -55,6 +55,9 @@ class MedicalRecordsRoutes {
         $router->add('GET', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'getVitalSignsForRecord'], ['auth']);
         // Listar signos vitales por historia clínica (timeline)
         $router->add('GET', 'medicalrecords/{recordId}/vitalsigns', [$controller, 'getVitalSignsForRecord'], ['auth']);
+        
+        // Reporte de Evolución (Signos Vitales)
+        $router->add('GET', 'medicalrecords/{recordId}/reports/evolution', [$controller, 'generateEvolutionReport'], ['auth', 'role:admin,medico']);
 
         // --- Rutas para Diagnósticos ---
         // Añadir diagnóstico a un encuentro
@@ -105,4 +108,3 @@ class MedicalRecordsRoutes {
 
     }
 }
-?>
