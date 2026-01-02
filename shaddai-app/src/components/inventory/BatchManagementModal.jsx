@@ -7,7 +7,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 import AdjustmentOverlay from './AdjustmentOverlay';
 
 export default function BatchManagementModal({ item, onClose, onUpdate }) {
-  const { token } = useAuth();
+  const { token, hasRole } = useAuth();
   const toast = useToast();
   const { confirm } = useConfirm();
   const [batches, setBatches] = useState([]);
@@ -165,6 +165,7 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
                           ) : (
                               <div className="flex items-center gap-2 group/date">
                                   <span>Vence: <strong>{batch.expiration_date}</strong></span>
+                                  {hasRole(['admin']) && (
                                   <button 
                                     onClick={() => setEditingDateBatch({ id: batch.id, date: batch.expiration_date })}
                                     className="opacity-0 group-hover/date:opacity-100 text-gray-400 hover:text-indigo-600 transition-opacity"
@@ -172,6 +173,7 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
                                   >
                                       <Edit2 size={12} />
                                   </button>
+                                  )}
                               </div>
                           )}
                           <span className="text-gray-400">|</span>
@@ -197,7 +199,7 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
                       </div>
 
                       {/* Acciones */}
-                      {batch.quantity > 0 && (
+                      {batch.quantity > 0 && hasRole(['admin']) && (
                         <div className="flex flex-col gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-gray-200/50 sm:pl-4 mt-2 sm:mt-0 min-w-[140px]">
                           <button 
                             onClick={() => handleToggleStatus(batch)}
