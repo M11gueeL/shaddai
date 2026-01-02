@@ -639,4 +639,41 @@ class MedicalRecordsModel {
         return $this->db->execute($sql, [':id' => $reportId]);
     }
 
+    /**
+     * Obtiene TODOS los datos de la historia clínica para exportación.
+     * @param int $recordId
+     * @return array|null
+     */
+    public function getFullMedicalRecordData($recordId) {
+        $data = [];
+        
+        // 1. Info básica
+        $data['record'] = $this->getMedicalRecordById($recordId);
+        if (!$data['record']) return null;
+
+        // 2. Antecedentes
+        $data['history'] = $this->getMedicalHistory($recordId);
+
+        // 3. Encuentros (con todo el detalle)
+        $encounters = $this->getEncountersByMedicalRecordId($recordId);
+        $data['encounters'] = [];
+        foreach ($encounters as $enc) {
+            $details = $this->getFullEncounterDetails($enc['id']);
+            if ($details) {
+                $data['encounters'][] = $details;
+            }
+        }
+
+        // 4. Signos vitales (todos, para tener el histórico completo incluso fuera de encuentros)
+        $data['all_vitals'] = $this->getVitalSignsByRecordId($recordId);
+
+        // 5. Adjuntos
+        $data['attachments'] = $this->getAttachments($recordId);
+
+        // 6. Informes generados
+        $data['reports'] = $this->getReportsByMedicalRecordId($recordId);
+
+        return $data;
+    }
+
 }

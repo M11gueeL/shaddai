@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Clock, Stethoscope, FileText, Activity, ClipboardList, Paperclip, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Stethoscope, FileText, Activity, ClipboardList, Paperclip, AlertCircle, Download } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import medicalRecordsApi from '../../api/medicalRecords';
@@ -35,6 +35,46 @@ export default function MedicalRecordsPanel() {
     const [showEditPatient, setShowEditPatient] = useState(false);
     const [patientForEdit, setPatientForEdit] = useState(null);
     const [patientRefreshKey, setPatientRefreshKey] = useState(0);
+    const [exporting, setExporting] = useState(false);
+
+    const handleExportFullHistory = async () => {
+        if (!record) return;
+        setExporting(true);
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/shaddai/shaddai-api/public';
+            const url = `${API_URL}/medicalrecords/${record.id}/reports/full`;
+            
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            // Verificar que sea un PDF real
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.indexOf('application/pdf') === -1) {
+                console.error('Respuesta no es PDF:', await response.text());
+                throw new Error('El servidor no devolvió un PDF válido.');
+            }
+
+            if (!response.ok) throw new Error('Error al generar reporte');
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `Historia_Clinica_${record.patient_cedula || 'Paciente'}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            toast.success('Historia clínica exportada correctamente');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error al exportar la historia clínica');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     // Load doctors and specialties once
     useEffect(() => {
@@ -249,6 +289,21 @@ export default function MedicalRecordsPanel() {
                                                 </button>
                                             </div>
                                             <ReportsSection recordId={record.id} record={record} token={token} user={user} condensed />
+                                            
+                                            <div className="mt-4 pt-4 border-t border-slate-100">
+                                                <button 
+                                                    onClick={handleExportFullHistory}
+                                                    disabled={exporting}
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 rounded-xl transition-colors duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {exporting ? (
+                                                        <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                                                    ) : (
+                                                        <Download className="w-4 h-4" />
+                                                    )}
+                                                    {exporting ? 'Exportando...' : 'Exportar Historia'}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

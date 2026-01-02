@@ -59,6 +59,9 @@ class MedicalRecordsRoutes {
         // Reporte de Evolución (Signos Vitales)
         $router->add('GET', 'medicalrecords/{recordId}/reports/evolution', [$controller, 'generateEvolutionReport'], ['auth', 'role:admin,medico']);
 
+        // Reporte Completo de Historia Clínica
+        $router->add('GET', 'medicalrecords/{recordId}/reports/full', [$controller, 'generateFullHistoryReport'], ['auth', 'role:admin,medico']);
+
         // --- Rutas para Diagnósticos ---
         // Añadir diagnóstico a un encuentro
         $router->add('POST', 'medicalrecords/encounters/{encounterId}/diagnoses', [$controller, 'addDiagnosisToEncounter'], ['auth', 'role:admin,medico']);

@@ -894,4 +894,29 @@ class MedicalRecordsController {
         }
     }
 
+    /**
+     * Genera reporte completo de la historia clínica.
+     * GET /medicalrecords/{recordId}/reports/full
+     */
+    public function generateFullHistoryReport($recordId) {
+        try {
+            $fullData = $this->model->getFullMedicalRecordData($recordId);
+            
+            if (!$fullData || !$fullData['record']) {
+                throw new Exception('Historia clínica no encontrada');
+            }
+
+            $reportService = new ReportGeneratorService();
+            $filename = 'Historia_Completa_' . ($fullData['record']['patient_cedula'] ?? 'NA') . '_' . date('YmdHis');
+            
+            $generatedBy = 'Sistema'; // Podría mejorarse con info del token
+            
+            $reportService->generateFullHistoryPdf($fullData, $filename, $generatedBy);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
 }

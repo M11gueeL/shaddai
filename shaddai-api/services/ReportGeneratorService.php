@@ -170,6 +170,34 @@ class ReportGeneratorService {
         exit;
     }
 
+    public function generateFullHistoryPdf($fullData, $filename, $generatedBy = '') {
+        // Aumentar límites para evitar errores en reportes grandes
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
+        ob_start();
+        require __DIR__ . '/../templates/reports/medicalRecords/full_history_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+        header("Cache-Control: no-cache, must-revalidate");
+        
+        echo $dompdf->output();
+        exit;
+    }
+
     public function generateCsv($data, $filename) {
         if (ob_get_length()) ob_end_clean();
 
