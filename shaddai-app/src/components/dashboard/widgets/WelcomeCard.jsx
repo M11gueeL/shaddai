@@ -34,7 +34,7 @@ export default function WelcomeCard() {
   }, [user]);
 
   const timeString = now.toLocaleTimeString("es-VE", { 
-    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false 
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true 
   });
   
   const dateString = now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });

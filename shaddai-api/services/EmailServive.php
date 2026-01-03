@@ -32,7 +32,7 @@ class EmailService {
         }
 
         $this->mailer->Port       = $_ENV['SMTP_PORT'];
-        $this->mailer->setFrom($_ENV['SMTP_USER'], 'Clínica Shaddai');
+        $this->mailer->setFrom($_ENV['SMTP_USER'], 'Shaddai Rafa');
         $this->mailer->CharSet = 'UTF-8';
         $this->mailer->isHTML(true);
     }
@@ -41,7 +41,7 @@ class EmailService {
         try {
             $this->mailer->clearAddresses();
             $this->mailer->addAddress($toEmail);
-            $this->mailer->Subject = 'Confirmación de Cita - Clínica Shaddai';
+            $this->mailer->Subject = 'Confirmación de Cita - Shaddai Rafa';
             
             $body = $this->renderTemplate('patient_confirmation', 'Cita Confirmada', [
                 'patientName' => $patientName,
@@ -64,7 +64,7 @@ class EmailService {
         try {
             $this->mailer->clearAddresses();
             $this->mailer->addAddress($toEmail);
-            $this->mailer->Subject = 'Nueva Cita Agendada - Clínica Shaddai';
+            $this->mailer->Subject = 'Nueva Cita Agendada - Shaddai Rafa';
             
             $body = $this->renderTemplate('doctor_notification', 'Nueva Cita Asignada', [
                 'doctorName' => $doctorName,
@@ -87,7 +87,7 @@ class EmailService {
         try {
             $this->mailer->clearAddresses();
             $this->mailer->addAddress($toEmail);
-            $this->mailer->Subject = 'Recordatorio de Cita - Clínica Shaddai';
+            $this->mailer->Subject = 'Recordatorio de Cita - Shaddai Rafa';
             
             $body = $this->renderTemplate('reminder', 'Recordatorio de Cita', [
                 'patientName' => $patientName,
@@ -108,7 +108,7 @@ class EmailService {
         try {
             $this->mailer->clearAddresses();
             $this->mailer->addAddress($toEmail);
-            $this->mailer->Subject = 'Restablecer Contraseña - Clínica Shaddai';
+            $this->mailer->Subject = 'Restablecer Contraseña - Shaddai Rafa';
             
             $body = $this->renderTemplate('password_reset', 'Recuperación de Cuenta', [
                 'userName' => $userName,

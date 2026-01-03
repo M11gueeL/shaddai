@@ -126,11 +126,14 @@ export default function Login() {
           {/* Tarjeta del Versículo */}
           <div className="relative p-6 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl border-t border-l border-white/20 shadow-xl">
             <p className="text-lg italic font-serif leading-relaxed text-white px-2">
-              "Y todo lo que hagáis, hacedlo de corazón, como para el Señor y no para los hombres."
+              "Jehová es mi fortaleza y mi escudo;
+                En él confió mi corazón, y fui ayudado,
+                Por lo que se gozó mi corazón,
+                Y con mi cántico le alabaré."
             </p>
             <div className="mt-4 flex items-center justify-center space-x-2">
               <div className="h-px w-6 bg-indigo-300"></div>
-              <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase">Colosenses 3:23</span>
+              <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase">Salmos 28:7</span>
               <div className="h-px w-6 bg-indigo-300"></div>
             </div>
           </div>

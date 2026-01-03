@@ -1,5 +1,5 @@
 <p>Hola <strong><?php echo $userName; ?></strong>,</p>
-<p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta en el sistema de Clínica Shaddai.</p>
+<p>Hemos recibido una solicitud para restablecer la contraseña de su cuenta en el sistema de Centro de Especialidades Médicas Shaddai Rafa.</p>
 
 <p>Si usted no realizó esta solicitud, puede ignorar este correo de forma segura.</p>
 

@@ -13,9 +13,25 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [countdown, setCountdown] = useState(null);
 
   const displayDuration = 3000;
   const fadeDuration = 500;
+
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown === 0) {
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown, navigate]);
 
   useEffect(() => {
     if (!error) return;
@@ -44,10 +60,8 @@ export default function ResetPassword() {
     setLoading(true);
     try {
       const response = await resetPassword(token, form.password);
-      setMessage(response.data.message + ". Redirigiendo...");
-      setTimeout(() => {
-        navigate("/login", { replace: true });
-      }, 3000);
+      setMessage(response.data.message);
+      setCountdown(5);
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Error al restablecer la contraseña.";
       setError(errorMsg);
@@ -171,7 +185,9 @@ export default function ResetPassword() {
 
             {message && (
               <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded-r-lg">
-                <p className="text-sm text-green-700 font-medium">{message}</p>
+                <p className="text-sm text-green-700 font-medium">
+                  {message} {countdown !== null && `Redirigiendo en ${countdown} segundos...`}
+                </p>
               </div>
             )}
 
