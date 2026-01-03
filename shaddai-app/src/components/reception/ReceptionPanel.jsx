@@ -17,7 +17,7 @@ import ReportsActions from './reports/ReportsActions';
 import ElegantHeader from '../common/ElegantHeader';
 
 // Estilos base para tarjetas para mantener simetría y consistencia
-const cardBase = "bg-white rounded-2xl shadow-sm border border-gray-100 p-6";
+const cardBase = "rounded-2xl shadow-sm border border-gray-100 p-6";
 
 export default function ReceptionPanel() {
   const [activeModal, setActiveModal] = useState(null);
@@ -109,7 +109,7 @@ export default function ReceptionPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/50 p-4 md:p-8 overflow-x-hidden">
+    <div className="min-h-screen p-4 md:p-8 overflow-x-hidden">
       <div className="max-w-[1600px] mx-auto space-y-8">
         <ElegantHeader 
             icon={Users}
