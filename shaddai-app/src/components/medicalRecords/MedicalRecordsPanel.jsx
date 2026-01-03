@@ -129,7 +129,7 @@ export default function MedicalRecordsPanel() {
         }
     };
 
-        const handleSearchByPatientId = async (patientId) => {
+    const handleSearchByPatientId = async (patientId, silent = false) => {
         if (!patientId) return;
         setLoading(true);
         try {
@@ -140,12 +140,12 @@ export default function MedicalRecordsPanel() {
                     const res = await medicalRecordsApi.getByPatientId(patientId, token);
                     setRecord(res.data);
                     setPendingPatient(null);
-                    toast.success('Historia cargada');
+                    if (!silent) toast.success('Historia cargada');
                 } catch (err) {
                     if (err?.response?.status === 404 && patient) {
                         setRecord(null);
                         setPendingPatient({ id: patient.id, full_name: patient.full_name, cedula: patient.cedula });
-                        toast.info('Este paciente no tiene historia clínica. Puedes crearla.');
+                        if (!silent) toast.info('Este paciente no tiene historia clínica. Puedes crearla.');
                     } else {
                         throw err;
                     }
@@ -154,7 +154,7 @@ export default function MedicalRecordsPanel() {
             setRecord(null);
                 setPendingPatient(null);
                 const msg = e?.response?.data?.error || 'No se encontró historia para el paciente';
-            toast.warning(msg);
+            if (!silent) toast.warning(msg);
         } finally {
             setLoading(false);
         }
@@ -202,7 +202,7 @@ export default function MedicalRecordsPanel() {
             const key = `shaddai_active_patient_id_${user.id}`;
             const savedPatientId = localStorage.getItem(key);
             if (savedPatientId && !record && !pendingPatient) {
-                handleSearchByPatientId(savedPatientId);
+                handleSearchByPatientId(savedPatientId, true);
             }
         }
     }, [token, user?.id]);
