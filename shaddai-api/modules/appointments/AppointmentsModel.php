@@ -769,5 +769,28 @@ class AppointmentsModel {
         return $this->db->query($query, $params);
     }
 
+    public function getDailyAppointmentsByDoctor($doctorId, $date) {
+        $query = "SELECT 
+            a.*,
+            p.full_name as patient_name, 
+            p.cedula as patient_cedula, 
+            p.phone as patient_phone,
+            p.email as patient_email,
+            ms.name as specialty_name,
+            ami.chief_complaint, 
+            ami.notes
+        FROM appointments a
+        INNER JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        WHERE a.doctor_id = :doctor_id 
+        AND a.appointment_date = :date
+        ORDER BY a.appointment_time ASC";
+        
+        return $this->db->query($query, [
+            ':doctor_id' => $doctorId,
+            ':date' => $date
+        ]);
+    }
     
 }

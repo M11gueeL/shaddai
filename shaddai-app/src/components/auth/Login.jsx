@@ -5,6 +5,7 @@ import ReCAPTCHA from "react-google-recaptcha";
 import { getRecaptchaSiteKey } from "../../api/authApi";
 
 export default function Login() {
+  const currentYear = new Date().getFullYear();
   const { login, loading } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
@@ -298,7 +299,7 @@ export default function Login() {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-400 font-medium">
-              © 2025 Centro de Especialidades Médicas Shaddai Rafa.
+              © {currentYear} Centro de Especialidades Médicas Shaddai Rafa.
             </p>
             <p className="text-xs text-gray-400 font-medium">
               Todos los derechos reservados.

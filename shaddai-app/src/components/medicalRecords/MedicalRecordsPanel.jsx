@@ -6,6 +6,7 @@ import medicalRecordsApi from '../../api/medicalRecords';
 import userApi from '../../api/userApi';
 import PatientsApi from '../../api/PatientsApi';
 import MedicalRecordWelcome from './MedicalRecordWelcome';
+import DailyAppointmentsDashboard from './DailyAppointmentsDashboard';
 import SearchPatientBar from './SearchPatientBar';
 import RecordHeader from './RecordHeader';
 import EncountersList from './encounters/EncountersList';
@@ -407,7 +408,7 @@ export default function MedicalRecordsPanel() {
                     </div>
                 ) : (
                     <div className="mt-8">
-                        <MedicalRecordWelcome />
+                        <DailyAppointmentsDashboard onSelectPatient={handleSearchByPatientId} />
                     </div>
                 )}
 

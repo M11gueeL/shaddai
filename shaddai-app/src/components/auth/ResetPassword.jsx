@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { resetPassword } from "../../api/authApi";
 
 export default function ResetPassword() {
+  const currentYear = new Date().getFullYear();
   const { token } = useParams();
   const navigate = useNavigate();
 
@@ -193,7 +194,7 @@ export default function ResetPassword() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-400 font-medium">© 2025 Centro de Especialidades Médicas Shaddai Rafa.</p>
+            <p className="text-xs text-gray-400 font-medium">© {currentYear} Centro de Especialidades Médicas Shaddai Rafa.</p>
             <p className="text-xs text-gray-400 font-medium">
               Todos los derechos reservados.
             </p>

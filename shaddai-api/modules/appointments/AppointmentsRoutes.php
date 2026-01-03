@@ -13,6 +13,10 @@ class AppointmentsRoutes {
         $router->add('GET', 'appointments/report/patient-export', [$controller, 'exportPatientReport'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/report/doctor-export', [$controller, 'exportDoctorReport'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/report/specialty-export', [$controller, 'exportSpecialtyReport'], ['auth', 'role:admin,recepcionista']);
+        
+        // "Mis consultas del día"
+        $router->add('GET', 'appointments/my-daily', [$controller, 'getMyDailyAppointments'], ['auth', 'role:admin,medico']);
+
         $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);
         
         $router->add('GET', 'appointments/today', [$controller, 'getTodaysAppointments'], ['auth', 'role:admin,recepcionista']);

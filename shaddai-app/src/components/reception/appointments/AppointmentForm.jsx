@@ -196,14 +196,13 @@ const AppointmentForm = ({ onClose }) => {
     setIsLoading(true);
     try {
         const token = getToken();
-        
-        // 👈 ASEGURAR QUE STATUS ESTÉ EN LOS DATOS
+
         const dataToSend = {
         ...formData,
-        status: formData.status || 'programada' // 👈 FALLBACK
+        status: formData.status || 'programada' // FALLBACK
         };
         
-        console.log('Data being sent:', dataToSend); // 👈 DEBUG
+        console.log('Data being sent:', dataToSend); // DEBUG
         // Verificar contra horarios preferidos del médico
         const outside = await checkOutsidePreferred();
         if (outside) {
@@ -226,7 +225,7 @@ const AppointmentForm = ({ onClose }) => {
         
     } catch (error) {
         console.error('Error creating appointment:', error);
-        // 👈 MOSTRAR MÁS DETALLES DEL ERROR
+        // MOSTRAR MÁS DETALLES DEL ERROR
         const errorMessage = error.response?.data?.error || error.message || 'Error al crear la cita';
         console.log('Full error response:', error.response?.data);
     toast.error(errorMessage);
@@ -269,7 +268,7 @@ const AppointmentForm = ({ onClose }) => {
         </button>
       </div>
 
-      {/* 👈 FORM QUE INCLUYE TODO, INCLUYENDO LOS BOTONES */}
+      {/* FORM QUE INCLUYE TODO, INCLUYENDO LOS BOTONES */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Contenido scrolleable */}
         <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-6">
@@ -377,8 +376,8 @@ const AppointmentForm = ({ onClose }) => {
                   }
                 }}
                 min={getMinTime()}
-                start="08:00"
-                end="19:00"
+                start="06:00"
+                end="22:00"
                 step={15}
                 error={errors.appointment_time}
               />

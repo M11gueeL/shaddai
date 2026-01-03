@@ -51,6 +51,16 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport, onEd
     return parts.map(p => p[0]?.toUpperCase()).join('');
   }, [patient?.full_name, record?.patient_name]);
 
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    // Handle YYYY-MM-DD manually to avoid timezone issues
+    if (dateString.includes('-')) {
+        const [year, month, day] = dateString.split('T')[0].split('-');
+        return `${day}/${month}/${year}`;
+    }
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div className="bg-white rounded-3xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border border-slate-100 p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
@@ -118,7 +128,7 @@ export default function RecordHeader({ record, onNewEncounter, onNewReport, onEd
       {/* Patient Details Grid */}
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <InfoChip icon={Calendar} label="Edad" value={age != null ? `${age} años` : null} />
-        <InfoChip icon={Calendar} label="Nacimiento" value={patient?.birth_date ? new Date(patient.birth_date).toLocaleDateString() : null} />
+        <InfoChip icon={Calendar} label="Nacimiento" value={formatDate(patient?.birth_date)} />
         <InfoChip icon={User2} label="Sexo" value={patient?.gender} />
         <InfoChip icon={Phone} label="Teléfono" value={patient?.phone} />
         <InfoChip icon={Mail} label="Email" value={patient?.email} />

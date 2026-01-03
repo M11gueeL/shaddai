@@ -371,6 +371,32 @@ class AppointmentsController {
         }
     }
 
+    public function getMyDailyAppointments() {
+        try {
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$jwtPayload || !isset($jwtPayload->sub)) {
+                throw new Exception('Usuario no autenticado');
+            }
+
+            $doctorId = $jwtPayload->sub;
+            $date = date('Y-m-d'); // Hoy
+
+            $appointments = $this->model->getDailyAppointmentsByDoctor($doctorId, $date);
+            
+            echo json_encode([
+                'date' => $date,
+                'doctor_id' => $doctorId,
+                'count' => count($appointments),
+                'appointments' => $appointments
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     private function validateAppointmentData($data, $isUpdate = false) {
         if (empty($data['patient_id'])) {
             throw new Exception('El ID del paciente es requerido');

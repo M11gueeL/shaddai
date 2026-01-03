@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { requestPasswordReset } from "../../api/authApi";
 
 export default function ForgotPassword() {
+  const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState("");
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
@@ -162,7 +163,7 @@ export default function ForgotPassword() {
           </div>
 
           <div className="mt-6 text-center border-t border-gray-100 pt-6">
-            <p className="text-xs text-gray-400 font-medium">© 2025 Centro de Especialidades Médicas Shaddai Rafa.</p>
+            <p className="text-xs text-gray-400 font-medium">© {currentYear} Centro de Especialidades Médicas Shaddai Rafa.</p>
             <p className="text-xs text-gray-400 font-medium ">
               Todos los derechos reservados.
             </p>

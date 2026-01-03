@@ -49,6 +49,9 @@ export default {
     params: availabilityData
   }),
   
+  // Obtener mis citas del día (para el médico logueado)
+  getMyDaily: (token) => axios.get(`${API_URL}/appointments/my-daily`, getAuthHeaders(token)),
+
   // Validar slot específico
   validateSlot: (slotData, token) => axios.post(`${API_URL}/appointments/validate-slot`, slotData, getAuthHeaders(token))
   ,
@@ -97,4 +100,7 @@ export default {
     params,
     responseType: 'blob'
   }),
+
+  // Obtener mis citas del día (para el médico logueado)
+  getMyDaily: (token) => axios.get(`${API_URL}/appointments/my-daily`, getAuthHeaders(token)),
 };
