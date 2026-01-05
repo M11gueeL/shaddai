@@ -3,6 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import * as ratesApi from '../../api/rates';
 import * as cashApi from '../../api/cashregister';
 import { useAuth } from '../../context/AuthContext';
+import { 
+  TrendingUp, 
+  Wallet, 
+  CreditCard, 
+  Plus, 
+  ArrowRight,
+  DollarSign,
+  Calendar,
+  AlertCircle
+} from 'lucide-react';
 
 export default function PaymentHome(){
   const { token } = useAuth();
@@ -17,82 +27,152 @@ export default function PaymentHome(){
     })();
   },[token]);
 
-  const rateText = rate ? `Hoy ${Number(rate.rate_bcv).toFixed(2)} Bs/USD` : 'Sin tasa registrada';
+  const rateValue = rate ? Number(rate.rate_bcv).toFixed(2) : '--';
   const cashOpen = cash?.status === 'open';
 
   return (
-    <div className="p-4 sm:p-6">
-      {/* Tarjetas principales */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FeatureCard
-          tone="sky"
-          icon={<span>💱</span>}
-          title="Tasa del día"
-          description={rateText}
-          action={{ label: rate ? 'Gestionar tasa' : 'Registrar tasa', onClick: ()=>navigate('/payment/rate') }}
+    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+      
+      {/* Hero Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="Tasa del Día"
+          value={`${rateValue} Bs`}
+          subtitle={rate ? `Actualizado: ${rate.rate_date}` : 'Sin tasa registrada'}
+          icon={TrendingUp}
+          color="indigo"
+          action={{ label: rate ? 'Ver Historial' : 'Registrar', onClick: () => navigate('/payment/rate') }}
+          alert={!rate}
         />
-        <FeatureCard
-          tone={cashOpen ? 'emerald' : 'amber'}
-          icon={<span>🧾</span>}
-          title="Caja"
-          statusPill={cashOpen ? 'Abierta' : 'Cerrada'}
-          description={cashOpen ? 'Sesión de caja abierta' : 'No hay sesión abierta'}
-          action={{ label: cashOpen ? 'Gestionar caja' : 'Abrir caja', onClick: ()=>navigate('/payment/cash') }}
+        
+        <StatCard
+          title="Estado de Caja"
+          value={cashOpen ? 'Abierta' : 'Cerrada'}
+          subtitle={cashOpen ? 'Sesión activa' : 'Requiere apertura'}
+          icon={Wallet}
+          color={cashOpen ? 'emerald' : 'rose'}
+          action={{ label: cashOpen ? 'Gestionar' : 'Abrir Turno', onClick: () => navigate('/payment/cash') }}
         />
-        <FeatureCard
-          tone="indigo"
-          icon={<span>💳</span>}
-          title="Cuentas y pagos"
-          description="Crea cuentas, agrega servicios y registra pagos"
-          action={{ label: 'Ir a cuentas', onClick: ()=>navigate('/payment/accounts') }}
+
+        <StatCard
+          title="Gestión de Cuentas"
+          value="Pagos"
+          subtitle="Cobros y facturación"
+          icon={CreditCard}
+          color="sky"
+          action={{ label: 'Ir a Cuentas', onClick: () => navigate('/payment/accounts') }}
         />
       </div>
 
-      {/* Atajos rápidos */}
-      <div className="mt-6">
-        <div className="rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-3 flex flex-wrap gap-2">
-          <QuickAction label="Abrir caja" onClick={()=>navigate('/payment/cash')} icon={<span>⚡</span>} />
-          <QuickAction label="Registrar tasa" onClick={()=>navigate('/payment/rate')} icon={<span>📈</span>} />
-          <QuickAction label="Nueva cuenta" onClick={()=>navigate('/payment/accounts')} icon={<span>➕</span>} />
+      {/* Quick Actions Grid */}
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <span className="w-1.5 h-6 rounded-full bg-gray-900" />
+          Acciones Rápidas
+        </h3>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <ActionTile 
+            title="Abrir Caja" 
+            desc="Iniciar sesión de cobro"
+            icon={Wallet} 
+            onClick={()=>navigate('/payment/cash')} 
+            delay={100}
+          />
+          <ActionTile 
+            title="Registrar Tasa" 
+            desc="Actualizar valor del dólar"
+            icon={TrendingUp} 
+            onClick={()=>navigate('/payment/rate')} 
+            delay={200}
+          />
+          <ActionTile 
+            title="Nueva Cuenta" 
+            desc="Crear cuenta para paciente"
+            icon={Plus} 
+            onClick={()=>navigate('/payment/accounts')} 
+            variant="primary"
+            delay={300}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function FeatureCard({ tone='sky', icon, title, description, action, statusPill }){
-  const colorMap = {
-    sky:   { ring: 'ring-sky-200',   dot: 'from-sky-500 to-cyan-400',    iconBg: 'bg-sky-50',    text: 'text-sky-700' },
-    emerald:{ ring: 'ring-emerald-200', dot: 'from-emerald-500 to-teal-400', iconBg: 'bg-emerald-50', text: 'text-emerald-700' },
-    amber: { ring: 'ring-amber-200', dot: 'from-amber-500 to-orange-400',  iconBg: 'bg-amber-50', text: 'text-amber-700' },
-    indigo:{ ring: 'ring-indigo-200', dot: 'from-indigo-500 to-violet-500', iconBg: 'bg-indigo-50', text: 'text-indigo-700' },
+function StatCard({ title, value, subtitle, icon: Icon, color, action, alert }) {
+  const colorStyles = {
+    indigo: 'bg-indigo-50 text-indigo-600 ring-indigo-100 group-hover:ring-indigo-200',
+    emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-100 group-hover:ring-emerald-200',
+    rose: 'bg-rose-50 text-rose-600 ring-rose-100 group-hover:ring-rose-200',
+    sky: 'bg-sky-50 text-sky-600 ring-sky-100 group-hover:ring-sky-200',
   };
-  const c = colorMap[tone] || colorMap.sky;
+  
+  const c = colorStyles[color] || colorStyles.indigo;
+
   return (
-    <div className={`relative rounded-2xl border border-gray-200 bg-white/70 backdrop-blur p-5 shadow-sm ring-1 ${c.ring}`}>
-      <span className={`absolute left-0 top-5 h-8 w-1.5 rounded-full bg-gradient-to-b ${c.dot}`} />
-      <div className="pl-4 flex items-start gap-3">
-        <div className={`h-10 w-10 ${c.iconBg} rounded-xl grid place-content-center text-lg`}>{icon}</div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="text-base font-semibold text-gray-900">{title}</div>
-            {statusPill && (<span className="px-2 py-0.5 rounded-full text-[10px] bg-gray-900 text-white">{statusPill}</span>)}
-          </div>
-          <div className="text-sm text-gray-700 mt-0.5 truncate" title={typeof description==='string'?description:undefined}>{description}</div>
-          <div className="mt-3">
-            <button onClick={action?.onClick} className="px-3 py-2 rounded-lg bg-gray-900 text-white text-sm hover:shadow">{action?.label}</button>
-          </div>
+    <div className={`
+      relative group bg-white p-6 rounded-3xl border border-gray-100 shadow-sm 
+      hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300
+    `}>
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-3 rounded-2xl ${c} transition-colors`}>
+          <Icon className="w-6 h-6" />
         </div>
+        {alert && (
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-100">
+            <AlertCircle className="w-3 h-3" />
+            Requerido
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-1">
+        <h3 className="text-gray-500 font-medium text-sm">{title}</h3>
+        <div className="text-2xl font-bold text-gray-900 tracking-tight">{value}</div>
+        <p className="text-sm text-gray-400 font-medium">{subtitle}</p>
+      </div>
+
+      <div className="mt-6 pt-4 border-t border-gray-50">
+        <button 
+          onClick={action.onClick}
+          className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 hover:text-indigo-600 group-hover:px-2 transition-all"
+        >
+          {action.label}
+          <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-600 transition-colors" />
+        </button>
       </div>
     </div>
   );
 }
 
-function QuickAction({ label, onClick, icon }){
+function ActionTile({ title, desc, icon: Icon, onClick, variant = 'default', delay = 0 }) {
+  const isPrimary = variant === 'primary';
   return (
-    <button onClick={onClick} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm">
-      <span>{icon}</span>
-      <span>{label}</span>
+    <button 
+      onClick={onClick}
+      className={`
+        flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 group text-left
+        ${isPrimary 
+          ? 'bg-gray-900 border-gray-900 text-white hover:bg-gray-800 shadow-lg shadow-gray-900/20' 
+          : 'bg-white border-gray-100 text-gray-900 hover:border-gray-300 hover:shadow-md'
+        }
+      `}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className={`
+        p-3 rounded-xl transition-transform duration-300 group-hover:scale-110
+        ${isPrimary ? 'bg-white/10 text-white' : 'bg-gray-50 text-gray-600 group-hover:bg-gray-100'}
+      `}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div>
+        <div className="font-semibold text-sm">{title}</div>
+        <div className={`text-xs mt-0.5 ${isPrimary ? 'text-gray-300' : 'text-gray-500'}`}>{desc}</div>
+      </div>
+      <div className={`ml-auto opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all ${isPrimary ? 'text-white' : 'text-gray-400'}`}>
+        <ArrowRight className="w-4 h-4" />
+      </div>
     </button>
   );
 }

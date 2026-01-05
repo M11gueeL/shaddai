@@ -3,15 +3,31 @@ import * as cashApi from '../../api/cashregister';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { 
+  Wallet, 
+  RefreshCw, 
+  ArrowUpCircle, 
+  ArrowDownCircle, 
+  MinusCircle, 
+  PlusCircle, 
+  Info,
+  History,
+  Lock,
+  Unlock,
+  User,
+  Clock,
+  CircleDollarSign,
+  X
+} from 'lucide-react';
 
 function StatusBadge({ status }){
   const map = {
-    open: { label: 'Abierta', cls: 'bg-emerald-100 text-emerald-700' },
-    closed: { label: 'Cerrada', cls: 'bg-gray-100 text-gray-700' },
-    no_open_session: { label: 'Sin sesión abierta', cls: 'bg-gray-100 text-gray-700' }
+    open: { label: 'Abierta', cls: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' },
+    closed: { label: 'Cerrada', cls: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200' },
+    no_open_session: { label: 'Sin sesión', cls: 'bg-gray-50 text-gray-700 ring-1 ring-gray-200' }
   };
   const m = map[status] || { label: status, cls: 'bg-gray-100 text-gray-700' };
-  return <span className={`px-2 py-1 rounded text-xs ${m.cls}`}>{m.label}</span>;
+  return <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${m.cls}`}>{m.label}</span>;
 }
 
 export default function CashManager(){
@@ -55,7 +71,6 @@ export default function CashManager(){
   useEffect(()=>{ load(); /* eslint-disable-next-line */ },[]);
 
   const openSession = async()=>{
-    // open small modal to collect optional data
     setOpenModal(true);
   };
 
@@ -64,235 +79,386 @@ export default function CashManager(){
     const payload = {};
     const bs = parseFloat(openingBs);
     const usd = parseFloat(openingUsd);
-    // Backend expects start_balance_bs / start_balance_usd
+    
     if(!isNaN(bs) && bs>0) payload.start_balance_bs = bs;
     if(!isNaN(usd) && usd>0) payload.start_balance_usd = usd;
-    // notes en apertura no está soportado actualmente
-
-    const ok = await confirm({ title: 'Abrir caja', message: 'Se abrirá la caja con los valores indicados. ¿Continuar?', tone: 'info', confirmText: 'Abrir', cancelText: 'Cancelar' });
+    
+    const ok = await confirm({ title: 'Confirmar Apertura', message: 'Se iniciará una nueva sesión de caja con los valores indicados. ¿Desea continuar?', tone: 'info', confirmText: 'Abrir Caja', cancelText: 'Cancelar' });
     if(!ok) return;
     try{
       await cashApi.openSession(payload, token);
-      toast.success('Caja abierta');
+      toast.success('Sesión de caja iniciada');
       setOpenModal(false); setOpeningBs(''); setOpeningUsd(''); setNote('');
       load();
-    }catch(e){ toast.error(e?.response?.data?.error || 'No se pudo abrir'); }
+    }catch(e){ toast.error(e?.response?.data?.error || 'Error al abrir caja'); }
   };
 
   const closeSession = async()=>{
-    const ok = await confirm({ title: 'Cerrar caja', message: 'Se cerrará la caja actual. Puedes abrir una nueva más tarde.', tone: 'warning', confirmText: 'Cerrar', cancelText: 'Cancelar' });
+    const ok = await confirm({ title: 'Cerrar Caja', message: 'Esta acción finalizará la sesión actual. Se recomienda verificar el saldo antes de cerrar.', tone: 'warning', confirmText: 'Cerrar Sesión', cancelText: 'Cancelar' });
     if(!ok) return;
     try{
-  await cashApi.closeSession({}, token);
-      toast.success('Caja cerrada');
+      await cashApi.closeSession({}, token);
+      toast.success('Sesión cerrada correctamente');
       load();
-    }catch(e){ toast.error(e?.response?.data?.error || 'No se pudo cerrar'); }
+    }catch(e){ toast.error(e?.response?.data?.error || 'Error al cerrar caja'); }
   };
 
-
   return (
-    <div className="p-4 sm:p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">Caja</h2>
-          <p className="text-sm text-gray-600">Gestiona la sesión y revisa los movimientos del día.</p>
+    <div className="space-y-6 max-w-7xl mx-auto py-6">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-gray-900 rounded-xl text-white">
+            <Wallet className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Control de Caja</h2>
+            <p className="text-sm text-gray-500">Gestión de turnos y supervisión de flujo de efectivo</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+           <button 
+             onClick={load} 
+             className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-900 transition-colors"
+             title="Actualizar datos"
+           >
+             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+           </button>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        {/* Panel de sesión - rediseñado */}
-        <div className="lg:col-span-1 rounded-2xl overflow-hidden border border-gray-200 shadow-sm bg-white">
-          <div className="p-5 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 text-white">
-            <div className="flex items-center justify-between">
-              <div className="text-sm opacity-80">Sesión de caja</div>
-              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${status==='open' ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40' : 'bg-slate-500/20 text-slate-300 ring-1 ring-slate-400/40'}`}>{status==='open'?'Abierta':'Cerrada'}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Left Column: Session Card */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="relative overflow-hidden rounded-[2rem] bg-white border border-gray-100 shadow-xl shadow-gray-200/50">
+            {/* Ambient Background */}
+            <div className={`absolute inset-0 opacity-10 ${status === 'open' ? 'bg-emerald-500' : 'bg-gray-500'}`} />
+            
+            <div className="relative p-6">
+              <div className="flex justify-between items-start mb-6">
+                <StatusBadge status={status} />
+                {status === 'open' ? (
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                ) : (
+                   <div className="w-2 h-2 rounded-full bg-gray-300" />
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {loading ? (
+                   <div className="space-y-3 animate-pulse">
+                     <div className="h-4 bg-gray-100 rounded w-1/2" />
+                     <div className="h-8 bg-gray-100 rounded w-3/4" />
+                     <div className="h-4 bg-gray-100 rounded w-1/3" />
+                   </div>
+                ) : (
+                   <>
+                     <div className="flex items-center gap-3">
+                       <div className="p-2 bg-white/50 backdrop-blur rounded-lg">
+                         <User className="w-5 h-5 text-gray-700" />
+                       </div>
+                       <div>
+                         <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Responsable</div>
+                         <div className="font-semibold text-gray-900 truncate max-w-[200px]">
+                           {status === 'open' 
+                             ? [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.email 
+                             : '---'
+                           }
+                         </div>
+                       </div>
+                     </div>
+
+                     <div className="flex items-center gap-3">
+                       <div className="p-2 bg-white/50 backdrop-blur rounded-lg">
+                         <Clock className="w-5 h-5 text-gray-700" />
+                       </div>
+                       <div>
+                         <div className="text-xs text-gray-500 font-medium uppercase tracking-wide">Apertura</div>
+                         <div className="font-semibold text-gray-900">
+                           {formatDateTime(session?.opened_at || session?.start_time)}
+                         </div>
+                       </div>
+                     </div>
+                   </>
+                )}
+              </div>
+              
+              <div className="mt-8 pt-6 border-t border-gray-100/50">
+                 {status !== 'open' ? (
+                   <div className="space-y-4">
+                     <p className="text-sm text-gray-500">Inicia una nueva sesión para comenzar a registrar operaciones.</p>
+                     
+                     {/* Mini inputs for quick open */}
+                     <div className="grid grid-cols-2 gap-3">
+                       <div className="space-y-1">
+                         <label className="text-[10px] uppercase font-bold text-gray-400">USD Inicial</label>
+                         <input 
+                           type="number" 
+                           placeholder="0.00" 
+                           value={openingUsd} 
+                           onChange={(e)=>setOpeningUsd(e.target.value)}
+                           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                         />
+                       </div>
+                       <div className="space-y-1">
+                         <label className="text-[10px] uppercase font-bold text-gray-400">Bs Inicial</label>
+                         <input 
+                           type="number" 
+                           placeholder="0.00" 
+                           value={openingBs} 
+                           onChange={(e)=>setOpeningBs(e.target.value)}
+                           className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                         />
+                       </div>
+                     </div>
+
+                     <button 
+                       onClick={submitOpen}
+                       className="w-full py-3 bg-gray-900 text-white rounded-xl font-medium shadow-lg shadow-gray-900/10 hover:bg-gray-800 hover:shadow-xl hover:-translate-y-0.5 transition-all flex justify-center items-center gap-2"
+                     >
+                       <Unlock className="w-4 h-4" />
+                       Abrir Caja
+                     </button>
+                   </div>
+                 ) : (
+                   <button 
+                     onClick={closeSession}
+                     className="w-full py-3 bg-white border border-gray-200 text-red-600 rounded-xl font-medium hover:bg-red-50 hover:border-red-100 transition-all flex justify-center items-center gap-2"
+                   >
+                     <Lock className="w-4 h-4" />
+                     Cerrar Turno
+                   </button>
+                 )}
+              </div>
             </div>
-            {loading ? (
-              <div className="mt-3 h-16 bg-white/10 rounded animate-pulse" />
-            ) : (
-              (()=>{
-                const d = deriveSessionMetrics(session, movs);
-                const displayName = [user?.first_name || user?.firstName, user?.last_name || user?.lastName].filter(Boolean).join(' ') || user?.name || user?.email || (session?.user_id ? `ID ${session.user_id}` : '-');
-                return (
-                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                    <div className="text-white/80">Usuario</div>
-                    <div className="text-white font-medium text-right" title={displayName}>{displayName}</div>
-                    <div className="text-white/80">Inicio</div>
-                    <div className="text-white font-medium text-right">{d.openedAt ? formatDateTime(d.openedAt) : '-'}</div>
-                  </div>
-                );
-              })()
-            )}
-          </div>
-          <div className="p-4">
-            {status !== 'open' ? (
-              <div className="space-y-2">
-                <div className="text-sm text-gray-600">Abrir sesión</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" step="0.01" placeholder="USD inicial" value={openingUsd} onChange={(e)=>setOpeningUsd(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
-                  <input type="number" step="0.01" placeholder="Bs inicial" value={openingBs} onChange={(e)=>setOpeningBs(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
-                </div>
-                <div className="flex justify-end">
-                  <button onClick={submitOpen} className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm shadow-sm hover:shadow">Abrir caja</button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-sm text-gray-700">Cerrar sesión</div>
-                <div className="flex justify-end">
-                  <button onClick={closeSession} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm shadow-sm hover:shadow">Cerrar caja</button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Panel de resumen y movimientos */}
-        <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <h3 className="font-medium">Resumen de sesión</h3>
-          </div>
-          <SummaryBar session={session} movs={movs} />
-          <p className="text-xs text-gray-600 mt-1">Movimientos: suma neta de ingresos/egresos del día (sin contar apertura ni cierre). Saldo estimado = Apertura + Movimientos.</p>
+        {/* Right Column: Stats & Movements */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Stats Grid */}
+          <SummaryCards session={session} movs={movs} />
 
-          <div className="mt-4 flex items-center justify-between">
-            <h3 className="font-medium">Movimientos</h3>
-            <button onClick={load} className="text-xs px-2 py-1 rounded-lg border bg-white hover:bg-gray-50">Refrescar</button>
-          </div>
-          <div className="mt-3 max-h-80 overflow-y-auto pr-1">
-            {movs.length === 0 ? (
-              <div className="py-8 text-sm text-gray-500 text-center">Sin movimientos</div>
-            ) : (
-              <ul className="space-y-3">
-                {movs.map(m => (
-                  <li key={m.id} className="relative pl-6">
-                    <span className={`absolute left-0 top-2 w-3 h-3 rounded-full ring-4 ring-white ${dotByType(m.movement_type)}`}></span>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-xs text-gray-500 font-medium">{formatDateTime(m.created_at)}</div>
-                        <div className="text-sm text-gray-800 font-semibold">{mapMovementType(m.movement_type)}</div>
-                        <div className="text-sm text-gray-700">{m.description}</div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <div className="text-xs text-gray-600">Bs {Number(m.currency==='BS'?m.amount:0).toFixed(2)}</div>
-                        <div className="text-xs text-gray-600">USD {Number(m.currency==='USD'?m.amount:0).toFixed(2)}</div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+          {/* Movements List */}
+          <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[500px]">
+            <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white sticky top-0 z-10">
+              <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                <History className="w-5 h-5 text-gray-400" />
+                Historial de Movimientos
+              </h3>
+              <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
+                {movs.length} registros
+              </span>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4 scroll-smooth">
+              {movs.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-4">
+                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                    <CircleDollarSign className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-sm font-medium">No se han registrado movimientos en esta sesión</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {movs.map((m, i) => (
+                    <MovementItem key={m.id || i} movement={m} />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-
+      
+      {/* Modal is effectively replaced by inline form, but keeping logic just in case user uses the separate button later */}
       {openModal && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/50" onClick={()=>setOpenModal(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-6">
-            <div className="flex items-start gap-3">
-              <div className="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700">Abrir caja</div>
-              <button onClick={()=>setOpenModal(false)} className="ml-auto p-1 rounded hover:bg-black/5">
-                <span className="text-gray-500">✕</span>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-gray-900/20 transition-all">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-gray-900">Apertura Manual</h3>
+              <button onClick={()=>setOpenModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <form onSubmit={submitOpen} className="mt-3 space-y-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Monto inicial Bs (opcional)</label>
-                <input type="number" step="0.01" min="0" value={openingBs} onChange={(e)=>setOpeningBs(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0.00" />
+            
+            <form onSubmit={submitOpen} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Base Bs</label>
+                  <input type="number" step="0.01" value={openingBs} onChange={(e)=>setOpeningBs(e.target.value)} className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all" placeholder="0.00" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Base USD</label>
+                  <input type="number" step="0.01" value={openingUsd} onChange={(e)=>setOpeningUsd(e.target.value)} className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all" placeholder="0.00" />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Monto inicial USD (opcional)</label>
-                <input type="number" step="0.01" min="0" value={openingUsd} onChange={(e)=>setOpeningUsd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="0.00" />
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase">Notas</label>
+                <textarea rows={3} value={note} onChange={(e)=>setNote(e.target.value)} className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all resize-none" placeholder="Observaciones de apertura..." />
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Nota (opcional)</label>
-                <textarea value={note} onChange={(e)=>setNote(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Observaciones" />
-              </div>
-              <div className="flex justify-end gap-2 pt-1">
-                <button type="button" onClick={()=>setOpenModal(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
-                <button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Abrir</button>
+
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={()=>setOpenModal(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">Cancelar</button>
+                <button type="submit" className="flex-1 py-3 bg-gray-900 text-white font-medium rounded-xl shadow-lg hover:bg-gray-800 hover:shadow-xl transition-all">Confirmar</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
 
-function formatDateTime(dt){
-  if(!dt) return '';
+function SummaryCards({ session, movs }){
+  const d = deriveSessionMetrics(session, movs);
+  
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <StatBox label="Fondo Inicial" valueBs={d.openingBs} valueUsd={d.openingUsd} icon={Wallet} tone="gray" />
+      <StatBox label="Actividad Neta" valueBs={d.sumBs} valueUsd={d.sumUsd} icon={ActivityIcon} tone="blue" />
+      <StatBox label="Saldo en Caja" valueBs={d.balanceBs} valueUsd={d.balanceUsd} icon={CircleDollarSign} tone="emerald" highlight />
+    </div>
+  );
+}
+
+function StatBox({ label, valueBs, valueUsd, icon: Icon, tone, highlight }){
+  const tones = {
+    gray: 'bg-gray-50 text-gray-600',
+    blue: 'bg-blue-50 text-blue-600',
+    emerald: 'bg-emerald-50 text-emerald-600'
+  };
+  const t = tones[tone] || tones.gray;
+
+  return (
+    <div className={`p-4 rounded-2xl border transition-all duration-300 ${highlight ? 'bg-gray-900 border-gray-900 text-white shadow-lg transform hover:-translate-y-1' : 'bg-white border-gray-100 text-gray-900 hover:shadow-md'}`}>
+      <div className="flex items-center gap-2 mb-3 opacity-80">
+        <Icon className={`w-4 h-4 ${highlight ? 'text-white' : ''}`} />
+        <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
+      </div>
+      <div className="space-y-1">
+        <div className={`text-lg font-bold ${highlight ? 'text-white' : 'text-gray-900'}`}>
+          <span className="text-xs font-normal opacity-60 mr-1">Bs</span>
+          {valueBs.toFixed(2)}
+        </div>
+        <div className={`text-sm font-medium ${highlight ? 'text-white/80' : 'text-gray-500'}`}>
+          <span className="text-xs font-normal opacity-60 mr-1">USD</span>
+          {valueUsd.toFixed(2)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MovementItem({ movement }){
+  const isPositive = ['payment_in', 'adjustment_in', 'initial_balance'].includes(movement.movement_type);
+  const isNeutral = movement.movement_type === 'initial_balance';
+  
+  const Icon = isNeutral ? Info : (isPositive ? ArrowDownCircle : ArrowUpCircle); // In is down (into box), Out is up (out of box) - metaphorically
+  
+  // Color logic
+  const colors = {
+    payment_in: 'text-emerald-500 bg-emerald-50',
+    expense_out: 'text-rose-500 bg-rose-50',
+    adjustment_in: 'text-indigo-500 bg-indigo-50',
+    adjustment_out: 'text-orange-500 bg-orange-50',
+    initial_balance: 'text-sky-500 bg-sky-50'
+  };
+  const c = colors[movement.movement_type] || 'text-gray-500 bg-gray-50';
+
+  return (
+    <div className="group flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all">
+      <div className={`p-3 rounded-full ${c} shrink-0`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start">
+          <h4 className="font-semibold text-gray-900 text-sm truncate pr-2">{movement.movement_type === 'payment_in' ? 'Pago Recibido' : mapMovementType(movement.movement_type)}</h4>
+          <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
+            {formatDateTime(movement.created_at, true)}
+          </span>
+        </div>
+        <p className="text-sm text-gray-500 truncate">{movement.description || 'Sin descripción'}</p>
+      </div>
+
+      <div className="text-right shrink-0">
+        <div className={`font-bold text-sm ${isPositive ? 'text-emerald-600' : 'text-gray-900'}`}>
+          {isPositive ? '+' : '-'} {Number(movement.amount).toFixed(2)} <span className="text-[10px] text-gray-400 font-normal">{movement.currency}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helpers
+function ActivityIcon(props) {
+  return (
+    <svg 
+      {...props} 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+    </svg>
+  )
+}
+
+function formatDateTime(dt, timeOnly = false){
+  if(!dt) return '---';
   try{
     const norm = typeof dt === 'string' && dt.includes(' ') && !dt.includes('T') ? dt.replace(' ', 'T') : dt;
     const d = new Date(norm);
     if(Number.isNaN(d.getTime())) return dt;
-    return d.toLocaleString('es-VE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
+    if(timeOnly) return d.toLocaleTimeString('es-VE', {hour: '2-digit', minute:'2-digit'});
+    return d.toLocaleString('es-VE', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit' });
   }catch{ return dt; }
-}
-
-function deriveSessionMetrics(session, movs){
-  // Apertura desde la sesión
-  const openingBs = Number(session?.start_balance_bs ?? 0);
-  const openingUsd = Number(session?.start_balance_usd ?? 0);
-
-  // Sumar movimientos netos por moneda (excluyendo 'initial_balance')
-  const sums = (movs||[]).reduce((acc,m)=>{
-    if(m?.movement_type === 'initial_balance') return acc; // ya está incluido como apertura
-    const sign = (m?.movement_type === 'payment_in' || m?.movement_type === 'adjustment_in') ? 1
-                : (m?.movement_type === 'expense_out' || m?.movement_type === 'adjustment_out') ? -1
-                : 0;
-    if(m?.currency === 'BS') acc.bs += sign * Number(m.amount || 0);
-    if(m?.currency === 'USD') acc.usd += sign * Number(m.amount || 0);
-    return acc;
-  },{ bs:0, usd:0 });
-
-  const balanceBs = openingBs + sums.bs;
-  const balanceUsd = openingUsd + sums.usd;
-
-  const openedAt = session?.opened_at || session?.start_time || null;
-
-  return { openingBs, openingUsd, sumBs: sums.bs, sumUsd: sums.usd, balanceBs, balanceUsd, openedAt };
-}
-
-function SummaryBar({ session, movs }){
-  const d = deriveSessionMetrics(session, movs);
-  const items = [
-    { label: 'Apertura', value: `Bs ${d.openingBs.toFixed(2)} · USD ${d.openingUsd.toFixed(2)}` },
-    { label: 'Movimientos', value: `Bs ${d.sumBs.toFixed(2)} · USD ${d.sumUsd.toFixed(2)}` },
-    { label: 'Saldo estimado', value: `Bs ${d.balanceBs.toFixed(2)} · USD ${d.balanceUsd.toFixed(2)}` },
-    { label: 'Cantidad de movs', value: String(movs.length) },
-  ];
-  return (
-    <div className="mb-3 grid grid-cols-2 md:grid-cols-4 gap-2">
-      {items.map((it,i)=>(
-        <div key={i} className="rounded-xl border border-gray-200 bg-gray-50 p-3">
-          <div className="text-xs text-gray-600">{it.label}</div>
-          <div className="text-sm font-medium text-gray-900">{it.value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function dotByType(t){
-  switch(t){
-    case 'payment_in': return 'bg-emerald-500';
-    case 'expense_out': return 'bg-rose-500';
-    case 'adjustment_in': return 'bg-indigo-500';
-    case 'adjustment_out': return 'bg-orange-500';
-    case 'initial_balance': return 'bg-sky-500';
-    default: return 'bg-gray-400';
-  }
 }
 
 function mapMovementType(t){
   const map = {
-    payment_in: 'Ingreso (pago)',
+    payment_in: 'Ingreso',
     expense_out: 'Egreso',
     adjustment_in: 'Ajuste (+)',
     adjustment_out: 'Ajuste (-)',
     initial_balance: 'Apertura'
   };
   return map[t] || t;
+}
+
+function deriveSessionMetrics(session, movs){
+  const openingBs = Number(session?.start_balance_bs ?? 0);
+  const openingUsd = Number(session?.start_balance_usd ?? 0);
+
+  const sums = (movs||[]).reduce((acc,m)=>{
+    if(m?.movement_type === 'initial_balance') return acc;
+    const isIncome = (m?.movement_type === 'payment_in' || m?.movement_type === 'adjustment_in');
+    const isExpense = (m?.movement_type === 'expense_out' || m?.movement_type === 'adjustment_out');
+    const sign = isIncome ? 1 : isExpense ? -1 : 0;
+    
+    if(m?.currency === 'BS') acc.bs += sign * Number(m.amount || 0);
+    if(m?.currency === 'USD') acc.usd += sign * Number(m.amount || 0);
+    return acc;
+  },{ bs:0, usd:0 });
+
+  return { 
+    openingBs, 
+    openingUsd, 
+    sumBs: sums.bs, 
+    sumUsd: sums.usd, 
+    balanceBs: openingBs + sums.bs, 
+    balanceUsd: openingUsd + sums.usd 
+  };
 }

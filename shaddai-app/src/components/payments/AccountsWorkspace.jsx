@@ -1,5 +1,24 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardList, CreditCard, Package, Trash2, Plus, Wallet, HandCoins, Search, CheckCircle2, XCircle } from 'lucide-react';
+import { 
+  ClipboardList, 
+  CreditCard, 
+  Package, 
+  Trash2, 
+  Plus, 
+  Wallet, 
+  HandCoins, 
+  Search, 
+  CheckCircle2, 
+  XCircle,
+  FileText,
+  User,
+  MoreVertical,
+  ChevronRight,
+  ArrowRight,
+  DollarSign,
+  AlertCircle
+} from 'lucide-react';
+
 import * as accountsApi from '../../api/accounts';
 import * as servicesApi from '../../api/services';
 import * as paymentsApi from '../../api/payments';
@@ -11,785 +30,770 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 
-function StatusBadge({ status }){
+function StatusBadge({ status }) {
   const map = {
-    pending: { label: 'Pendiente', classes: 'text-amber-700 bg-amber-50 ring-1 ring-amber-200' },
-    partially_paid: { label: 'Parcial', classes: 'text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200' },
-    paid: { label: 'Pagada', classes: 'text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200' },
-    cancelled: { label: 'Anulada', classes: 'text-slate-700 bg-slate-100 ring-1 ring-slate-300' },
-    pending_verification: { label: 'Por verificar', classes: 'text-sky-700 bg-sky-50 ring-1 ring-sky-200' }
+    pending: { label: 'Pendiente', classes: 'text-amber-700 bg-amber-50 border-amber-200' },
+    partially_paid: { label: 'Parcial', classes: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+    paid: { label: 'Pagada', classes: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    cancelled: { label: 'Anulada', classes: 'text-slate-700 bg-slate-100 border-slate-200' },
+    pending_verification: { label: 'Por verificar', classes: 'text-sky-700 bg-sky-50 border-sky-200' }
   };
-  const m = map[status] || { label: status, classes: 'text-slate-700 bg-slate-100 ring-1 ring-slate-300' };
-  return <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${m.classes}`}>{m.label}</span>;
+  const m = map[status] || { label: status, classes: 'text-gray-700 bg-gray-50 border-gray-200' };
+  return (
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${m.classes}`}>
+       {m.label}
+    </span>
+  );
 }
 
-export default function AccountsWorkspace(){
+export default function AccountsWorkspace() {
   const detailsRef = useRef(null);
-  const { token, user, hasRole } = useAuth();
+  const { token } = useAuth();
   const toast = useToast();
   const { confirm } = useConfirm();
 
   const [accounts, setAccounts] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [details, setDetails] = useState([]);
-  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [details, setDetails] = useState([]);
+  const [rate, setRate] = useState(null);
+  const [receiptInfo, setReceiptInfo] = useState(null);
+  
+  // Create Modal State
   const [createOpen, setCreateOpen] = useState(false);
+  const [chosenPatient, setChosenPatient] = useState(null);
+  const [chosenPayer, setChosenPayer] = useState(null);
   const [patientQuery, setPatientQuery] = useState('');
   const [payerQuery, setPayerQuery] = useState('');
   const [patientResults, setPatientResults] = useState([]);
   const [payerResults, setPayerResults] = useState([]);
-  const [chosenPatient, setChosenPatient] = useState(null);
-  const [chosenPayer, setChosenPayer] = useState(null);
 
-  const [method, setMethod] = useState('cash_bs');
-  const [amount, setAmount] = useState('');
-  const [ref, setRef] = useState('');
-  const [file, setFile] = useState(null);
-  const [rate, setRate] = useState(null);
-  const [serviceToAdd, setServiceToAdd] = useState('');
-  const [serviceQty, setServiceQty] = useState(1);
-  const [stage, setStage] = useState('services'); // 'services' | 'payments' | 'supplies'
-  const [supplies, setSupplies] = useState([]);
-  const [inventory, setInventory] = useState([]);
-  const [supplyToAdd, setSupplyToAdd] = useState('');
-  const [supplyQty, setSupplyQty] = useState(1);
-  const [receiptInfo, setReceiptInfo] = useState(null);
-
-  const load = async()=>{
-    try{
+  // Load Data
+  const load = async () => {
+    try {
       setLoading(true);
-      const [accRes, srvRes, invRes] = await Promise.all([
-        accountsApi.listAccounts(statusFilter ? { status: statusFilter } : undefined, token),
-        servicesApi.listServices(token),
-        inventoryApi.listInventory({ onlyActive: 1 }, token)
-      ]);
-      setAccounts(accRes.data || []);
-      setServices(srvRes.data || []);
-      setInventory((invRes.data || []).filter(i=>i.is_active===1 || i.is_active===true));
-    }catch(e){
-      toast.error('No se pudo cargar');
-    }finally{ setLoading(false); }
+      const res = await accountsApi.listAccounts(statusFilter ? { status: statusFilter } : undefined, token);
+      setAccounts(res.data || []);
+    } catch (e) {
+      toast.error('Error al cargar cuentas');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loadDetails = async(accountId, opts = { scroll: false })=>{
-    try{
+  const loadDetails = async (accountId) => {
+    try {
       const res = await accountsApi.getAccount(accountId, token);
       setSelected(res.data || null);
       setDetails((res.data && res.data.details) ? res.data.details : []);
-      setSupplies(Array.isArray(res?.data?.supplies) ? res.data.supplies : []);
-      // set account rate if provided
-      if(res?.data?.rate_bcv){ setRate(Number(res.data.rate_bcv)); }
-      // fetch receipt metadata if account is paid
+      if(res?.data?.rate_bcv) setRate(Number(res.data.rate_bcv));
+      
       if(res?.data?.status === 'paid'){
-        try { const r = await receiptsApi.getReceiptByAccount(accountId, token); setReceiptInfo(r?.data || null); } catch { setReceiptInfo(null); }
+         try { const r = await receiptsApi.getReceiptByAccount(accountId, token); setReceiptInfo(r?.data || null); } catch { setReceiptInfo(null); }
       } else { setReceiptInfo(null); }
-      // scroll if requested (used only when seleccionando cuenta)
-      if(opts?.scroll){ setTimeout(()=>{ detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); }
-    }catch(e){ setDetails([]); setSelected(null); }
+      
+      setTimeout(() => detailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    } catch (e) {
+      toast.error('Error al cargar detalles de la cuenta');
+      setSelected(null);
+    }
   };
 
-  const handleSelectAccount = async (accountId)=>{
-    setStage('services');
-    await loadDetails(accountId, { scroll: true });
-  };
+  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => {
+    ratesApi.getTodayRate(token).then(r => setRate(Number(r?.data?.rate_bcv || 0))).catch(()=>{});
+  }, []);
 
-  // carga inicial y por filtro de estado
-  useEffect(()=>{ load(); /* eslint-disable-next-line */ },[]);
-  useEffect(()=>{ load(); /* eslint-disable-next-line */ },[statusFilter]);
-  // tasa del día como respaldo si la cuenta no la trae
-  useEffect(()=>{
-    (async ()=>{
-      try{ const r = await ratesApi.getTodayRate(token); setRate(Number(r?.data?.rate_bcv || r?.data?.rate || 0)); }catch{/* ignore */}
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  // Derivados para UI
-  const filteredAccounts = useMemo(()=>{
+  const filteredAccounts = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if(!q) return accounts;
-    return accounts.filter(acc => {
-      const text = `${acc.id} ${acc.patient_name || ''} ${acc.payer_name || ''}`.toLowerCase();
-      return text.includes(q);
-    });
-  },[accounts, query]);
+    if (!q) return accounts;
+    return accounts.filter(acc => 
+      `${acc.id} ${acc.patient_name || ''} ${acc.payer_name || ''}`.toLowerCase().includes(q)
+    );
+  }, [accounts, query]);
 
-  const canModify = useMemo(()=> selected && selected.status !== 'paid' && selected.status !== 'cancelled', [selected]);
-  const paidUsd = useMemo(()=>{
-    const list = Array.isArray(selected?.payments) ? selected.payments : [];
-    return list.filter(p=>p.status !== 'rejected').reduce((s,p)=> s + Number(p.amount_usd_equivalent||0), 0);
-  }, [selected]);
-  const accountTotalUsd = useMemo(()=> Number(selected?.total_usd || 0), [selected]);
-  const saldoUsd = useMemo(()=> Math.max(0, accountTotalUsd - paidUsd), [accountTotalUsd, paidUsd]);
-  // Usar totales consolidados que vienen de la cuenta (servicios + insumos)
-  const totalUsd = useMemo(()=> Number(selected?.total_usd || 0), [selected]);
-  const totalBs = useMemo(()=> Number(selected?.total_bs || 0), [selected]);
-  const saldoBs = useMemo(()=>{
-    const r = Number(selected?.rate_bcv || rate || 0);
-    if(!r) return 0;
-    const totalBsLocal = Number(selected?.total_bs || totalBs || 0);
-    const paidBsApprox = paidUsd * r;
-    return Math.max(0, totalBsLocal - paidBsApprox);
-  }, [selected, totalBs, paidUsd, rate]);
-
-  // Selecciones para vista previa
-  const selectedService = useMemo(()=> services.find(s => s.id === Number(serviceToAdd)), [services, serviceToAdd]);
-  const selectedItem = useMemo(()=> inventory.find(i => i.id === Number(supplyToAdd)), [inventory, supplyToAdd]);
-
-  // Reglas de validación de pagos (evitar sobrepago en métodos electrónicos)
-  const todayRate = useMemo(()=> Number(rate || 0), [rate]);
-  const amountNumber = useMemo(()=> Number(amount || 0), [amount]);
-  const amountUsdEntered = useMemo(()=>{
-    if(!amountNumber) return 0;
-    if(method === 'cash_usd') return amountNumber;
-    // Para Bs (efectivo, transferencia o pago móvil) usamos la tasa del día del pago
-    return todayRate ? (amountNumber / todayRate) : 0;
-  }, [amountNumber, method, todayRate]);
-  const isElectronic = method === 'transfer_bs' || method === 'mobile_payment_bs';
-  const exceedsElectronic = useMemo(()=> isElectronic && amountUsdEntered > (saldoUsd + 0.01), [isElectronic, amountUsdEntered, saldoUsd]);
-  const isCash = method === 'cash_usd' || method === 'cash_bs';
-  const hasChange = useMemo(()=> isCash && amountUsdEntered > (saldoUsd + 0.01), [isCash, amountUsdEntered, saldoUsd]);
-  const changeLabel = useMemo(()=>{
-    if(!hasChange) return '';
-    if(method === 'cash_usd') {
-      const change = Math.max(0, amountNumber - saldoUsd);
-      return `Vuelto: USD ${change.toFixed(2)}`;
-    }
-    // cash_bs
-    const changeBs = Math.max(0, amountNumber - (saldoUsd * (todayRate||0)));
-    return `Vuelto: Bs ${changeBs.toFixed(2)}`;
-  }, [hasChange, method, amountNumber, saldoUsd, todayRate]);
-  const saldoBsExact = useMemo(()=>{
-    const r = Number(selected?.rate_bcv || rate || 0);
-    return r ? Number((saldoUsd * r).toFixed(2)) : 0;
-  }, [saldoUsd, selected, rate]);
-
-  const handleAmountInput = (e) => {
-    let val = e.target.value.replace(/,/g,'.');
-    if(val === '') { setAmount(''); return; }
-    let num = Number(val);
-    if(isNaN(num) || num < 0) num = 0;
-    // Limitar sobrepago en métodos electrónicos (transferencia/pago móvil en Bs)
-    if(isElectronic) {
-      const maxBs = saldoBsExact; // saldo exacto convertido a Bs
-      if(num > maxBs) {
-        num = maxBs; // clamp
+  // Handle Create Account
+  const handleCreate = async () => {
+    if(!chosenPatient || !chosenPayer) return toast.warning('Selecciona paciente y pagador');
+    try {
+      const res = await accountsApi.createAccount({ patient_id: chosenPatient.id, payer_patient_id: chosenPayer.id }, token);
+      if(res?.data?.id) {
+        toast.success('Cuenta creada exitosamente');
+        setCreateOpen(false);
+        await load();
+        handleSelectAccount(res.data.id);
       }
-    }
-    setAmount(num.toString());
+    } catch(e) { toast.error(e?.response?.data?.error || 'Error al crear cuenta'); }
   };
 
-  // Actions
-  const addService = async (serviceId, qty = 1) => {
-    if(!selected) return toast.warning('Selecciona una cuenta');
-    if(!canModify) return toast.warning('La cuenta está pagada o anulada');
-    try{
-      await accountsApi.addDetail(selected.id, { service_id: serviceId, quantity: qty }, token);
-      toast.success('Servicio agregado');
-  await loadDetails(selected.id);
-    }catch(e){
-      toast.error(e?.response?.data?.error || 'No se pudo agregar');
-    }
+  // Search Helpers
+  const searchPatients = async (q, setResults) => {
+    if(q.trim().length < 2) { setResults([]); return; }
+    try { const r = await PatientsApi.search({ q, limit: 5 }, token); setResults(r.data || []); } catch { setResults([]); }
   };
 
-  const addSupply = async (itemId, qty = 1) => {
-    if(!selected) return toast.warning('Selecciona una cuenta');
-    if(!canModify) return toast.warning('La cuenta está pagada o anulada');
-    try{
-      await accountsApi.addSupply(selected.id, { item_id: itemId, quantity: qty }, token);
-      toast.success('Insumo agregado');
-      setSupplyToAdd(''); setSupplyQty(1);
-  await loadDetails(selected.id);
-    }catch(e){
-      toast.error(e?.response?.data?.error || 'No se pudo agregar el insumo');
-    }
-  };
+  const handleSelectAccount = (id) => loadDetails(id);
 
-  const removeDetail = async (detailId) => {
-    if(!selected) return;
-    const ok = await confirm({ title: 'Eliminar detalle', description: '¿Deseas quitar este servicio de la cuenta?' });
-    if(!ok) return;
-    try{
-      await accountsApi.removeDetail(detailId, token);
-      toast.success('Detalle eliminado');
-  await loadDetails(selected.id);
-    }catch(e){
-      toast.error(e?.response?.data?.error || 'No se pudo eliminar');
-    }
-  };
-
-  const removeSupply = async (supplyId) => {
-    if(!selected) return;
-    const ok = await confirm({ title: 'Eliminar insumo', description: '¿Deseas quitar este insumo de la cuenta?' });
-    if(!ok) return;
-    try{
-      await accountsApi.removeSupply(supplyId, token);
-      toast.success('Insumo eliminado');
-  await loadDetails(selected.id);
-    }catch(e){
-      toast.error(e?.response?.data?.error || 'No se pudo eliminar');
-    }
-  };
-
-  const submitPayment = async (e) => {
-    e.preventDefault();
-    if(!selected) return toast.warning('Selecciona una cuenta');
-    if(!canModify) return toast.warning('La cuenta está pagada o anulada');
-    const a = parseFloat(amount);
-    if(!a || a<=0) return toast.warning('Monto inválido');
-    const currency = method === 'cash_usd' ? 'USD' : 'BS';
-    if((method==='transfer_bs' || method==='mobile_payment_bs') && !file){
-      return toast.warning('Debe adjuntar comprobante para transferencias o pago móvil');
-    }
-    const form = new FormData();
-    form.append('payment_method', method);
-    form.append('amount', a);
-    form.append('currency', currency);
-    if(ref) form.append('reference_number', ref);
-    if(file) form.append('attachment', file);
-    try{
-      const res = await paymentsApi.createPayment(selected.id, form, token);
-      if(res?.data?.id){
-        toast.success('Pago registrado');
-        setAmount(''); setRef(''); setFile(null);
-  await loadDetails(selected.id);
-      } else {
-        toast.error('No se pudo confirmar el pago');
-      }
-    }catch(e){
-      toast.error(e?.response?.data?.error || 'No se pudo registrar el pago');
-    }
-  };
+  if(selected) {
+    return (
+      <div ref={detailsRef}>
+        <AccountDetailView 
+          account={selected} 
+          details={details}
+          setDetails={setDetails}
+          onBack={() => { setSelected(null); load(); }} // Reload list on back to refresh statuses
+          onReload={() => loadDetails(selected.id)}
+          rate={rate}
+          receiptInfo={receiptInfo}
+          token={token}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
+      
+      {/* Header & Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-gray-900">Cuentas de Cobro</h2>
-          <p className="text-sm text-gray-600">Busca, crea y gestiona cuentas; al seleccionar una, verás sus detalles completos más abajo.</p>
+          <h2 className="text-xl font-bold text-gray-900">Cuentas de Cobro</h2>
+          <p className="text-sm text-gray-500">Gestión de estados de cuenta y facturación</p>
         </div>
-        <button onClick={()=>{ setCreateOpen(true); setChosenPatient(null); setChosenPayer(null); setPatientQuery(''); setPayerQuery(''); setPatientResults([]); setPayerResults([]); }} className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm shadow-sm hover:shadow transition">
-          Nueva cuenta
+        <button 
+          onClick={() => {
+            setCreateOpen(true); 
+            setChosenPatient(null); setChosenPayer(null); 
+            setPatientQuery(''); setPayerQuery(''); 
+            setPatientResults([]); setPayerResults([]);
+          }} 
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 text-white font-medium shadow-lg shadow-gray-900/10 hover:bg-gray-800 transition-all hover:translate-y-px"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Nueva Cuenta</span>
         </button>
       </div>
 
-      {/* Listado de cuentas - se oculta al seleccionar */}
-      {!selected && (
-        <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm relative">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <div className="text-sm font-semibold tracking-wide text-gray-700 uppercase">Listado de cuentas</div>
-              <p className="text-xs text-gray-500 mt-1">Selecciona una cuenta para ver y gestionar todos sus detalles.</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input value={query} onChange={(e)=>setQuery(e.target.value)} className="w-full sm:w-72 pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400 text-sm transition" placeholder="Buscar #, paciente o pagador" />
-                </div>
-              </div>
-              <select value={statusFilter} onChange={(e)=>setStatusFilter(e.target.value)} className="sm:w-44 border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-900/20 focus:border-gray-400">
-                <option value="">Todos</option>
-                <option value="pending">Pendientes</option>
-                <option value="partially_paid">Parciales</option>
-                <option value="paid">Pagadas</option>
-                <option value="cancelled">Anuladas</option>
-              </select>
-              <button onClick={()=>{ setCreateOpen(true); setChosenPatient(null); setChosenPayer(null); setPatientQuery(''); setPayerQuery(''); setPatientResults([]); setPayerResults([]); }} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-gray-900/30">
-                <Plus className="w-4 h-4" /> Nueva cuenta
-              </button>
-            </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input 
+            type="text" 
+            placeholder="Buscar por #, paciente o pagador..." 
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm"
+          />
+        </div>
+        <select 
+          value={statusFilter} 
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm min-w-[180px]"
+        >
+          <option value="">Todos los estados</option>
+          <option value="pending">Pendientes</option>
+          <option value="partially_paid">Pago Parcial</option>
+          <option value="paid">Pagadas</option>
+          <option value="cancelled">Anuladas</option>
+        </select>
+      </div>
+
+      {/* Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => <div key={i} className="h-48 bg-gray-100 rounded-2xl animate-pulse" />)}
+        </div>
+      ) : filteredAccounts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+          <div className="p-4 bg-gray-50 rounded-full mb-4">
+             <Search className="w-8 h-8 text-gray-400" />
           </div>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {loading ? (
-              <div className="h-32 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 animate-pulse" />
-            ) : filteredAccounts.length === 0 ? (
-              <div className="col-span-full flex flex-col items-center justify-center py-14 text-center">
-                <Search className="w-6 h-6 text-gray-300 mb-2" />
-                <p className="text-sm text-gray-500">No hay cuentas para los filtros seleccionados.</p>
-              </div>
-            ) : filteredAccounts.map(acc => (
-              <button
-                key={acc.id}
-                onClick={()=>handleSelectAccount(acc.id)}
-                className="group text-left rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md hover:border-gray-300 transition relative overflow-hidden"
-              >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-gray-50 to-gray-100 transition pointer-events-none" />
-                <div className="relative flex flex-col gap-1">
-                  <div className="flex items-start justify-between">
-                    <div className="text-sm font-semibold text-gray-800 tracking-tight">#{acc.id}</div>
-                    <StatusBadge status={acc.status} />
-                  </div>
-                  <div className="text-sm text-gray-700 font-medium line-clamp-1">{acc.patient_name}</div>
-                  {acc.payer_name && <div className="text-xs text-gray-500 line-clamp-1">Pagador: {acc.payer_name}</div>}
-                  <div className="mt-1 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500">{acc.created_at}</span>
-                    <span className="text-[11px] font-medium text-gray-600 group-hover:text-gray-900 transition">Ver detalles →</span>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+          <p className="text-gray-500 font-medium">No se encontraron cuentas</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredAccounts.map(acc => (
+            <AccountCard key={acc.id} account={acc} onClick={() => handleSelectAccount(acc.id)} />
+          ))}
         </div>
       )}
 
-      {/* Detalles de cuenta - ocupa ancho completo al seleccionar */}
-      {selected && (
-        <div ref={detailsRef} className="mt-6">
-          <div className="rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm opacity-80">Cuenta Número: {selected.id}</div>
-                  <div className="text-base font-semibold">Paciente: {selected.patient_name}</div>
-                  <div className="text-base font-semibold">Pagador: {selected.payer_name}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="px-2 py-1 text-xs">
-                    <StatusBadge status={selected.status} />
-                  </div>
-                  {selected.status === 'paid' && (
-                    receiptInfo ? (
-                      <button
-                        onClick={async()=>{
-                          try {
-                            const r = await receiptsApi.downloadReceipt(receiptInfo.id, token);
-                            const blob = r.data instanceof Blob ? r.data : new Blob([r.data], { type: 'application/pdf' });
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `recibo_${receiptInfo.receipt_number || receiptInfo.id}.pdf`;
-                            document.body.appendChild(a);
-                            a.click();
-                            a.remove();
-                            window.URL.revokeObjectURL(url);
-                          } catch(e){
-                            toast.error('No se pudo descargar el recibo');
-                          }
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700"
-                        title="Descargar recibo de pago"
-                      >Descargar recibo</button>
-                    ) : (
-                      <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-200 text-gray-600" title="Generando recibo automáticamente…">Generando recibo…</span>
-                    )
-                  )}
-                  <button
-                    onClick={()=>{ setSelected(null); setDetails([]); }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/20 backdrop-blur-sm transition border border-white/20"
-                    title="Volver al listado"
-                  >Volver</button>
-                </div>
-              </div>
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-white">
-                {/* Total a Pagar */}
-                <div className="bg-white/10 rounded-xl p-4">
-                  <div className="text-sm opacity-80">Total a Pagar</div>
-                  <div className="mt-1">
-                    <div className="text-2xl font-bold">USD {Number(totalUsd).toFixed(2)}</div>
-                    <div className="text-sm opacity-80">Bs {Number(totalBs).toFixed(2)}</div>
-                  </div>
-                </div>
-                {/* Total Pagado */}
-                <div className="bg-white/10 rounded-xl p-4">
-                  <div className="text-sm opacity-80">Pagado</div>
-                  <div className="mt-1">
-                    <div className="text-2xl font-bold">USD {paidUsd.toFixed(2)}</div>
-                    <div className="text-sm opacity-80 text-transparent">.</div>
-                  </div>
-                </div>
-                {/* Saldo Pendiente */}
-                <div className="bg-white/10 rounded-xl p-4">
-                  <div className="text-sm opacity-80">Saldo Pendiente</div>
-                  <div className="mt-1">
-                    <div className="text-2xl font-bold">USD {saldoUsd.toFixed(2)}</div>
-                    <div className="text-sm opacity-80">Bs {saldoBs.toFixed(2)}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6">
-              {/* Navegación de pestañas moderna */}
-              <div className="inline-flex rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-                <button onClick={()=>setStage('services')} className={`flex items-center gap-2 px-4 py-2 text-sm transition ${stage==='services' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
-                  <ClipboardList className="w-4 h-4" />
-                  <span>Servicios</span>
-                </button>
-                <button onClick={()=>setStage('payments')} className={`flex items-center gap-2 px-4 py-2 text-sm transition border-l ${stage==='payments' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
-                  <CreditCard className="w-4 h-4" />
-                  <span>Registrar pagos</span>
-                </button>
-                <button onClick={()=>setStage('supplies')} className={`flex items-center gap-2 px-4 py-2 text-sm transition border-l ${stage==='supplies' ? 'bg-gray-900 text-white' : 'text-gray-700 hover:bg-gray-50'}`}>
-                  <Package className="w-4 h-4" />
-                  <span>Insumos</span>
-                </button>
-              </div>
-
-              {stage==='services' ? (
-                <div className="mt-4">
-                  {/* Listado de servicios */}
-                  <div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-                    {details.length === 0 ? (
-                      <div className="p-6 text-sm text-gray-500 flex items-center gap-2"><Search className="w-4 h-4"/> Sin servicios</div>
-                    ) : (
-                      <div className="divide-y">
-                        <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 text-[11px] uppercase tracking-wide text-gray-500 bg-gray-50">
-                          <div className="col-span-6">Servicio</div>
-                          <div className="col-span-2 text-right">Cantidad</div>
-                          <div className="col-span-2 text-right">Precio (USD · Bs)</div>
-                          <div className="col-span-2 text-right">Acciones</div>
-                        </div>
-                        {details.map(d => (
-                          <div key={d.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
-                            <div className="col-span-12 md:col-span-6">
-                              <div className="text-sm font-medium text-gray-800">{d.service_name}</div>
-                              <div className="text-xs text-gray-500 md:hidden">x{d.quantity || 1} · USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
-                            </div>
-                            <div className="hidden md:block md:col-span-2 text-right text-sm">x{d.quantity || 1}</div>
-                            <div className="hidden md:block md:col-span-2 text-right text-sm">USD {Number(d.price_usd||0).toFixed(2)} · Bs {Number(d.price_bs||0).toFixed(2)}</div>
-                            <div className="col-span-12 md:col-span-2 flex md:justify-end">
-                              {canModify ? (
-                                <button onClick={()=>removeDetail(d.id)} className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700">
-                                  <Trash2 className="w-4 h-4"/> Quitar
-                                </button>
-                              ) : (
-                                <span className="text-[11px] text-gray-500">Bloqueado</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Agregar servicio */}
-                  <div className="mt-5 rounded-xl border border-gray-200 bg-white p-4">
-                    <div className="flex items-center gap-2 mb-3 text-gray-800 font-medium text-sm">
-                      <Plus className="w-4 h-4"/> Agregar servicio
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end">
-                      <div className="sm:col-span-4">
-                        <select disabled={!canModify} value={serviceToAdd} onChange={(e)=>setServiceToAdd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
-                          <option value="">Selecciona un servicio…</option>
-                          {services.map(s=> (
-                            <option key={s.id} value={s.id}>{s.name} · USD {Number(s.price_usd||0).toFixed(2)}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="sm:col-span-1">
-                        <input disabled={!canModify} type="number" min="1" value={serviceQty} onChange={(e)=>setServiceQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cant." />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <button disabled={!canModify || !serviceToAdd} onClick={()=>{ addService(Number(serviceToAdd), Number(serviceQty)); }} className="w-full inline-flex justify-center items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">
-                          <Plus className="w-4 h-4"/> Agregar
-                        </button>
-                      </div>
-                    </div>
-                    {selectedService && (
-                      <div className="mt-2 text-xs text-gray-600">
-                        Previsualización: x{serviceQty} · USD {Number(selectedService.price_usd||0).toFixed(2)} =
-                        <span className="font-semibold"> USD {(Number(selectedService.price_usd||0) * Number(serviceQty||1)).toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="mt-3 flex justify-end">
-                      <button onClick={()=>setStage('payments')} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Ir a pagos</button>
-                    </div>
-                  </div>
-                </div>
-              ) : stage==='payments' ? (
-                <div className="mt-4 grid gap-4 md:grid-cols-5">
-                  {/* Historial de pagos */}
-                  <div className="md:col-span-3">
-                    <div className="rounded-xl border border-gray-200 bg-white">
-                      <div className="px-4 py-3 border-b text-sm font-medium text-gray-800 flex items-center gap-2">
-                        <Wallet className="w-4 h-4"/> Pagos registrados
-                      </div>
-                      <div className="max-h-72 overflow-y-auto divide-y">
-                        {(!selected?.payments || selected.payments.length===0) ? (
-                          <div className="p-4 text-sm text-gray-500 flex items-center gap-2"><Search className="w-4 h-4"/> Aún no hay pagos</div>
-                        ) : selected.payments.map(p => (
-                          <div key={p.id} className="p-3 text-sm flex items-center justify-between">
-                            <div>
-                              <div className="font-medium text-gray-800 flex items-center gap-2">
-                                <span>{({
-                                  cash_bs: 'Efectivo Bs',
-                                  cash_usd: 'Divisas (efectivo)',
-                                  transfer_bs: 'Transferencia Bs',
-                                  mobile_payment_bs: 'Pago móvil'
-                                })[p.payment_method] || p.payment_method}</span> · {p.currency} {Number(p.amount||0).toFixed(2)}
-                                {hasRole(['admin']) && (
-                                  <button
-                                    onClick={async ()=>{
-                                      const ok = await confirm({ title: 'Eliminar pago', description: '¿Deseas eliminar este pago? Esta acción no se puede deshacer.' });
-                                      if(!ok) return;
-                                      try {
-                                        await paymentsApi.deletePayment(p.id, token);
-                                        toast.success('Pago eliminado');
-                                        loadDetails(selected.id);
-                                      } catch(e){
-                                        toast.error(e?.response?.data?.error || 'No se pudo eliminar');
-                                      }
-                                    }}
-                                    className="ml-1 inline-flex items-center gap-1 text-[11px] text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="w-3 h-3"/> Eliminar
-                                  </button>
-                                )}
-                              </div>
-                              <div className="text-xs text-gray-500 flex items-center gap-2">
-                                {p.currency === 'BS' && (
-                                  <span>Eq. USD {Number(p.amount_usd_equivalent||0).toFixed(2)}</span>
-                                )}
-                                {p.status === 'verified' ? (
-                                  <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200"><CheckCircle2 className="w-3 h-3"/> Verificado</span>
-                                ) : p.status === 'rejected' ? (
-                                  <span className="inline-flex items-center gap-1 text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200"><XCircle className="w-3 h-3"/> Rechazado</span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Pendiente</span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              {p.reference_number && (
-                                <div className="text-[11px] text-gray-500">Ref: {p.reference_number}</div>
-                              )}
-                              {p.attachment_path && (
-                                <a
-                                  href={`${paymentsApi.API_URL}${p.attachment_path}`}
-                                  download
-                                  className="text-[11px] text-blue-600 hover:underline"
-                                >Descargar comprobante</a>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Formulario de pago */}
-                  <div className="md:col-span-2">
-                    <div className="rounded-xl border border-gray-200 bg-white p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm font-medium text-gray-800"><HandCoins className="w-4 h-4"/> Registrar pago</div>
-                        <div className="text-[11px] text-gray-500">Saldo USD: <span className="font-semibold text-gray-800">{saldoUsd.toFixed(2)}</span></div>
-                      </div>
-                      <form onSubmit={submitPayment} className="mt-3 space-y-3">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <select disabled={!canModify} value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
-                            <option value="cash_bs">Efectivo Bs</option>
-                            <option value="cash_usd">Divisas (efectivo)</option>
-                            <option value="transfer_bs">Transferencia Bs</option>
-                            <option value="mobile_payment_bs">Pago móvil</option>
-                          </select>
-                          <div className="flex gap-2">
-                            <input disabled={!canModify} type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Monto" value={amount} onChange={handleAmountInput} max={isElectronic ? saldoBsExact : undefined} />
-                            <button type="button" onClick={()=>{
-                              if(method==='cash_usd') setAmount(saldoUsd.toFixed(2));
-                              else setAmount(((saldoUsd||0) * (todayRate||0)).toFixed(2));
-                            }} className="shrink-0 px-3 py-2 rounded-lg border text-sm hover:bg-gray-50" title="Usar saldo exacto">Exacto</button>
-                          </div>
-                        </div>
-                        {(method==='transfer_bs' || method==='mobile_payment_bs') && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input disabled={!canModify} type="text" className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Referencia" value={ref} onChange={(e)=>setRef(e.target.value)} />
-                            <input disabled={!canModify} type="file" accept="image/*,.pdf" onChange={(e)=>setFile(e.target.files?.[0]||null)} className="w-full text-sm disabled:opacity-50" />
-                          </div>
-                        )}
-                        <div className="text-xs text-gray-600 space-y-0.5">
-                          <div>Total cuenta: USD {totalUsd.toFixed(2)} · Bs {totalBs.toFixed(2)}</div>
-                          <div>Saldo actual (USD): {saldoUsd.toFixed(2)} · Saldo (Bs aprox): {saldoBs.toFixed(2)}</div>
-                          {hasChange && (
-                            <div className="text-emerald-700 font-medium">{changeLabel}</div>
-                          )}
-                          {exceedsElectronic && (
-                            <div className="text-rose-700 font-medium">El monto excede el saldo permitido para este método.</div>
-                          )}
-                        </div>
-                        <div className="flex justify-between items-center mt-2">
-                          <button type="button" onClick={()=>setStage('services')} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm">Volver a servicios</button>
-                          <button disabled={!canModify || exceedsElectronic || amountUsdEntered<=0} className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">Guardar pago</button>
-                        </div>
-                        {!canModify && (
-                          <div className="text-[11px] text-gray-500 mt-1">Cuenta pagada/anulada: no se permiten nuevos pagos.</div>
-                        )}
-                        {canModify && method !== 'cash_usd' && !exceedsElectronic && amountUsdEntered>0 && (
-                          <div className="mt-2 text-[11px] text-gray-400">Equivalente USD estimado: {amountUsdEntered.toFixed(2)}</div>
-                        )}
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-4">
-                  {/* Agregar insumo */}
-                  <div className="rounded-xl border border-gray-200 bg-white p-4">
-                    <div className="flex items-center gap-2 mb-3 text-gray-800 font-medium text-sm"><Plus className="w-4 h-4"/> Agregar insumo</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-6 gap-2 items-end">
-                      <div className="sm:col-span-4">
-                        <select disabled={!canModify} value={supplyToAdd} onChange={(e)=>setSupplyToAdd(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50">
-                          <option value="">Selecciona un insumo…</option>
-                          {inventory.map(it => {
-                            const usd = Number(it.price_usd||0);
-                            const r = Number(selected?.rate_bcv || rate || 0);
-                            const bs = r ? (usd * r) : 0;
-                            return (
-                              <option key={it.id} value={it.id}>{it.name} · USD {usd.toFixed(2)} · Bs {bs.toFixed(2)} · Stock {it.stock_quantity} {it.unit_of_measure||''}</option>
-                            );
-                          })}
-                        </select>
-                      </div>
-                      <div className="sm:col-span-1">
-                        <input disabled={!canModify} type="number" min="1" value={supplyQty} onChange={(e)=>setSupplyQty(Math.max(1, parseInt(e.target.value||'1',10)))} className="w-full border rounded-lg px-3 py-2 text-sm disabled:opacity-50" placeholder="Cant." />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <button disabled={!canModify || !supplyToAdd} onClick={()=>{ addSupply(Number(supplyToAdd), Number(supplyQty)); }} className="w-full inline-flex justify-center items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm disabled:opacity-50 shadow-sm hover:shadow">
-                          <Plus className="w-4 h-4"/> Agregar
-                        </button>
-                      </div>
-                    </div>
-                    {selectedItem && (
-                      <div className="mt-2 text-xs text-gray-600">
-                        Previsualización: x{supplyQty} · USD {Number(selectedItem.price_usd||0).toFixed(2)} =
-                        <span className="font-semibold"> USD {(Number(selectedItem.price_usd||0) * Number(supplyQty||1)).toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Listado de insumos */}
-                  <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden bg-white">
-                    {(!supplies || supplies.length===0) ? (
-                      <div className="p-6 text-sm text-gray-500 flex items-center gap-2"><Search className="w-4 h-4"/> Sin insumos</div>
-                    ) : (
-                      <div className="divide-y">
-                        <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 text-[11px] uppercase tracking-wide text-gray-500 bg-gray-50">
-                          <div className="col-span-6">Insumo</div>
-                          <div className="col-span-2 text-right">Cantidad</div>
-                          <div className="col-span-2 text-right">Total (USD · Bs)</div>
-                          <div className="col-span-2 text-right">Acciones</div>
-                        </div>
-                        {supplies.map(s => (
-                          <div key={s.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
-                            <div className="col-span-12 md:col-span-6">
-                              <div className="text-sm font-medium text-gray-800">{s.description}</div>
-                              <div className="text-xs text-gray-500 md:hidden">x{s.quantity || 1} · USD {Number(s.total_price_usd ?? (s.price_usd * s.quantity)).toFixed(2)} · Bs {Number(s.total_price_bs ?? (s.price_bs * s.quantity)).toFixed(2)}</div>
-                            </div>
-                            <div className="hidden md:block md:col-span-2 text-right text-sm">x{s.quantity || 1}</div>
-                            <div className="hidden md:block md:col-span-2 text-right text-sm">USD {Number(s.total_price_usd ?? (s.price_usd * s.quantity)).toFixed(2)} · Bs {Number(s.total_price_bs ?? (s.price_bs * s.quantity)).toFixed(2)}</div>
-                            <div className="col-span-12 md:col-span-2 flex md:justify-end">
-                              {canModify ? (
-                                <button onClick={()=>removeSupply(s.id)} className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700">
-                                  <Trash2 className="w-4 h-4"/> Quitar
-                                </button>
-                              ) : (
-                                <span className="text-[11px] text-gray-500">Bloqueado</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {!canModify && (
-                      <div className="p-3 text-xs text-gray-600 bg-gray-50">Cuenta pagada/anulada: no se puede editar</div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Create Modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/50" onClick={()=>setCreateOpen(false)} />
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-gray-100 p-6">
-            <div className="flex items-start gap-3">
-              <div className="px-2 py-1 rounded-lg text-xs font-semibold bg-gray-900 text-white">Nueva cuenta</div>
-              <button onClick={()=>setCreateOpen(false)} className="ml-auto p-1 rounded hover:bg-black/5">
-                <span className="text-gray-500">✕</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/30 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Nueva Cuenta</h3>
+                <p className="text-sm text-gray-500">Asigna paciente y responsable financiero</p>
+              </div>
+              <button onClick={() => setCreateOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <XCircle className="w-6 h-6 text-gray-400" />
               </button>
             </div>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div>
-                <div className="text-sm font-medium text-gray-800 mb-1">Paciente</div>
-                {chosenPatient ? (
-                  <div className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
-                    <div>{chosenPatient.full_name} · CI {chosenPatient.cedula}</div>
-                    <button onClick={()=>setChosenPatient(null)} className="text-xs text-blue-600 hover:underline">Cambiar</button>
-                  </div>
-                ) : (
-                  <>
-                    <input value={patientQuery} onChange={async (e)=>{
-                      const val = e.target.value; setPatientQuery(val);
-                      if(val.trim().length < 2){ setPatientResults([]); return; }
-                      try { const r = await PatientsApi.search({ q: val, limit: 8 }, token); setPatientResults(r.data || []); } catch { setPatientResults([]); }
-                    }} placeholder="Buscar por nombre o cédula" className="w-full border rounded px-3 py-2 text-sm" />
-                    <div className="mt-2 max-h-40 overflow-y-auto divide-y border rounded">
-                      {(patientResults||[]).length === 0 ? (
-                        <div className="p-3 text-xs text-gray-500">Sin resultados</div>
-                      ) : patientResults.map(p => (
-                        <button key={p.id} onClick={()=>{ setChosenPatient(p); setPatientResults([]); }} className="w-full text-left px-3 py-2 hover:bg-gray-50">
-                          <div className="font-medium text-sm">{p.full_name}</div>
-                          <div className="text-xs text-gray-500">CI {p.cedula}</div>
-                        </button>
-                      ))}
+            
+            <div className="p-8 space-y-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Patient Select */}
+                <div className="space-y-3">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Paciente</label>
+                  {chosenPatient ? (
+                    <SelectedUserCard user={chosenPatient} onRemove={() => setChosenPatient(null)} label="Paciente" icon={User} />
+                  ) : (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                      <input 
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                        placeholder="Buscar paciente..."
+                        value={patientQuery}
+                        onChange={(e) => { setPatientQuery(e.target.value); searchPatients(e.target.value, setPatientResults); }}
+                      />
+                      {patientResults.length > 0 && (
+                        <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10">
+                          {patientResults.map(p => (
+                            <button key={p.id} onClick={() => { setChosenPatient(p); setPatientResults([]); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group">
+                              <div>
+                                <div className="font-medium text-gray-900">{p.full_name}</div>
+                                <div className="text-xs text-gray-500">CI: {p.cedula}</div>
+                              </div>
+                              <Plus className="w-4 h-4 text-gray-300 group-hover:text-indigo-600" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </>
-                )}
-              </div>
-              <div>
-                <div className="text-sm font-medium text-gray-800 mb-1">Pagador</div>
-                {chosenPayer ? (
-                  <div className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm">
-                    <div>{chosenPayer.full_name} · CI {chosenPayer.cedula}</div>
-                    <button onClick={()=>setChosenPayer(null)} className="text-xs text-blue-600 hover:underline">Cambiar</button>
-                  </div>
-                ) : (
-                  <>
-                    <input value={payerQuery} onChange={async (e)=>{
-                      const val = e.target.value; setPayerQuery(val);
-                      if(val.trim().length < 2){ setPayerResults([]); return; }
-                      try { const r = await PatientsApi.search({ q: val, limit: 8 }, token); setPayerResults(r.data || []); } catch { setPayerResults([]); }
-                    }} placeholder="Buscar por nombre o cédula" className="w-full border rounded px-3 py-2 text-sm" />
-                    <div className="mt-2 max-h-40 overflow-y-auto divide-y border rounded">
-                      {(payerResults||[]).length === 0 ? (
-                        <div className="p-3 text-xs text-gray-500">Sin resultados</div>
-                      ) : payerResults.map(p => (
-                        <button key={p.id} onClick={()=>{ setChosenPayer(p); setPayerResults([]); }} className="w-full text-left px-3 py-2 hover:bg-gray-50">
-                          <div className="font-medium text-sm">{p.full_name}</div>
-                          <div className="text-xs text-gray-500">CI {p.cedula}</div>
-                        </button>
-                      ))}
+                  )}
+                </div>
+
+                {/* Payer Select */}
+                <div className="space-y-3">
+                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Responsable de Pago</label>
+                   {chosenPayer ? (
+                    <SelectedUserCard user={chosenPayer} onRemove={() => setChosenPayer(null)} label="Pagador" icon={Wallet} />
+                  ) : (
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                      <input 
+                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                        placeholder="Buscar responsable..."
+                        value={payerQuery}
+                        onChange={(e) => { setPayerQuery(e.target.value); searchPatients(e.target.value, setPayerResults); }}
+                      />
+                      {payerResults.length > 0 && (
+                        <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10">
+                          {payerResults.map(p => (
+                            <button key={p.id} onClick={() => { setChosenPayer(p); setPayerResults([]); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group">
+                              <div>
+                                <div className="font-medium text-gray-900">{p.full_name}</div>
+                                <div className="text-xs text-gray-500">CI: {p.cedula}</div>
+                              </div>
+                              <Plus className="w-4 h-4 text-gray-300 group-hover:text-indigo-600" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button onClick={()=>setCreateOpen(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancelar</button>
-              <button onClick={async ()=>{
-                if(!chosenPatient || !chosenPayer){ toast.warning('Selecciona paciente y pagador'); return; }
-                try{
-                  const res = await accountsApi.createAccount({ patient_id: chosenPatient.id, payer_patient_id: chosenPayer.id }, token);
-                  const id = res?.data?.id;
-                  if(id){
-                    toast.success('Cuenta creada');
-                    setCreateOpen(false);
-                    await load();
-                    await loadDetails(id);
-                    setStage('services');
-                  } else {
-                    toast.error('La API no confirmó la creación');
-                  }
-                }catch(e){ toast.error(e?.response?.data?.error || 'No se pudo crear la cuenta'); }
-              }} className="px-4 py-2 rounded-lg bg-gray-900 text-white">Crear</button>
+
+            <div className="px-8 py-6 bg-gray-50 flex justify-end gap-3">
+              <button onClick={() => setCreateOpen(false)} className="px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 font-medium hover:bg-gray-100 transition-all">Cancelar</button>
+              <button onClick={handleCreate} disabled={!chosenPatient || !chosenPayer} className="px-5 py-2.5 rounded-xl bg-gray-900 text-white font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-gray-900/10 transition-all">Confirmar Creación</button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function AccountCard({ account, onClick }) {
+  return (
+    <button 
+      onClick={onClick}
+      className="group relative flex flex-col items-start text-left p-6 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all duration-300 w-full overflow-hidden"
+    >
+      <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+        <FileText className="w-20 h-20 text-gray-900" />
+      </div>
+
+      <div className="flex justify-between w-full mb-4">
+        <span className="font-mono text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">#{account.id}</span>
+        <StatusBadge status={account.status} />
+      </div>
+
+      <div className="space-y-1 mb-6 relative z-10">
+        <div className="text-lg font-bold text-gray-900 line-clamp-1">{account.patient_name}</div>
+        {account.payer_name && <div className="text-sm text-gray-500">Pagador: {account.payer_name}</div>}
+      </div>
+
+      <div className="mt-auto w-full pt-4 border-t border-gray-50 flex justify-between items-center group-hover:border-gray-100 transition-colors">
+        <div className="text-xs text-gray-400">{account.created_at?.split(' ')[0]}</div>
+        <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-gray-900 group-hover:text-white transition-all">
+          <ChevronRight className="w-4 h-4" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function SelectedUserCard({ user, onRemove, label, icon: Icon }) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-white rounded-lg text-indigo-600 shadow-sm">
+          <Icon className="w-4 h-4" />
+        </div>
+        <div>
+           <div className="text-sm font-semibold text-gray-900">{user.full_name}</div>
+           <div className="text-[10px] uppercase font-bold text-indigo-400">{label}</div>
+        </div>
+      </div>
+      <button onClick={onRemove} className="p-1.5 hover:bg-white rounded-lg text-indigo-400 hover:text-indigo-600 transition-colors">
+        <XCircle className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// DETAIL VIEW COMPONENT
+// ----------------------------------------------------------------------
+
+function AccountDetailView({ account, details, setDetails, onBack, onReload, rate, receiptInfo, token }) {
+  const { confirm } = useConfirm();
+  const toast = useToast();
+  const [tab, setTab] = useState('services'); // services | payments | supplies
+  const { hasRole } = useAuth();
+
+  // Loaders for selects
+  const [servicesList, setServicesList] = useState([]);
+  const [inventoryList, setInventoryList] = useState([]);
+  
+  // Form states
+  const [serviceId, setServiceId] = useState('');
+  const [serviceQty, setServiceQty] = useState(1);
+  const [itemId, setItemId] = useState('');
+  const [itemQty, setItemQty] = useState(1);
+  
+  // Payment states
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState('cash_bs');
+  const [ref, setRef] = useState('');
+  const [file, setFile] = useState(null);
+
+  // Load lists
+  useEffect(() => {
+    servicesApi.listServices(token).then(r => setServicesList(r.data || [])).catch(()=>{});
+    inventoryApi.listInventory({onlyActive:1}, token).then(r => setInventoryList(r.data?.filter(i=>i.is_active) || [])).catch(()=>{});
+  }, [token]);
+
+  // Calculations
+  const canModify = !['paid', 'cancelled'].includes(account.status);
+  
+  const payments = account.payments || [];
+  const validPayments = payments.filter(p => p.status !== 'rejected');
+  const paidUsd = validPayments.reduce((acc, p) => acc + Number(p.amount_usd_equivalent || 0), 0);
+  
+  const totalUsd = Number(account.total_usd || 0);
+  const totalBs = Number(account.total_bs || 0);
+  const pendingUsd = Math.max(0, totalUsd - paidUsd);
+  
+  // Local estimated Bs pending
+  const currentRate = Number(account.rate_bcv || rate || 0);
+  const pendingBs = currentRate ? pendingUsd * currentRate : 0;
+
+  // Actions
+  const handleAddService = async () => {
+    if(!serviceId) return;
+    try {
+      await accountsApi.addDetail(account.id, { service_id: serviceId, quantity: serviceQty }, token);
+      toast.success('Servicio añadido');
+      setServiceId(''); setServiceQty(1);
+      onReload();
+    } catch(e) { toast.error('Error al agregar servicio'); }
+  };
+
+  const handleAddSupply = async () => {
+    if(!itemId) return;
+    try {
+      await accountsApi.addSupply(account.id, { item_id: itemId, quantity: itemQty }, token);
+      toast.success('Insumo añadido');
+      setItemId(''); setItemQty(1);
+      onReload();
+    } catch(e) { toast.error('Error al agregar insumo'); }
+  };
+
+  const removeItem = async (id, type) => {
+    if(!await confirm({ title: 'Eliminar item', message: '¿Seguro que deseas eliminar este elemento?' })) return;
+    try {
+      if(type === 'service') await accountsApi.removeDetail(id, token);
+      else await accountsApi.removeSupply(id, token);
+      toast.success('Eliminado correctamente');
+      onReload();
+    } catch(e) { toast.error('Error al eliminar'); }
+  };
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    if(!amount) return;
+    
+    // Validation: Check if exceeds balance for electronic payments
+    const val = parseFloat(amount);
+    if(method !== 'cash_usd' && method !== 'cash_bs' && currentRate) {
+       // if electronic in Bs, check limits
+       const maxBs = pendingBs + 0.5; // tolerance
+       if(val > maxBs) return toast.warning('El monto excede el saldo pendiente en Bs');
+    }
+
+    const form = new FormData();
+    form.append('payment_method', method);
+    form.append('amount', val);
+    form.append('currency', method === 'cash_usd' ? 'USD' : 'BS');
+    if(ref) form.append('reference_number', ref);
+    if(file) form.append('attachment', file);
+
+    try {
+      await paymentsApi.createPayment(account.id, form, token);
+      toast.success('Pago registrado');
+      setAmount(''); setRef(''); setFile(null);
+      onReload();
+    } catch(e) { toast.error('Error al registrar pago'); }
+  };
+
+  const handleReceipt = async () => {
+    if(!receiptInfo) return;
+    try {
+      const r = await receiptsApi.downloadReceipt(receiptInfo.id, token);
+      const blob = new Blob([r.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recibo_${receiptInfo.receipt_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch(e) { toast.error('Error al descargar recibo'); }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto py-6 space-y-6 animate-in slide-in-from-right duration-500">
+      {/* Top Navigation */}
+      <button onClick={onBack} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors">
+        <ArrowRight className="w-4 h-4 rotate-180" />
+        Volver al listado
+      </button>
+
+      {/* Account Header Card */}
+      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gray-50 rounded-full -translate-y-1/2 translate-x-1/2 -z-0" />
+        
+        <div className="relative z-10 p-6 sm:p-8">
+           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-mono text-sm text-gray-400">#{account.id}</span>
+                  <StatusBadge status={account.status} />
+                </div>
+                <h1 className="text-3xl font-bold text-gray-900">{account.patient_name}</h1>
+                <p className="text-sm text-gray-500 mt-1">Responsable: <span className="font-medium text-gray-700">{account.payer_name}</span></p>
+                
+                {account.status === 'paid' && receiptInfo && (
+                  <button onClick={handleReceipt} className="mt-4 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Descargar Recibo
+                  </button>
+                )}
+              </div>
+
+              {/* Financial Summary */}
+              <div className="flex gap-4 sm:gap-8 bg-gray-50/80 backdrop-blur p-4 rounded-2xl border border-gray-100">
+                 <div className="text-right">
+                    <div className="text-xs uppercase font-bold text-gray-400 mb-1">Total</div>
+                    <div className="text-xl font-bold text-gray-900">${totalUsd.toFixed(2)}</div>
+                    <div className="text-xs text-gray-500">Bs {totalBs.toFixed(2)}</div>
+                 </div>
+                 <div className="w-px bg-gray-200" />
+                 <div className="text-right">
+                    <div className="text-xs uppercase font-bold text-gray-400 mb-1">Pagado</div>
+                    <div className="text-xl font-bold text-emerald-600">${paidUsd.toFixed(2)}</div>
+                 </div>
+                 <div className="w-px bg-gray-200" />
+                 <div className="text-right">
+                    <div className="text-xs uppercase font-bold text-gray-400 mb-1">Pendiente</div>
+                    <div className="text-xl font-bold text-rose-600">${pendingUsd.toFixed(2)}</div>
+                    <div className="text-xs text-rose-600/70 font-medium">~Bs {pendingBs.toFixed(2)}</div>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="border-t border-gray-100 bg-gray-50/50 px-6 sm:px-8">
+           <div className="flex gap-6 overflow-x-auto">
+             <TabBtn active={tab==='services'} onClick={()=>setTab('services')} icon={ClipboardList} label="Servicios" count={details.length} />
+             <TabBtn active={tab==='supplies'} onClick={()=>setTab('supplies')} icon={Package} label="Insumos" count={account.supplies?.length || 0} />
+             <TabBtn active={tab==='payments'} onClick={()=>setTab('payments')} icon={CreditCard} label="Pagos" count={validPayments.length} />
+           </div>
+        </div>
+      </div>
+
+      {/* Tab Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Main Content (Left 2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+           {tab === 'services' && (
+             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                 <ClipboardList className="w-5 h-5 text-gray-400" /> Servicios Facturados
+               </h3>
+               {details.length === 0 ? (
+                 <EmptyState label="No hay servicios agregados" />
+               ) : (
+                 <div className="space-y-2">
+                   {details.map(d => (
+                     <ItemRow 
+                       key={d.id} 
+                       title={d.service_name} 
+                       qty={d.quantity} 
+                       price={d.price_usd} 
+                       total={d.price_usd * (d.quantity||1)} 
+                       onDelete={canModify ? ()=>removeItem(d.id,'service') : null} 
+                     />
+                   ))}
+                 </div>
+               )}
+               {canModify && (
+                 <div className="mt-6 pt-6 border-t border-gray-100">
+                    <div className="flex gap-3">
+                       <select value={serviceId} onChange={(e)=>setServiceId(e.target.value)} className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 outline-none">
+                          <option value="">Agregar servicio...</option>
+                          {servicesList.map(s => <option key={s.id} value={s.id}>{s.name} (${Number(s.price_usd).toFixed(2)})</option>)}
+                       </select>
+                       <input type="number" min="1" value={serviceQty} onChange={(e)=>setServiceQty(e.target.value)} className="w-20 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-center text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gray-900/10" />
+                       <button onClick={handleAddService} disabled={!serviceId} className="px-5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors">
+                         <Plus className="w-5 h-5" />
+                       </button>
+                    </div>
+                 </div>
+               )}
+             </div>
+           )}
+
+           {tab === 'supplies' && (
+             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                 <Package className="w-5 h-5 text-gray-400" /> Insumos Médicos
+               </h3>
+               {!account.supplies?.length ? (
+                 <EmptyState label="No hay insumos cargados" />
+               ) : (
+                 <div className="space-y-2">
+                   {account.supplies.map(s => (
+                     <ItemRow 
+                       key={s.id} 
+                       title={s.description || s.item_name} 
+                       qty={s.quantity} 
+                       price={s.price_usd} 
+                       total={s.total_price_usd} 
+                       onDelete={canModify ? ()=>removeItem(s.id,'supply') : null} 
+                     />
+                   ))}
+                 </div>
+               )}
+               {canModify && (
+                 <div className="mt-6 pt-6 border-t border-gray-100">
+                    <div className="flex gap-3">
+                       <select value={itemId} onChange={(e)=>setItemId(e.target.value)} className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:bg-white focus:ring-2 focus:ring-gray-900/10 outline-none">
+                          <option value="">Agregar insumo...</option>
+                          {inventoryList.map(i => <option key={i.id} value={i.id}>{i.name} (Stock: {i.stock_quantity}) - ${Number(i.price_usd).toFixed(2)}</option>)}
+                       </select>
+                       <input type="number" min="1" value={itemQty} onChange={(e)=>setItemQty(e.target.value)} className="w-20 bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 text-center text-sm outline-none focus:bg-white focus:ring-2 focus:ring-gray-900/10" />
+                       <button onClick={handleAddSupply} disabled={!itemId} className="px-5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors">
+                         <Plus className="w-5 h-5" />
+                       </button>
+                    </div>
+                 </div>
+               )}
+             </div>
+           )}
+
+           {tab === 'payments' && (
+             <div className="space-y-6">
+                {/* Payments List */}
+                <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                     <HistoryIcon className="w-5 h-5 text-gray-400" /> Historial de Pagos
+                   </h3>
+                   {validPayments.length === 0 ? (
+                      <EmptyState label="No se han registrado pagos" />
+                   ) : (
+                      <div className="space-y-3">
+                        {validPayments.map(p => (
+                          <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                             <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-white rounded-xl text-gray-600 shadow-sm">
+                                   {p.payment_method?.includes('cash') ? <DollarSign className="w-5 h-5"/> : <CreditCard className="w-5 h-5"/>}
+                                </div>
+                                <div>
+                                   <div className="font-semibold text-gray-900">
+                                      {p.currency} {Number(p.amount).toFixed(2)}
+                                   </div>
+                                   <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">
+                                      {p.payment_method.replace(/_/g, ' ')}
+                                   </div>
+                                </div>
+                             </div>
+                             
+                             <div className="flex flex-col items-end gap-1">
+                                {p.status === 'verified' && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">VERIFICADO</span>}
+                                {p.status === 'pending' && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">PENDIENTE</span>}
+                                <div className="text-xs text-gray-400">
+                                   {p.currency === 'BS' ? `~ $${Number(p.amount_usd_equivalent).toFixed(2)}` : ''}
+                                </div>
+                             </div>
+                          </div>
+                        ))}
+                      </div>
+                   )}
+                </div>
+             </div>
+           )}
+        </div>
+
+        {/* Action Sidebar (Right 1/3) */}
+        <div className="lg:col-span-1">
+           {canModify ? (
+             <div className="bg-gray-900 text-white rounded-[2rem] p-6 shadow-xl shadow-gray-900/20 sticky top-6">
+               <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                 <HandCoins className="w-5 h-5 text-indigo-400" /> Registrar Pago
+               </h3>
+               
+               <form onSubmit={handlePayment} className="space-y-4">
+                 <div>
+                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Método</label>
+                   <select value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full bg-gray-800 border-gray-700 text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none">
+                      <option value="cash_bs">Efectivo (Bs)</option>
+                      <option value="cash_usd">Efectivo (Divisas)</option>
+                      <option value="transfer_bs">Transferencia (Bs)</option>
+                      <option value="mobile_payment_bs">Pago Móvil (Bs)</option>
+                   </select>
+                 </div>
+
+                 <div>
+                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Monto ({method.includes('bs') ? 'Bs' : 'USD'})</label>
+                   <div className="relative">
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        value={amount} 
+                        onChange={(e)=>setAmount(e.target.value)} 
+                        className="w-full bg-gray-800 border-gray-700 text-white rounded-xl pl-4 pr-12 py-3 text-lg font-bold outline-none focus:ring-1 focus:ring-indigo-500" 
+                        placeholder="0.00" 
+                      />
+                      <button type="button" onClick={() => setAmount(method.includes('usd') ? pendingUsd.toFixed(2) : pendingBs.toFixed(2))} className="absolute right-2 top-1.5 px-2 py-1.5 bg-gray-700 rounded-lg text-[10px] font-bold text-indigo-300 hover:bg-gray-600 transition">Complete</button>
+                   </div>
+                   {method.includes('bs') && amount && (
+                     <div className="text-right mt-1 text-xs text-gray-400">
+                        ~ ${(Number(amount) / currentRate).toFixed(2)} USD
+                     </div>
+                   )}
+                 </div>
+
+                 {(method === 'transfer_bs' || method === 'mobile_payment_bs') && (
+                    <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
+                       <input 
+                         placeholder="Nro. Referencia" 
+                         value={ref} 
+                         onChange={(e)=>setRef(e.target.value)}
+                         className="w-full bg-gray-800 border-gray-700 text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                       />
+                       <div className="flex items-center gap-2 text-xs text-gray-400">
+                         <input type="file" onChange={(e)=>setFile(e.target.files?.[0])} className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600" />
+                       </div>
+                    </div>
+                 )}
+
+                 <button 
+                  type="submit" 
+                  disabled={!amount}
+                  className="w-full py-4 mt-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:translate-y-px"
+                >
+                   Procesar Pago
+                 </button>
+               </form>
+             </div>
+           ) : (
+             <div className="bg-gray-50 rounded-[2rem] p-8 text-center border border-dashed border-gray-200">
+                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                <h3 className="text-gray-900 font-bold mb-1">Cuenta Cerrada</h3>
+                <p className="text-sm text-gray-500">No se pueden realizar más modificaciones en esta cuenta.</p>
+             </div>
+           )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function TabBtn({ active, onClick, icon: Icon, label, count }) {
+  return (
+    <button 
+      onClick={onClick} 
+      className={`
+        flex items-center gap-2 pb-4 border-b-2 transition-all min-w-max
+        ${active ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}
+      `}
+    >
+      <Icon className={`w-5 h-5 ${active ? 'text-indigo-600' : ''}`} />
+      <span className="font-medium">{label}</span>
+      {count > 0 && (
+        <span className={`text-xs px-2 py-0.5 rounded-full ${active ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-600'}`}>
+          {count}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function ItemRow({ title, qty, price, total, onDelete }) {
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-colors group">
+      <div>
+        <div className="font-semibold text-gray-900">{title}</div>
+        <div className="text-xs text-gray-400 mt-0.5 flex gap-2">
+           <span>Can: {qty}</span>
+           <span>•</span>
+           <span>Unit: ${Number(price).toFixed(2)}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+         <div className="font-bold text-gray-900">${Number(total).toFixed(2)}</div>
+         {onDelete && (
+           <button onClick={onDelete} className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+             <Trash2 className="w-4 h-4" />
+           </button>
+         )}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ label }) {
+  return (
+    <div className="py-12 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+       <Package className="w-10 h-10 mb-3 opacity-20" />
+       <p className="text-sm">{label}</p>
+    </div>
+  );
+}
+
+function HistoryIcon(props) {
+  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12" /><path d="M3 3v9h9" /><path d="M12 7v5l4 2" /></svg>
 }
