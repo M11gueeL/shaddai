@@ -370,6 +370,13 @@ function AccountDetailView({ account, details, setDetails, onBack, onReload, rat
   const toast = useToast();
   const [tab, setTab] = useState('services'); // services | payments | supplies
   const { hasRole } = useAuth();
+  
+  const PAYMENT_METHODS = {
+    cash_bs: 'Bolívares en efectivo',
+    cash_usd: 'Divisas en efectivo',
+    transfer_bs: 'Transferencia en Bolívares',
+    mobile_payment_bs: 'Pago Móvil'
+  };
 
   // Loaders for selects
   const [servicesList, setServicesList] = useState([]);
@@ -443,11 +450,23 @@ function AccountDetailView({ account, details, setDetails, onBack, onReload, rat
     e.preventDefault();
     if(!amount) return;
     
-    // Validation: Check if exceeds balance for electronic payments
+    // Validation
     const val = parseFloat(amount);
-    if(method !== 'cash_usd' && method !== 'cash_bs' && currentRate) {
-       // if electronic in Bs, check limits
-       const maxBs = pendingBs + 0.5; // tolerance
+    
+    // 1. Negative check
+    if (val <= 0) return toast.warning('El monto debe ser positivo');
+
+    // 2. Integer check for Cash
+    if ((method === 'cash_usd' || method === 'cash_bs') && !Number.isInteger(val)) {
+        return toast.warning('Los pagos en efectivo no pueden tener decimales');
+    }
+
+    // 3. Balance check
+    if (method === 'cash_usd') {
+       if(val > pendingUsd) return toast.warning('El monto excede el saldo pendiente en Divisas');
+    } else {
+       // if electronic or cash in Bs, check limits with small tolerance
+       const maxBs = pendingBs + 0.5; 
        if(val > maxBs) return toast.warning('El monto excede el saldo pendiente en Bs');
     }
 
@@ -645,7 +664,7 @@ function AccountDetailView({ account, details, setDetails, onBack, onReload, rat
                                       {p.currency} {Number(p.amount).toFixed(2)}
                                    </div>
                                    <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">
-                                      {p.payment_method.replace(/_/g, ' ')}
+                                      {PAYMENT_METHODS[p.payment_method] || p.payment_method}
                                    </div>
                                 </div>
                              </div>
@@ -669,34 +688,33 @@ function AccountDetailView({ account, details, setDetails, onBack, onReload, rat
         {/* Action Sidebar (Right 1/3) */}
         <div className="lg:col-span-1">
            {canModify ? (
-             <div className="bg-gray-900 text-white rounded-[2rem] p-6 shadow-xl shadow-gray-900/20 sticky top-6">
-               <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                 <HandCoins className="w-5 h-5 text-indigo-400" /> Registrar Pago
+             <div className="bg-white rounded-[2rem] p-6 shadow-xl shadow-gray-200/50 border border-gray-100 sticky top-6">
+               <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-gray-900">
+                 <HandCoins className="w-5 h-5 text-indigo-600" /> Registrar Pago
                </h3>
                
                <form onSubmit={handlePayment} className="space-y-4">
                  <div>
-                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Método</label>
-                   <select value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full bg-gray-800 border-gray-700 text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none">
-                      <option value="cash_bs">Efectivo (Bs)</option>
-                      <option value="cash_usd">Efectivo (Divisas)</option>
-                      <option value="transfer_bs">Transferencia (Bs)</option>
-                      <option value="mobile_payment_bs">Pago Móvil (Bs)</option>
+                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-1 block">Método</label>
+                   <select value={method} onChange={(e)=>setMethod(e.target.value)} className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
+                      {Object.entries(PAYMENT_METHODS).map(([val, label]) => (
+                         <option key={val} value={val}>{label}</option>
+                      ))}
                    </select>
                  </div>
 
                  <div>
-                   <label className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Monto ({method.includes('bs') ? 'Bs' : 'USD'})</label>
+                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1 mb-1 block">Monto ({method.includes('bs') ? 'Bs' : 'USD'})</label>
                    <div className="relative">
                       <input 
                         type="number" 
                         step="0.01" 
                         value={amount} 
                         onChange={(e)=>setAmount(e.target.value)} 
-                        className="w-full bg-gray-800 border-gray-700 text-white rounded-xl pl-4 pr-12 py-3 text-lg font-bold outline-none focus:ring-1 focus:ring-indigo-500" 
+                        className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl pl-4 pr-12 py-3 text-lg font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
                         placeholder="0.00" 
                       />
-                      <button type="button" onClick={() => setAmount(method.includes('usd') ? pendingUsd.toFixed(2) : pendingBs.toFixed(2))} className="absolute right-2 top-1.5 px-2 py-1.5 bg-gray-700 rounded-lg text-[10px] font-bold text-indigo-300 hover:bg-gray-600 transition">Complete</button>
+                      <button type="button" onClick={() => setAmount(method.includes('usd') ? pendingUsd.toFixed(2) : pendingBs.toFixed(2))} className="absolute right-2 top-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition">Complete</button>
                    </div>
                    {method.includes('bs') && amount && (
                      <div className="text-right mt-1 text-xs text-gray-400">
@@ -711,10 +729,10 @@ function AccountDetailView({ account, details, setDetails, onBack, onReload, rat
                          placeholder="Nro. Referencia" 
                          value={ref} 
                          onChange={(e)=>setRef(e.target.value)}
-                         className="w-full bg-gray-800 border-gray-700 text-white rounded-xl px-4 py-3 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                         className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                        />
                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                         <input type="file" onChange={(e)=>setFile(e.target.files?.[0])} className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600" />
+                         <input type="file" onChange={(e)=>setFile(e.target.files?.[0])} className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors" />
                        </div>
                     </div>
                  )}
@@ -722,7 +740,7 @@ function AccountDetailView({ account, details, setDetails, onBack, onReload, rat
                  <button 
                   type="submit" 
                   disabled={!amount}
-                  className="w-full py-4 mt-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:translate-y-px"
+                  className="w-full py-4 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:translate-y-px"
                 >
                    Procesar Pago
                  </button>
@@ -747,7 +765,7 @@ function TabBtn({ active, onClick, icon: Icon, label, count }) {
     <button 
       onClick={onClick} 
       className={`
-        flex items-center gap-2 pb-4 border-b-2 transition-all min-w-max
+        flex items-center gap-2 py-4 border-b-2 transition-all min-w-max
         ${active ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-600'}
       `}
     >
