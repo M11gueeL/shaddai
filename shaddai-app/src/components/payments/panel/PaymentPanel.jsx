@@ -1,10 +1,9 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import ElegantHeader from '../common/ElegantHeader';
+import { useAuth } from '../../../context/AuthContext';
+import ElegantHeader from '../../common/ElegantHeader';
 import { 
   CreditCard, 
-  Home, 
   TrendingUp, 
   Wallet, 
   Users, 
