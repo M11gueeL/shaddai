@@ -243,7 +243,7 @@ export default function CashManager(){
           <SummaryCards session={session} movs={movs} />
 
           {/* Movements List */}
-          <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[500px]">
+          <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col h-[400px] lg:h-[500px]">
             <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-white sticky top-0 z-10">
               <h3 className="font-bold text-gray-900 flex items-center gap-2">
                 <History className="w-5 h-5 text-gray-400" />
@@ -319,7 +319,7 @@ function SummaryCards({ session, movs }){
   const d = deriveSessionMetrics(session, movs);
   
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       <StatBox label="Fondo Inicial" valueBs={d.openingBs} valueUsd={d.openingUsd} icon={Wallet} tone="gray" />
       <StatBox label="Actividad Neta" valueBs={d.sumBs} valueUsd={d.sumUsd} icon={ActivityIcon} tone="blue" />
       <StatBox label="Saldo en Caja" valueBs={d.balanceBs} valueUsd={d.balanceUsd} icon={CircleDollarSign} tone="emerald" highlight />
@@ -339,14 +339,14 @@ function StatBox({ label, valueBs, valueUsd, icon: Icon, tone, highlight }){
     <div className={`p-4 rounded-2xl border transition-all duration-300 ${highlight ? 'bg-gray-900 border-gray-900 text-white shadow-lg transform hover:-translate-y-1' : 'bg-white border-gray-100 text-gray-900 hover:shadow-md'}`}>
       <div className="flex items-center gap-2 mb-3 opacity-80">
         <Icon className={`w-4 h-4 ${highlight ? 'text-white' : ''}`} />
-        <span className="text-xs font-semibold uppercase tracking-wider">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider truncate">{label}</span>
       </div>
       <div className="space-y-1">
-        <div className={`text-lg font-bold ${highlight ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`text-lg font-bold truncate ${highlight ? 'text-white' : 'text-gray-900'}`}>
           <span className="text-xs font-normal opacity-60 mr-1">Bs</span>
           {valueBs.toFixed(2)}
         </div>
-        <div className={`text-sm font-medium ${highlight ? 'text-white/80' : 'text-gray-500'}`}>
+        <div className={`text-sm font-medium truncate ${highlight ? 'text-white/80' : 'text-gray-500'}`}>
           <span className="text-xs font-normal opacity-60 mr-1">USD</span>
           {valueUsd.toFixed(2)}
         </div>

@@ -34,7 +34,7 @@ export default function PaymentHome(){
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       
       {/* Hero Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         <StatCard
           title="Tasa del Día"
           value={`${rateValue} Bs`}

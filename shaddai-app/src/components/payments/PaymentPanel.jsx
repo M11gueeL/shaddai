@@ -30,14 +30,14 @@ export default function PaymentPanel() {
       <div className="px-4 sm:px-8 mt-2 flex-1 flex flex-col">
         <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden flex flex-col flex-1">
           <div className="border-b border-gray-100 bg-white sticky top-0 z-20 px-4 pt-4">
-            <nav className="flex gap-2 overflow-x-auto pb-4 no-scrollbar items-center">
+            <nav className="flex gap-2 overflow-x-auto pb-4 w-full no-scrollbar items-center">
               <Tab to="/payment" end label="Inicio" icon={LayoutDashboard} />
               <Tab to="/payment/rate" label="Tasa del Día" icon={TrendingUp} />
               <Tab to="/payment/cash" label="Caja Chica" icon={Wallet} />
               <Tab to="/payment/accounts" label="Cuentas" icon={Users} />
               {hasRole(['admin']) && (
                 <>
-                  <div className="w-px h-6 bg-gray-200 mx-1" />
+                  <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
                   <Tab to="/payment/audit" label="Auditoría" icon={ShieldCheck} />
                 </>
               )}
@@ -60,7 +60,7 @@ function Tab({ to, label, icon: Icon, end }) {
       to={to}
       end={end}
       className={({ isActive }) => `
-        group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out border
+        group relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out border whitespace-nowrap shrink-0
         ${isActive 
           ? 'bg-gray-900 text-white border-gray-900 shadow-md shadow-gray-900/20 translate-y-0' 
           : 'bg-white text-gray-500 border-transparent hover:border-gray-200 hover:bg-gray-50 hover:text-gray-900'
