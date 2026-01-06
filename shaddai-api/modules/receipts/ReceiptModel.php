@@ -6,20 +6,59 @@ class ReceiptModel {
     public function __construct() { $this->db = Database::getInstance(); }
 
     public function create($accountId, $paymentId, $issuedBy) {
-        // generate sequential YYYY-00000N (e.g., 2025-000001)
-        $year = date('Y');
-        $prefix = $year . '-';
-        $row = $this->db->query('SELECT receipt_number FROM payment_receipts WHERE receipt_number LIKE :pfx ORDER BY id DESC LIMIT 1', [':pfx'=>$prefix.'%']);
-        $seq = 1;
-        if ($row) {
-            $last = $row[0]['receipt_number'];
-            $num = (int)substr($last, strrpos($last, '-')+1);
-            $seq = $num + 1;
+        try {
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+            }
+
+            // Usar la función helper para generar el siguiente número
+            $conn = $this->db->getConnection();
+            $newNumber = $this->generateNextReceiptNumber($conn);
+
+            $sqlInsert = 'INSERT INTO payment_receipts (receipt_number, account_id, payment_id, issued_by, issued_at, status) VALUES (:n, :acc, :pay, :by, NOW(), "active")';
+            $this->db->execute($sqlInsert, [':n'=>$newNumber, ':acc'=>$accountId, ':pay'=>$paymentId, ':by'=>$issuedBy]);
+            
+            $id = $this->db->lastInsertId();
+            $this->db->commit();
+
+            return ['id'=>$id, 'receipt_number'=>$newNumber];
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
-        $recNumber = $prefix . str_pad((string)$seq, 6, '0', STR_PAD_LEFT);
-        $sql = 'INSERT INTO payment_receipts (receipt_number, account_id, payment_id, issued_by, issued_at, status) VALUES (:n, :acc, :pay, :by, NOW(), "active")';
-        $this->db->execute($sql, [':n'=>$recNumber, ':acc'=>$accountId, ':pay'=>$paymentId, ':by'=>$issuedBy]);
-        return ['id'=>$this->db->lastInsertId(), 'receipt_number'=>$recNumber];
+    }
+
+    /**
+     * Genera el próximo número de recibo consecutivo global.
+     * Formato: AAAA-MM-XXXXXXX (7 dígitos)
+     */
+    private function generateNextReceiptNumber($pdo) {
+        // 1. Consultar el último número con bloqueo FOR UPDATE
+        $stmt = $pdo->query("SELECT receipt_number FROM payment_receipts ORDER BY id DESC LIMIT 1 FOR UPDATE");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $nextSequence = 1;
+
+        if ($row && !empty($row['receipt_number'])) {
+            // 2. Extraer la parte secuencial global (últimos 7 dígitos o todo lo después del último guion)
+            // Formato esperado en DB: YYYY-MM-Sequence
+            $parts = explode('-', $row['receipt_number']);
+            $lastSequenceStr = end($parts);
+            $lastSequence = (int)$lastSequenceStr;
+            
+            if ($lastSequence > 0) {
+                $nextSequence = $lastSequence + 1;
+            }
+        }
+
+        // 3. Formatear: AAAA-MM-XXXXXXX
+        // El año y mes son los actuales, pero la secuencia CONTINÚA del anterior (global)
+        $prefix = date('Y-m');
+        $formattedSequence = str_pad((string)$nextSequence, 7, '0', STR_PAD_LEFT);
+        
+        return $prefix . '-' . $formattedSequence;
     }
 
     public function listByPatient($patientId) {

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/ReceiptModel.php';
 require_once __DIR__ . '/../../modules/accounts/BillingAccountModel.php';
 require_once __DIR__ . '/../../services/ReceiptService.php';
+require_once __DIR__ . '/../../modules/cashregister/CashRegisterSessionModel.php';
 
 class ReceiptController {
     private $model;
@@ -110,6 +111,105 @@ class ReceiptController {
             }
             http_response_code(404); echo json_encode(['error'=>'Archivo no disponible']);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
+    }
+
+    public function annul($receiptId) {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+            
+            $input = json_decode(file_get_contents('php://input'), true);
+            $reason = $input['reason'] ?? 'Sin motivo especificado';
+            
+            $this->voidReceipt((int)$receiptId, $payload->sub, $reason);
+            echo json_encode(['message'=>'Recibo anulado correctamente']);
+        } catch (Exception $e) {
+            http_response_code(400); 
+            echo json_encode(['error'=>$e->getMessage()]);
+        }
+    }
+
+    public function voidReceipt($receiptId, $userId, $reason) {
+        $db = Database::getInstance();
+        try {
+            if (!$db->inTransaction()) {
+                $db->beginTransaction();
+            }
+
+            // 1. Validar: Verificar que el recibo existe y su status no sea ya 'annulled'.
+            $sql = "SELECT id, receipt_number, status, payment_id, account_id FROM payment_receipts WHERE id = :id FOR UPDATE";
+            $rows = $db->query($sql, [':id' => $receiptId]);
+            if (empty($rows)) {
+                throw new Exception("Recibo no encontrado.");
+            }
+            $receipt = $rows[0];
+
+            if ($receipt['status'] === 'annulled') {
+                throw new Exception("El recibo ya se encuentra anulado.");
+            }
+
+            // 2. Actualizar payment_receipts: Set status='annulled', llenar annulled_at, by y reason.
+            $sqlVoid = "UPDATE payment_receipts SET status = 'annulled', annulled_at = NOW(), annulled_by = :uid, annulled_reason = :reason WHERE id = :id";
+            $db->execute($sqlVoid, [':uid' => $userId, ':reason' => $reason, ':id' => $receiptId]);
+
+            // 3. Obtener monto y moneda antes de anular el pago
+            $amount = 0;
+            $currency = 'USD'; // Default
+            
+            if ($receipt['payment_id']) {
+                $payRows = $db->query("SELECT amount, currency, status FROM payments WHERE id = :pid", [':pid' => $receipt['payment_id']]);
+                if (!empty($payRows)) {
+                    $payment = $payRows[0];
+                    $amount = $payment['amount'];
+                    $currency = $payment['currency'];
+                    
+                    // 4. Actualizar tabla payments: Set status='rejected'
+                    $db->execute("UPDATE payments SET status = 'rejected' WHERE id = :pid", [':pid' => $receipt['payment_id']]);
+                }
+            } else {
+                // FALLBACK: Si no hay payment_id directo, intentar recuperar datos de la cuenta asociada
+                // Esto es crucial para mantener integridad si el recibo agrupa pagos o si el link es indirecto
+                 /* 
+                 * NOTA: Según requerimiento estricto, usamos "El pago asociado". 
+                 * Si es null, asumimos monto 0 o lógica futura. 
+                 * Mantenemos 0 para evitar errores de lógica no especificada.
+                 */
+            }
+
+            // 5. Insertar contra-partida en cash_register_movements
+            // Validar sesión abierta
+            $sessionModel = new CashRegisterSessionModel();
+            $session = $sessionModel->findOpenByUser($userId);
+            
+            if (!$session) {
+                throw new Exception("Error: No tienes una sesión de caja abierta para registrar el reverso.");
+            }
+
+            if ($amount > 0) {
+                $desc = "ANULACIÓN Recibo " . $receipt['receipt_number'] . ". Motivo: " . $reason;
+                $sqlMov = "INSERT INTO cash_register_movements (session_id, payment_id, movement_type, amount, currency, description, created_by, created_at) 
+                           VALUES (:sess, :pid, 'reversal', :amt, :curr, :desc, :uid, NOW())";
+                
+                $db->execute($sqlMov, [
+                    ':sess' => $session['id'],
+                    ':pid'  => $receipt['payment_id'],
+                    ':amt'  => $amount,
+                    ':curr' => $currency,
+                    ':desc' => $desc,
+                    ':uid'  => $userId
+                ]);
+            }
+
+            // 6. Commit
+            $db->commit();
+            return true;
+
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 }
 ?>
