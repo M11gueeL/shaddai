@@ -7,11 +7,7 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../config');
 $dotenv->safeLoad();
 
-if (!empty($_ENV['TIMEZONE'])) {
-	date_default_timezone_set($_ENV['TIMEZONE']);
-} else if (!ini_get('date.timezone')) {
-	date_default_timezone_set('America/Caracas');
-}
+date_default_timezone_set($_ENV['TIMEZONE'] ?? 'America/Caracas');
 
 require_once __DIR__ . '/../utils/Utilities.php';
 
