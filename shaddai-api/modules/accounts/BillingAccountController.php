@@ -4,6 +4,8 @@ require_once __DIR__ . '/../services/ServiceModel.php';
 require_once __DIR__ . '/../inventory/InventoryModel.php';
 require_once __DIR__ . '/../../services/RateService.php';
 require_once __DIR__ . '/../../services/BillingService.php';
+require_once __DIR__ . '/../receipts/ReceiptModel.php';
+require_once __DIR__ . '/../../services/ReceiptService.php';
 
 class BillingAccountController {
     private $model;
@@ -11,13 +13,17 @@ class BillingAccountController {
     private $inventoryModel;
     private $rateService;
     private $billingService;
+    private $receiptModel;
+    private $receiptService;
 
     public function __construct() {
         $this->model = new BillingAccountModel();
         $this->serviceModel = new ServiceModel();
-    $this->inventoryModel = new InventoryModel();
+        $this->inventoryModel = new InventoryModel();
         $this->rateService = new RateService();
         $this->billingService = new BillingService();
+        $this->receiptModel = new ReceiptModel();
+        $this->receiptService = new ReceiptService();
     }
 
     public function createAccount() {
@@ -72,6 +78,7 @@ class BillingAccountController {
             $priceBs = round($priceUsd * (float)$account['rate_bcv'], 2);
             $detailId = $this->model->addDetail((int)$id, $service_id, $service['name'], $qty, $priceUsd, $priceBs);
             $totals = $this->billingService->computeTotalsForAccount((int)$id);
+            $this->billingService->refreshAccountStatusByPayments((int)$id);
             http_response_code(201);
             echo json_encode(['detail_id'=>(int)$detailId, 'totals'=>$totals]);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
@@ -106,6 +113,7 @@ class BillingAccountController {
                 throw $inner;
             }
             $totals = $this->billingService->computeTotalsForAccount((int)$id);
+            $this->billingService->refreshAccountStatusByPayments((int)$id);
             http_response_code(201);
             echo json_encode(['supply_id'=>(int)$supplyId, 'totals'=>$totals]);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
@@ -113,6 +121,9 @@ class BillingAccountController {
 
     public function removeDetail($detailId) {
         try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
+            
             // Find account id from detail
             $db = Database::getInstance();
             $row = $db->query('SELECT account_id FROM billing_account_details WHERE id = :id', [':id'=>(int)$detailId]);
@@ -121,8 +132,11 @@ class BillingAccountController {
             $acc = $this->model->getAccountWithRate($accountId);
             if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
             if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar detalles de una cuenta anulada o pagada']); return; }
+            
             $this->model->removeDetail((int)$detailId);
             $totals = $this->billingService->computeTotalsForAccount($accountId);
+            $this->billingService->refreshAccountStatusByPayments($accountId);
+
             echo json_encode(['removed'=>true, 'totals'=>$totals]);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
     }
@@ -151,6 +165,8 @@ class BillingAccountController {
                 throw $inner;
             }
             $totals = $this->billingService->computeTotalsForAccount($accountId);
+            $this->billingService->refreshAccountStatusByPayments($accountId);
+
             echo json_encode(['removed'=>true, 'totals'=>$totals]);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
     }

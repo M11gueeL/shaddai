@@ -43,7 +43,18 @@ class BillingService {
         if ($paid <= 0.0001) {
             $newStatus = 'pending';
         } elseif ($paid + 0.0001 >= (float)$acc['total_usd']) { // allow tiny epsilon
-            $newStatus = 'paid';
+            // If previous status was already paid, keep it. 
+            // If it was cancelled or pending/partially_paid, we DO NOT auto-set to 'paid'.
+            // User requested explicit confirmation to close account.
+            // However, we must ensure we don't "revert" a paid status if no changes happened.
+            // But if we just modified items (refresh called), we might want to stay in partially_paid until confirmed?
+            // "lo preferible es que un cuenta no se marque como PAGADA por automatico"
+            
+            if ($previous === 'paid') {
+                 $newStatus = 'paid';
+            } else {
+                 $newStatus = 'partially_paid'; // Require manual closure
+            }
         } else {
             $newStatus = 'partially_paid';
         }

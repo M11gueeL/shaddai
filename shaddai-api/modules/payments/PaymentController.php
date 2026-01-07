@@ -77,6 +77,21 @@ class PaymentController {
 
             $todayRate = $this->rateService->getTodayOrFail();
 
+            // [NEW] Strict overpayment check requested by user:
+            // "lo preferible es que un cuenta no se marque como PAGADA por automatico ... lo que si obviamente es que si el monto pagado es igual al monto total no permitir mas pagos"
+            // We check if account is already effectively paid (Status might be 'partially_paid' due to manual closure requirement, but if math says full, stop payments).
+            
+            $paidSoFar = $this->billingService->getAccountPaymentUsdSum((int)$accountId);
+            $isPaidMath = ($paidSoFar + 0.0001 >= (float)$account['total_usd']);
+            if ($isPaidMath) {
+                 // But wait, if they create a payment because they plan to delete another?
+                 // User said: "no permitir mas pagos a menos que se elimine uno".
+                 // So if it's already full, we BLOCK.
+                 http_response_code(400); 
+                 echo json_encode(['error'=>'La cuenta ya cubre el monto total. No se permiten más pagos a menos que elimine uno existente.']); 
+                 return;
+            }
+
             $usdEq = $currency === 'USD' ? $amount : round($amount / (float)$todayRate['rate_bcv'], 2);
             $status = in_array($payment_method, ['transfer_bs','mobile_payment_bs']) ? 'pending_verification' : 'verified';
 
@@ -98,7 +113,7 @@ class PaymentController {
             }
 
             // Validaciones de sobrepago:
-            $paidSoFar = $this->billingService->getAccountPaymentUsdSum((int)$accountId);
+            // $paidSoFar calculado previamente al inicio
             $saldoUsd = max(0, (float)$account['total_usd'] - $paidSoFar);
             $epsilon = 0.01;
             $isElectronic = in_array($payment_method, ['transfer_bs','mobile_payment_bs']);

@@ -197,6 +197,21 @@ export default function AccountDetailView({ account, details, setDetails, onBack
     } catch(e) { toast.error('Error al descargar recibo'); }
   };
 
+  const handleCloseAccount = async () => {
+    if(!await confirm({ 
+        title: 'Cerrar Cuenta', 
+        message: 'El saldo ha sido cubierto en su totalidad. ¿Desea cerrar la cuenta y generar el recibo definitivo?' 
+    })) return;
+
+    try {
+        await receiptsApi.generateReceipt(account.id, token);
+        toast.success('Cuenta cerrada y recibo generado');
+        onReload();
+    } catch(e) {
+        toast.error(e.response?.data?.error || 'Error al generar recibo');
+    }
+  };
+
   const initiateVoidReceipt = () => {
     setVoidReason('');
     setSelectedVoidPayments([]);
@@ -257,20 +272,33 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                 <h1 className="text-3xl font-bold text-gray-900">{account.patient_name}</h1>
                 <p className="text-sm text-gray-500 mt-1">Responsable: <span className="font-medium text-gray-700">{account.payer_name}</span></p>
                 
-                {account.status === 'paid' && receiptInfo && (
-                  <div className="flex gap-2 mt-4">
-                      <button onClick={handleReceipt} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-2">
-                        <ReceiptText className="w-4 h-4" /> Descargar Recibo
-                      </button>
-                      
-                      {/* Admin Void Button */}
-                      {hasRole(['admin']) && (
-                          <button onClick={initiateVoidReceipt} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors flex items-center gap-2">
-                            <HandCoins className="w-4 h-4" /> Anular Recibo
-                          </button>
-                      )}
-                  </div>
-                )}
+                <div className="mt-4 flex flex-col gap-2">
+                    {account.status === 'paid' && receiptInfo && (
+                    <div className="flex gap-2">
+                        <button onClick={handleReceipt} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-2">
+                            <ReceiptText className="w-4 h-4" /> Descargar Recibo
+                        </button>
+                        
+                        {/* Admin Void Button */}
+                        {hasRole(['admin']) && (
+                            <button onClick={initiateVoidReceipt} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors flex items-center gap-2">
+                                <HandCoins className="w-4 h-4" /> Anular Recibo
+                            </button>
+                        )}
+                    </div>
+                    )}
+                    
+                    {/* Manual Close Button for Full Payments */}
+                    {account.status !== 'paid' && pendingUsd < 0.01 && totalUsd > 0 && (
+                        <button 
+                            onClick={handleCloseAccount} 
+                            className="w-fit px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 animate-pulse"
+                        >
+                            <CheckCircle2 className="w-4 h-4" /> 
+                            Cerrar Cuenta y Generar Recibo
+                        </button>
+                    )}
+                </div>
               </div>
 
               {/* Financial Summary */}

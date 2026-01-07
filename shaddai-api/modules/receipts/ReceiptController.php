@@ -19,15 +19,35 @@ class ReceiptController {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
             if (!$payload) throw new Exception('No autorizado');
-            $acc = $this->accountModel->getAccount((int)$accountId);
+            $acc = $this->accountModel->getAccountWithRate((int)$accountId);
             if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Account not found']); return; }
-            if ($acc['status'] !== 'paid') { http_response_code(400); echo json_encode(['error'=>'Account is not paid']); return; }
+            
+            // Allow generation if 'paid' OR if 'partially_paid' but balance is effectively 0
+            $billingService = new BillingService(); // Ensure we have instance or use global if available (using included class)
+            $paidSoFar = $billingService->getAccountPaymentUsdSum((int)$accountId);
+            $total = (float)$acc['total_usd'];
+            $isFullyPaid = ($paidSoFar + 0.0001 >= $total);
+
+            // If not fully paid, deny
+            if (!$isFullyPaid) { 
+                http_response_code(400); 
+                echo json_encode(['error'=>'La cuenta no está solvente (Monto pagado menor al total). No se puede generar recibo.']); 
+                return; 
+            }
+
+            // Close the account (Set 'paid') if not already
+            if ($acc['status'] !== 'paid') {
+                $db = Database::getInstance();
+                $db->execute("UPDATE billing_accounts SET status = 'paid', updated_at = NOW() WHERE id = :id", [':id'=>$accountId]);
+            }
+
             // If an active receipt already exists, reuse it
             $existing = $this->model->getLatestByAccount((int)$accountId);
             if ($existing) {
                 echo json_encode(['receipt_id'=>(int)$existing['id'], 'receipt_number'=>$existing['receipt_number'], 'pdf_path'=>$existing['pdf_path'] ?? null]);
                 return;
             }
+            // Link to the last payment just for reference, or null
             $created = $this->model->create((int)$accountId, null, $payload->sub);
             try { $pdf = $this->service->generatePdfForAccountReceipt((int)$created['id']); } catch (Exception $e) { $pdf = null; }
             echo json_encode(['receipt_id'=>(int)$created['id'], 'receipt_number'=>$created['receipt_number'], 'pdf_path'=>$pdf]);
