@@ -9,7 +9,10 @@ import {
   FileText,
   HandCoins,
   CheckCircle2,
-  ReceiptText
+  ReceiptText,
+  Trash2,
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 
 import * as accountsApi from '../../../api/accounts';
@@ -34,6 +37,10 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   // Void Reason Modal State
   const [showVoidReason, setShowVoidReason] = useState(false);
   const [voidReason, setVoidReason] = useState('');
+  const [selectedVoidPayments, setSelectedVoidPayments] = useState([]);
+
+  // Image Preview Modal
+  const [previewImage, setPreviewImage] = useState(null);
   
   const PAYMENT_METHODS = {
     cash_bs: 'Bolívares en efectivo',
@@ -68,8 +75,13 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   const canModify = !['paid', 'cancelled'].includes(account.status);
   
   const payments = account.payments || [];
-  const validPayments = payments.filter(p => p.status !== 'rejected');
-  const paidUsd = validPayments.reduce((acc, p) => acc + Number(p.amount_usd_equivalent || 0), 0);
+  // Calculate paid amount excluding rejected payments
+  const paidUsd = payments
+    .filter(p => p.status !== 'rejected')
+    .reduce((acc, p) => acc + Number(p.amount_usd_equivalent || 0), 0);
+  
+  // We want to show ALL payments in the list, including rejected ones, for audit purposes
+  const displayPayments = payments;
   
   const totalUsd = Number(account.total_usd || 0);
   const totalBs = Number(account.total_bs || 0);
@@ -145,8 +157,29 @@ export default function AccountDetailView({ account, details, setDetails, onBack
       await paymentsApi.createPayment(account.id, form, token);
       toast.success('Pago registrado');
       setAmount(''); setRef(''); setFile(null);
+      // Reset file input value
+      const fileInput = document.getElementById('payment-file-input');
+      if(fileInput) fileInput.value = '';
+      
       onReload();
     } catch(e) { toast.error('Error al registrar pago'); }
+  };
+
+  const deletePayment = async (paymentId) => {
+      if(!await confirm({
+          title: 'Eliminar Pago',
+          message: '¿Está seguro de eliminar este pago? Esta acción revertirá el saldo.'
+      })) return;
+
+      try {
+          // Use Api directly. assuming import * as paymentsApi
+          // The search showed: export const deletePayment = ...
+          await paymentsApi.deletePayment(paymentId, token);
+          toast.success('Pago eliminado');
+          onReload();
+      } catch(e) {
+          toast.error('Error al eliminar el pago');
+      }
   };
 
   const handleReceipt = async () => {
@@ -166,7 +199,16 @@ export default function AccountDetailView({ account, details, setDetails, onBack
 
   const initiateVoidReceipt = () => {
     setVoidReason('');
+    setSelectedVoidPayments([]);
     setShowVoidReason(true);
+  };
+
+  const toggleVoidPayment = (id) => {
+    if(selectedVoidPayments.includes(id)) {
+        setSelectedVoidPayments(prev => prev.filter(x => x !== id));
+    } else {
+        setSelectedVoidPayments(prev => [...prev, id]);
+    }
   };
 
   const confirmVoidReceipt = async () => {
@@ -174,13 +216,17 @@ export default function AccountDetailView({ account, details, setDetails, onBack
     if(!receiptInfo) return;
     
     // Final confirm
+    const paymentWarning = selectedVoidPayments.length > 0 
+        ? ` Se eliminarán ${selectedVoidPayments.length} pago(s) asociados.` 
+        : ' No se eliminará ningún pago (solo se anulará el recibo físico).';
+
     if(!await confirm({ 
         title: 'ANULACIÓN PERMANENTE', 
-        message: 'Esta acción anulará el recibo, el pago asociado y generará un reverso en caja. La cuenta se reabrirá para edición. ¿Proceder?' 
+        message: 'Esta acción anulará el recibo y reabrirá la cuenta.' + paymentWarning + ' ¿Proceder?' 
     })) return;
 
     try {
-        await receiptsApi.annulReceipt(receiptInfo.id, voidReason, token);
+        await receiptsApi.annulReceipt(receiptInfo.id, voidReason, selectedVoidPayments, token);
         toast.success('Recibo anulado y cuenta reabierta exitosamente.');
         setShowVoidReason(false);
         onReload(); // Reload to update UI state
@@ -254,7 +300,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
            <div className="flex gap-6 overflow-x-auto">
              <TabBtn active={tab==='services'} onClick={()=>setTab('services')} icon={ClipboardList} label="Servicios" count={details.length} />
              <TabBtn active={tab==='supplies'} onClick={()=>setTab('supplies')} icon={Package} label="Insumos" count={account.supplies?.length || 0} />
-             <TabBtn active={tab==='payments'} onClick={()=>setTab('payments')} icon={CreditCard} label="Pagos" count={validPayments.length} />
+             <TabBtn active={tab==='payments'} onClick={()=>setTab('payments')} icon={CreditCard} label="Pagos" count={displayPayments.length} />
            </div>
         </div>
       </div>
@@ -347,15 +393,26 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                      <HistoryIcon className="w-5 h-5 text-gray-400" /> Historial de Pagos
                    </h3>
-                   {validPayments.length === 0 ? (
+                   {displayPayments.length === 0 ? (
                       <EmptyState label="No se han registrado pagos" />
                    ) : (
                       <div className="space-y-3">
-                        {validPayments.map(p => (
+                        {displayPayments.map(p => (
                           <div key={p.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                              <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-white rounded-xl text-gray-600 shadow-sm">
+                                <div className="p-2.5 bg-white rounded-xl text-gray-600 shadow-sm relative group">
                                    {p.payment_method?.includes('cash') ? <DollarSign className="w-5 h-5"/> : <CreditCard className="w-5 h-5"/>}
+                                   
+                                   {/* Image Preview Thumbnail */}
+                                   {(p.attachment_path) && (
+                                       <button 
+                                          onClick={() => setPreviewImage(`${import.meta.env.VITE_API_URL}${p.attachment_path}`)}
+                                          className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm"
+                                          title="Ver comprobante"
+                                       >
+                                           <ImageIcon className="w-2.5 h-2.5" />
+                                       </button>
+                                   )}
                                 </div>
                                 <div>
                                    <div className="font-semibold text-gray-900">
@@ -364,15 +421,30 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                                    <div className="text-xs text-gray-500 uppercase font-bold tracking-wider">
                                       {PAYMENT_METHODS[p.payment_method] || p.payment_method}
                                    </div>
+                                   {p.reference_number && (
+                                       <div className="text-[10px] text-gray-400 font-mono">Ref: {p.reference_number}</div>
+                                   )}
                                 </div>
                              </div>
                              
-                             <div className="flex flex-col items-end gap-1">
-                                {p.status === 'verified' && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">VERIFICADO</span>}
-                                {p.status === 'pending' && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">PENDIENTE</span>}
-                                <div className="text-xs text-gray-400">
-                                   {p.currency === 'BS' ? `~ $${Number(p.amount_usd_equivalent).toFixed(2)}` : ''}
-                                </div>
+                             <div className="flex items-center gap-3">
+                                 <div className="flex flex-col items-end gap-1">
+                                    {p.status === 'verified' && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">VERIFICADO</span>}
+                                    {p.status === 'pending' && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">PENDIENTE</span>}
+                                    {p.status === 'rejected' && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">RECHAZADO</span>}
+                                    <div className="text-xs text-gray-400">
+                                    {p.currency === 'BS' ? `~ $${Number(p.amount_usd_equivalent).toFixed(2)}` : ''}
+                                    </div>
+                                 </div>
+                                 {canModify && (
+                                     <button 
+                                        onClick={() => deletePayment(p.id)}
+                                        className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                        title="Eliminar pago"
+                                     >
+                                         <Trash2 className="w-4 h-4" />
+                                     </button>
+                                 )}
                              </div>
                           </div>
                         ))}
@@ -465,10 +537,38 @@ export default function AccountDetailView({ account, details, setDetails, onBack
             <textarea
               value={voidReason}
               onChange={e => setVoidReason(e.target.value)}
-              className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none resize-none"
+              className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none resize-none mb-4"
               placeholder="Ej: Error en el cobro del servicio X..."
               autoFocus
             />
+
+            <div className="mb-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">Seleccione pagos a eliminar (Soft Delete)</label>
+                <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-100 rounded-xl p-2 bg-gray-50">
+                   {payments.filter(p => p.status === 'verified').length === 0 && <p className="text-xs text-gray-400 p-2">No hay pagos verificados para eliminar.</p>}
+                   {payments.filter(p => !p.deleted_at).map(p => (
+                       <label key={p.id} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${selectedVoidPayments.includes(p.id) ? 'bg-rose-50 border border-rose-100' : 'hover:bg-gray-100'}`}>
+                           <div className="flex items-center gap-3">
+                               <input 
+                                  type="checkbox" 
+                                  checked={selectedVoidPayments.includes(p.id)} 
+                                  onChange={() => toggleVoidPayment(p.id)}
+                                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-gray-300"
+                               />
+                               <div>
+                                   <div className="text-sm font-medium text-gray-900">{PAYMENT_METHODS[p.payment_method] || p.payment_method}</div>
+                                   <div className="text-xs text-gray-500">{p.currency} {Number(p.amount).toFixed(2)}</div>
+                               </div>
+                           </div>
+                           {selectedVoidPayments.includes(p.id) && <Trash2 className="w-4 h-4 text-rose-500" />}
+                       </label>
+                   ))}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1 italic">
+                    * Los pagos seleccionados se eliminarán de la cuenta y se generará un reverso en caja. Los NO seleccionados se mantendrán.
+                </p>
+            </div>
+
             <div className="flex justify-end gap-3 mt-6">
               <button 
                 onClick={() => setShowVoidReason(false)}
@@ -484,6 +584,42 @@ export default function AccountDetailView({ account, details, setDetails, onBack
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in" onClick={() => setPreviewImage(null)}>
+            <div className="relative max-w-4xl max-h-[90vh] bg-transparent flex flex-col items-center">
+                 <button 
+                    onClick={() => setPreviewImage(null)}
+                    className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+                 >
+                     <X className="w-8 h-8" />
+                 </button>
+                 {previewImage.toLowerCase().endsWith('.pdf') ? (
+                     <iframe src={previewImage} className="w-[80vw] h-[80vh] bg-white rounded-lg shadow-2xl" title="Comprobante PDF" />
+                 ) : (
+                     <img 
+                        src={previewImage} 
+                        alt="Comprobante" 
+                        className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/10" 
+                        onClick={(e) => e.stopPropagation()}
+                     />
+                 )}
+                 <div className="mt-4">
+                     <a 
+                        href={previewImage} 
+                        download 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="px-6 py-2 bg-white text-gray-900 rounded-full font-bold shadow hover:bg-gray-100 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                     >
+                         Descargar Original
+                     </a>
+                 </div>
+            </div>
         </div>
       )}
     </div>

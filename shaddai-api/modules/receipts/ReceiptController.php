@@ -152,8 +152,9 @@ class ReceiptController {
             
             $input = json_decode(file_get_contents('php://input'), true);
             $reason = $input['reason'] ?? 'Sin motivo especificado';
+            $paymentsToRemove = $input['payments_to_remove'] ?? [];
             
-            $this->voidReceipt((int)$receiptId, $payload->sub, $reason);
+            $this->voidReceipt((int)$receiptId, $payload->sub, $reason, $paymentsToRemove);
             echo json_encode(['message'=>'Recibo anulado correctamente']);
         } catch (Exception $e) {
             http_response_code(400); 
@@ -161,7 +162,7 @@ class ReceiptController {
         }
     }
 
-    public function voidReceipt($receiptId, $userId, $reason) {
+    public function voidReceipt($receiptId, $userId, $reason, $paymentsToRemove = []) {
         $db = Database::getInstance();
         try {
             if (!$db->inTransaction()) {
@@ -192,36 +193,60 @@ class ReceiptController {
                  }
             }
 
-            // 3. Obtener monto y moneda antes de anular el pago
-            $amount = 0;
-            $currency = 'USD'; // Default
+            // 3. Process Payments to Void/Delete
+            // Only process if user explicitly selected payments to remove
+            $totalReversal = 0;
+            // Need a breakdown by currency/payment for precise reversals? 
+            // Cash Register Movements table usually stores one entry per logical movement.
+            // If multiple payments are removed, we should probably insert multiple reversals or one aggregate if same currency.
+            // Better: loop and insert one reversal per removed payment to maintain traceability.
             
-            if ($receipt['payment_id']) {
-                $payRows = $db->query("SELECT amount, currency, status FROM payments WHERE id = :pid", [':pid' => $receipt['payment_id']]);
-                if (!empty($payRows)) {
-                    $payment = $payRows[0];
-                    $amount = $payment['amount'];
-                    $currency = $payment['currency'];
+            // Check session ONCE
+            $sessionModel = new CashRegisterSessionModel();
+            $session = $sessionModel->findOpenByUser($userId);
+            // Only require session IF we are actually reversing payments
+            if (!empty($paymentsToRemove) && !$session) {
+                throw new Exception("Error: Debes tener una sesión de caja abierta para registrar el reverso de los pagos seleccionados.");
+            }
+
+            if (!empty($paymentsToRemove)) {
+                foreach($paymentsToRemove as $pid) {
+                    // Fetch payment details to ensure it belongs to account and get amount
+                    $pRow = $db->query("SELECT * FROM payments WHERE id = :pid AND account_id = :acc", [':pid'=>$pid, ':acc'=>$receipt['account_id']]);
+                    if(empty($pRow)) continue; // skip if invalid
+                    $payment = $pRow[0];
                     
-                    // 4. Actualizar tabla payments: Set status='rejected'
-                    $db->execute("UPDATE payments SET status = 'rejected' WHERE id = :pid", [':pid' => $receipt['payment_id']]);
+                    if($payment['status'] === 'rejected' || $payment['deleted_at']) continue; // already voided
+
+                    // Soft Delete
+                    // We set status='rejected' AND deleted_at=NOW()
+                    $db->execute("UPDATE payments SET status = 'rejected', deleted_at = NOW() WHERE id = :pid", [':pid' => $pid]);
+                    
+                    // Register Reversal in Cash Register
+                    if ($session && $payment['amount'] > 0) {
+                        $desc = "ANULACIÓN Recibo " . $receipt['receipt_number'] . ". Reverso Pago #" . $payment['id'] . ". Motivo: " . $reason;
+                        $sqlMov = "INSERT INTO cash_register_movements (session_id, payment_id, movement_type, amount, currency, description, created_by, created_at) 
+                                   VALUES (:sess, :pid, 'reversal', :amt, :curr, :desc, :uid, NOW())";
+                        
+                        $db->execute($sqlMov, [
+                            ':sess' => $session['id'],
+                            ':pid'  => $pid,
+                            ':amt'  => $payment['amount'],
+                            ':curr' => $payment['currency'],
+                            ':desc' => $desc,
+                            ':uid'  => $userId
+                        ]);
+                    }
                 }
-            } else {
-                 // Si no hay payment_id directo (ej. recibo agrupa varios), la lógica sería más compleja.
-                 // Asumimos modelo actual: 1 Recibo = 1 Pago (o null).
             }
 
             // [NUEVO] 4.1. Reabrir la Cuenta (BillingAccount)
-            // Cambiar estado a 'pending' o 'partially_paid' para permitir ediciones.
-            // Al anular el pago, el saldo pendiente aumenta.
-            // En este caso, lo pasaremos a 'pending' o 'partially_paid' dependiendo si quedan otros pagos.
-            // Para simplificar y cumplir requerimiento de "modificarla nuevamente", 'pending' o 'partially_paid' 
-            // no bloquean edición. Si hay otros pagos parciales, debería ser 'partially_paid'.
-            // Verificamos si hay otros pagos válidos.
+            // We always open it to 'pending' or 'partially_paid' because annulment implies correction.
+            // Even if no payments were deleted, the existence of an "Annulled Receipt" means the previous "Paid" state was based on an invalid document.
+            // Check if there are any remaining valid payments
             
-            $otherPayments = $db->query("SELECT COUNT(*) as c FROM payments WHERE account_id = :acc AND status = 'verified' AND id <> :pid", [
-                ':acc' => $receipt['account_id'], 
-                ':pid' => $receipt['payment_id'] ?? 0
+            $otherPayments = $db->query("SELECT COUNT(*) as c FROM payments WHERE account_id = :acc AND status = 'verified' AND deleted_at IS NULL", [
+                ':acc' => $receipt['account_id']
             ]);
             $hasOtherPayments = ($otherPayments[0]['c'] > 0);
             
@@ -231,34 +256,6 @@ class ReceiptController {
                 ':st' => $newAccountStatus, 
                 ':acc' => $receipt['account_id']
             ]);
-
-
-            // 5. Insertar contra-partida en cash_register_movements
-            // Validar sesión abierta
-            $sessionModel = new CashRegisterSessionModel();
-            $session = $sessionModel->findOpenByUser($userId);
-            
-            if (!$session) {
-                // Si es admin y no tiene caja abierta, podríamos permitirlo (logueando sin session_id)?
-                // Pero el requerimiento "Reverso de Caja" implica caja.
-                // Si el admin no es cajero, esto fallará. Asumimos Admin DEBE abrir caja para anular (para registrar el movimiento).
-                throw new Exception("Error: Debes tener una sesión de caja abierta para registrar el reverso contable.");
-            }
-
-            if ($amount > 0) {
-                $desc = "ANULACIÓN Recibo " . $receipt['receipt_number'] . ". Motivo: " . $reason;
-                $sqlMov = "INSERT INTO cash_register_movements (session_id, payment_id, movement_type, amount, currency, description, created_by, created_at) 
-                           VALUES (:sess, :pid, 'reversal', :amt, :curr, :desc, :uid, NOW())";
-                
-                $db->execute($sqlMov, [
-                    ':sess' => $session['id'],
-                    ':pid'  => $receipt['payment_id'],
-                    ':amt'  => $amount,
-                    ':curr' => $currency,
-                    ':desc' => $desc,
-                    ':uid'  => $userId
-                ]);
-            }
 
             // 6. Commit
             $db->commit();

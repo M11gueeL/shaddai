@@ -12,7 +12,7 @@ export const getReceiptByAccount = (accountId, token) => axios.get(`${API_URL}/r
 export const downloadReceiptUrl = (receiptId) => `${API_URL}/receipts/${receiptId}/download`;
 export const downloadReceipt = (receiptId, token) => axios.get(`${API_URL}/receipts/${receiptId}/download`, { ...auth(token), responseType: 'blob' });
 
-export const annulReceipt = (receiptId, reason, token) => axios.post(`${API_URL}/receipts/${receiptId}/annul`, { reason }, auth(token));
+export const annulReceipt = (receiptId, reason, paymentsToRemove = [], token) => axios.post(`${API_URL}/receipts/${receiptId}/annul`, { reason, payments_to_remove: paymentsToRemove }, auth(token));
 
 export const listAllReceipts = (params, token) => axios.get(`${API_URL}/receipts/list`, { ...auth(token), params });
 

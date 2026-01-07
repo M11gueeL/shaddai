@@ -45,20 +45,94 @@ class ReceiptService {
         // Logic to fetch payments: Include 'rejected' ONLY if it is the payment linked to this receipt (in case of annulment)
         // or if the receipt itself is annulled, we might want to show what was attempting to be paid. 
         // Safer approach: Always show non-rejected, OR show the specific payment_id linked even if rejected.
+        // UPDATE: User wants to see ALL payments (even rejected ones) if the receipt is annulled, to keep the history.
+        $isAnnulled = ($receipt['status'] === 'annulled');
+        
         $paySql = 'SELECT payment_date, payment_method, amount, currency, amount_usd_equivalent, reference_number, status, id 
                    FROM payments 
-                   WHERE account_id = :acc 
-                   AND (status <> "rejected" OR id = :pid)
-                   ORDER BY id ASC';
+                   WHERE account_id = :acc AND deleted_at IS NULL ';
+        
+        // If NOT annulled, hide rejected payments generally (unless it's the specific linked one which is rare but safe to include)
+        // If annulled, show EVERYTHING so the user sees what happened (including the payment that "disappeared").
+        if (!$isAnnulled) {
+             $paySql .= ' AND (status <> "rejected" OR id = :pid)';
+        }
+        $paySql .= ' ORDER BY id ASC';
+
         $payments = $this->db->query($paySql, [':acc'=>$receipt['account_id'], ':pid'=>$receipt['payment_id'] ?? 0]);
+
+        // --- Logic to consolidate Cash payments (USD & BS) ---
+        // Requirement: "if two payment methods of cash_usd and cash_bs are added, they should automatically be summed and count as one... this does not apply to transfer and mobile payment"
+        $processedPayments = [];
+        $cashConsolidation = [
+            'cash_usd' => null,
+            'cash_bs' => null
+        ];
+
+        foreach($payments as $p) {
+            $key = $p['payment_method'];
+
+            // We only consolidate if the status matches (to avoid mixing rejected with active cash, although technically cash is fungible, for audit clearer is better?)
+            // Assuming "Active Receipt" usually has only verified payments.
+            // If Reciept is Annulled, mixed states might exist.
+            // Let's create a composite key: method + status to be safe.
+            // But user requirement implies summing up. "cash_usd 40" instead of "20 and 20".
+            // If one is verified and one rejected, they shouldn't be mixed.
+            // So we consolidate separately per status.
+            
+            if (in_array($key, ['cash_usd', 'cash_bs'])) {
+                $compositeKey = $key . '_' . $p['status'];
+                if (!isset($cashConsolidation[$compositeKey])) {
+                    $cashConsolidation[$compositeKey] = $p;
+                    $cashConsolidation[$compositeKey]['original_count'] = 1;
+                } else {
+                    $cashConsolidation[$compositeKey]['amount'] += $p['amount'];
+                    $cashConsolidation[$compositeKey]['amount_usd_equivalent'] += $p['amount_usd_equivalent'];
+                    // Append notes if any
+                    if (!empty($p['notes'])) {
+                        $existingNotes = $cashConsolidation[$compositeKey]['notes'] ?? '';
+                        $cashConsolidation[$compositeKey]['notes'] = trim($existingNotes . ' | ' . $p['notes'], ' | ');
+                    }
+                    $cashConsolidation[$compositeKey]['original_count']++;
+                }
+            } else {
+                $processedPayments[] = $p;
+            }
+        }
+
+        // Merge consolidated cash back into the list
+        // Prefer putting them at the top or bottom? Or preserve original order?
+        // Original order is lost if we merge. Put them at the beginning.
+        foreach ($cashConsolidation as $c) {
+            array_unshift($processedPayments, $c);
+        }
+        
+        // Sorting: Maybe by date?
+        // Let's just keep the order where cash is first for simplicity, or re-sort by ID.
+        // Usually cash is handed over on spot.
+        // Let's perform a stable sort by ID (approx time) to keep logical flow.
+        usort($processedPayments, function($a, $b) {
+            return $a['id'] <=> $b['id'];
+        });
+
+        $payments = $processedPayments; // Replace with processed list
+        // -----------------------------------------------------
 
         // Calculate totals logic for the view
         $paidUsdTotal = 0;
         foreach($payments as $p){
-            // If payment is rejected but shown (because it's the linked one), we might NOT want to count it towards "Paid Total" in the logic?
-            // Actually, for an annulled receipt, the "Paid" amount usually reflects 0 or the annulled amount.
-            // But visually, we list the payment.
-            if ($p['status'] !== 'rejected') {
+            // If payment is rejected but shown (because it's the linked one or we are listing everything in annulled receipt), 
+            // we typically DO NOT add it to the "Paid" total if it is rejected, because effectively it is not paid.
+            // But if the user wants to see the "snapshot" of the receipt BEFORE it was annulled, we might need to count it?
+            // "el recibo anulado dice que falta dinero... claro porque el pago en pago movil se borro"
+            // The user implies they want to see the totals AS THEY WERE.
+            // So if the receipt is annulled, we should probably Sum even the rejected ones to reconstruct the original state?
+            // OR, the PDF template should explicitly list them and maybe the total logic needs to handle "what was attempted".
+            
+            // DECISION: If receipt is annulled, we count rejected payments towards the total ONLY IF they were rejected 
+            // likely due to this annulment? Hard to know. 
+            // Simplest fix: If isAnnulled, sum everything to match the "original" view.
+            if ($p['status'] !== 'rejected' || $isAnnulled) {
                 $paidUsdTotal += (float)$p['amount_usd_equivalent'];
             }
         }

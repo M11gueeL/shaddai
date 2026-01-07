@@ -40,7 +40,8 @@ class PaymentModel {
     }
 
     public function delete($id) {
-        return $this->db->execute('DELETE FROM payments WHERE id = :id', [':id'=>$id]);
+        // Implement Soft Delete
+        return $this->db->execute('UPDATE payments SET deleted_at = NOW(), status = "rejected" WHERE id = :id', [':id'=>$id]);
     }
 
     public function listPending($limit = 200) {

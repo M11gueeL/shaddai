@@ -29,7 +29,8 @@ class BillingAccountModel {
         $acc = $acc[0];
         $details = $this->db->query('SELECT d.*, s.name as service_name FROM billing_account_details d INNER JOIN services s ON s.id = d.service_id WHERE d.account_id = :id ORDER BY d.id ASC', [':id'=>$id]);
         // Avoid large blobs; expose only metadata
-        $payments = $this->db->query('SELECT id, account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by, verified_by FROM payments WHERE account_id = :id ORDER BY id ASC', [':id'=>$id]);
+        // Filter out soft-deleted payments (deleted_at IS NULL)
+        $payments = $this->db->query('SELECT id, account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by, verified_by FROM payments WHERE account_id = :id AND deleted_at IS NULL ORDER BY id ASC', [':id'=>$id]);
         // Supplies loaded to the account
         $supplies = $this->db->query('SELECT s.*, ii.name as item_name, ii.unit_of_measure FROM billing_account_supplies s INNER JOIN inventory_items ii ON ii.id = s.item_id WHERE s.account_id = :id ORDER BY s.id ASC', [':id'=>$id]);
         $acc['details'] = $details;
