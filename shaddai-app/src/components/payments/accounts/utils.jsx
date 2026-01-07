@@ -5,7 +5,7 @@ export function StatusBadge({ status }) {
     pending: { label: 'Pendiente', classes: 'text-amber-700 bg-amber-50 border-amber-200' },
     partially_paid: { label: 'Parcial', classes: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
     paid: { label: 'Pagada', classes: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-    cancelled: { label: 'Anulada', classes: 'text-slate-700 bg-slate-100 border-slate-200' },
+    cancelled: { label: 'Cancelada', classes: 'text-slate-700 bg-slate-100 border-slate-200' },
     pending_verification: { label: 'Por verificar', classes: 'text-sky-700 bg-sky-50 border-sky-200' }
   };
   const m = map[status] || { label: status, classes: 'text-gray-700 bg-gray-50 border-gray-200' };

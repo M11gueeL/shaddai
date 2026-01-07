@@ -67,7 +67,7 @@ class BillingAccountController {
         try {
             $account = $this->model->getAccountWithRate((int)$id);
             if (!$account) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
-            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden agregar detalles a una cuenta anulada o pagada']); return; }
+            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden agregar detalles a una cuenta cancelada o pagada']); return; }
             $service_id = (int)($_POST['service_id'] ?? 0);
             $qty = (int)($_POST['quantity'] ?? 1);
             if ($service_id <= 0) { http_response_code(400); echo json_encode(['error'=>'El ID del servicio es requerido']); return; }
@@ -90,7 +90,7 @@ class BillingAccountController {
             if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
             $account = $this->model->getAccountWithRate((int)$id);
             if (!$account) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
-            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden agregar insumos a una cuenta anulada o pagada']); return; }
+            if ($account['status'] === 'cancelled' || $account['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden agregar insumos a una cuenta cancelada o pagada']); return; }
             $item_id = (int)($_POST['item_id'] ?? 0);
             $qty = (int)($_POST['quantity'] ?? 1);
             if ($item_id <= 0) { http_response_code(400); echo json_encode(['error'=>'El ID del insumo es requerido']); return; }
@@ -131,7 +131,7 @@ class BillingAccountController {
             $accountId = (int)$row[0]['account_id'];
             $acc = $this->model->getAccountWithRate($accountId);
             if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
-            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar detalles de una cuenta anulada o pagada']); return; }
+            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar detalles de una cuenta cancelada o pagada']); return; }
             
             $this->model->removeDetail((int)$detailId);
             $totals = $this->billingService->computeTotalsForAccount($accountId);
@@ -153,7 +153,7 @@ class BillingAccountController {
             $qty = (int)$row[0]['quantity'];
             $acc = $this->model->getAccountWithRate($accountId);
             if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
-            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar insumos de una cuenta anulada o pagada']); return; }
+            if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar insumos de una cuenta cancelada o pagada']); return; }
             try {
                 $db->beginTransaction();
                 $this->model->removeSupply((int)$supplyId);
@@ -173,11 +173,24 @@ class BillingAccountController {
 
     public function cancelAccount($id) {
         try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+
+            // 1. Role Check
+            $roles = $payload->roles ?? [];
+            if (!in_array('admin', $roles)) {
+                http_response_code(403); 
+                echo json_encode(['error' => 'Acceso denegado. Solo administradores pueden cancelar cuentas.']);
+                return;
+            }
+
             $acc = $this->model->getAccountWithRate((int)$id);
             if (!$acc) { http_response_code(404); echo json_encode(['error'=>'Cuenta no encontrada']); return; }
-            if ($acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se puede anular una cuenta pagada']); return; }
+            if ($acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se puede cancelar una cuenta que ya está pagada.']); return; }
+            if ($acc['status'] === 'cancelled') { http_response_code(400); echo json_encode(['error'=>'La cuenta ya está cancelada.']); return; }
+
             $this->model->updateStatus((int)$id, 'cancelled');
-            echo json_encode(['status'=>'cancelled']);
+            echo json_encode(['status'=>'cancelled', 'message'=>'Cuenta cancelada correctamente']);
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
     }
 }

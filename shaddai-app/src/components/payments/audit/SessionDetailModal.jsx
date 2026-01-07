@@ -1,5 +1,6 @@
 // src/components/payments/audit/SessionDetailModal.jsx
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Calendar, 
@@ -29,8 +30,8 @@ export default function SessionDetailModal({ sessionId, onClose }) {
 
   if (!sessionId) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] overflow-y-auto">
       <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
         
         {/* Header */}
@@ -81,7 +82,7 @@ export default function SessionDetailModal({ sessionId, onClose }) {
                     color="blue"
                  />
                  <MetricCard 
-                    label="Cuentas Anuladas"
+                    label="Cuentas Canceladas"
                     value={data.cancelled_accounts.length}
                     subtext="Cancelaciones en el turno"
                     color="rose"
@@ -155,14 +156,14 @@ export default function SessionDetailModal({ sessionId, onClose }) {
                     {data.cancelled_accounts.length > 0 && (
                        <div className="space-y-3">
                           <h3 className="font-bold text-red-900 border-b border-red-100 pb-2 flex justify-between">
-                             <span className="text-red-600">Cuentas Anuladas</span>
+                             <span className="text-red-600">Cuentas Canceladas</span>
                              <span className="text-xs bg-red-100 px-2 py-1 rounded-full text-red-600">{data.cancelled_accounts.length}</span>
                           </h3>
                           {data.cancelled_accounts.map(acc => (
                              <div key={acc.id} className="p-3 bg-red-50 rounded-xl flex justify-between items-center opacity-75">
                                 <div>
                                    <div className="text-sm font-bold text-red-900 strike-through decoration-red-500 line-through">{acc.full_name}</div>
-                                   <div className="text-xs text-red-400">Anulada a las {new Date(acc.cancelled_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                                   <div className="text-xs text-red-400">Cancelada a las {new Date(acc.cancelled_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
                                 </div>
                                 <div className="text-sm font-bold text-red-300 line-through">
                                    ${Number(acc.total_usd).toFixed(2)}
@@ -191,7 +192,8 @@ export default function SessionDetailModal({ sessionId, onClose }) {
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

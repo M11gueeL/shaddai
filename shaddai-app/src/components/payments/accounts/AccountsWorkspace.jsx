@@ -4,7 +4,8 @@ import {
   Search, 
   XCircle,
   User,
-  Wallet
+  Wallet,
+  Check
 } from 'lucide-react';
 
 import * as accountsApi from '../../../api/accounts';
@@ -42,6 +43,7 @@ export default function AccountsWorkspace() {
   const [payerQuery, setPayerQuery] = useState('');
   const [patientResults, setPatientResults] = useState([]);
   const [payerResults, setPayerResults] = useState([]);
+  const [sameAsPatient, setSameAsPatient] = useState(false);
 
   // Load Data
   const load = async () => {
@@ -103,7 +105,8 @@ export default function AccountsWorkspace() {
 
   // Search Helpers
   const searchPatients = async (q, setResults) => {
-    if(q.trim().length < 2) { setResults([]); return; }
+    // Basic validation, but allow searching by CI numbers even if short (e.g. "12")
+    if(q.trim().length < 1) { setResults([]); return; }
     try { const r = await PatientsApi.search({ q, limit: 5 }, token); setResults(r.data || []); } catch { setResults([]); }
   };
 
@@ -141,6 +144,7 @@ export default function AccountsWorkspace() {
             setChosenPatient(null); setChosenPayer(null); 
             setPatientQuery(''); setPayerQuery(''); 
             setPatientResults([]); setPayerResults([]);
+            setSameAsPatient(false);
           }} 
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-900 text-white font-medium shadow-lg shadow-gray-900/10 hover:bg-gray-800 transition-all hover:translate-y-px"
         >
@@ -170,7 +174,7 @@ export default function AccountsWorkspace() {
           <option value="pending">Pendientes</option>
           <option value="partially_paid">Pago Parcial</option>
           <option value="paid">Pagadas</option>
-          <option value="cancelled">Anuladas</option>
+          <option value="cancelled">Canceladas</option>
         </select>
       </div>
 
@@ -227,7 +231,11 @@ export default function AccountsWorkspace() {
                       {patientResults.length > 0 && (
                         <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10">
                           {patientResults.map(p => (
-                            <button key={p.id} onClick={() => { setChosenPatient(p); setPatientResults([]); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group">
+                            <button key={p.id} onClick={() => { 
+                                setChosenPatient(p); 
+                                if(sameAsPatient) setChosenPayer(p);
+                                setPatientResults([]); 
+                            }} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group">
                               <div>
                                 <div className="font-medium text-gray-900">{p.full_name}</div>
                                 <div className="text-xs text-gray-500">CI: {p.cedula}</div>
@@ -243,19 +251,49 @@ export default function AccountsWorkspace() {
 
                 {/* Payer Select */}
                 <div className="space-y-3">
-                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Responsable de Pago</label>
+                   <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Responsable de Pago</label>
+                      
+                      <button 
+                        onClick={() => {
+                            const newVal = !sameAsPatient;
+                            setSameAsPatient(newVal);
+                            if(newVal && chosenPatient) {
+                                setChosenPayer(chosenPatient);
+                            } else if (!newVal) {
+                                setChosenPayer(null);
+                            }
+                        }}
+                        className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg transition-colors ${sameAsPatient ? 'bg-indigo-50 text-indigo-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      >
+                         <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${sameAsPatient ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}`}>
+                             {sameAsPatient && <Check className="w-2.5 h-2.5 text-white" />}
+                         </div>
+                         Mismo Paciente
+                      </button>
+                   </div>
+                   
                    {chosenPayer ? (
-                    <SelectedUserCard user={chosenPayer} onRemove={() => setChosenPayer(null)} label="Pagador" icon={Wallet} />
+                    <SelectedUserCard 
+                        user={chosenPayer} 
+                        onRemove={() => {
+                            setChosenPayer(null);
+                            setSameAsPatient(false);
+                        }} 
+                        label="Pagador" 
+                        icon={Wallet} 
+                    />
                   ) : (
                     <div className="relative">
                       <Search className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
                       <input 
-                        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                        placeholder="Buscar responsable..."
+                        disabled={sameAsPatient}
+                        className={`w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none ${sameAsPatient ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        placeholder={sameAsPatient ? "Mismo que paciente" : "Buscar responsable por nombre o cédula..."}
                         value={payerQuery}
                         onChange={(e) => { setPayerQuery(e.target.value); searchPatients(e.target.value, setPayerResults); }}
                       />
-                      {payerResults.length > 0 && (
+                      {payerResults.length > 0 && !sameAsPatient && (
                         <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-10">
                           {payerResults.map(p => (
                             <button key={p.id} onClick={() => { setChosenPayer(p); setPayerResults([]); }} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between group">

@@ -12,7 +12,8 @@ import {
   ReceiptText,
   Trash2,
   Image as ImageIcon,
-  X
+  X,
+  Ban
 } from 'lucide-react';
 
 import * as accountsApi from '../../../api/accounts';
@@ -212,6 +213,23 @@ export default function AccountDetailView({ account, details, setDetails, onBack
     }
   };
 
+  const handleCancelAccount = async () => {
+    if(!await confirm({ 
+        title: 'Cancelar Cuenta', 
+        message: '¿Está seguro de que desea cancelar esta cuenta? Quedará invalidada y no se podrá recuperar.',
+        confirmText: 'Sí, cancelar cuenta',
+        cancelText: 'No, volver'
+    })) return;
+
+    try {
+        await accountsApi.cancelAccount(account.id, token);
+        toast.success('Cuenta cancelada correctamente');
+        onReload();
+    } catch(e) {
+        toast.error(e.response?.data?.error || 'Error al cancelar la cuenta');
+    }
+  };
+
   const initiateVoidReceipt = () => {
     setVoidReason('');
     setSelectedVoidPayments([]);
@@ -296,6 +314,17 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                         >
                             <CheckCircle2 className="w-4 h-4" /> 
                             Cerrar Cuenta y Generar Recibo
+                        </button>
+                    )}
+
+                    {/* Admin Cancel Button (Only for non-paid accounts) */}
+                    {hasRole(['admin']) && account.status !== 'paid' && account.status !== 'cancelled' && (
+                        <button 
+                            onClick={handleCancelAccount} 
+                            className="w-fit px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-200 hover:text-gray-800 transition-colors flex items-center gap-2 mt-2 border border-gray-200"
+                        >
+                            <Ban className="w-4 h-4" /> 
+                            Cancelar Cuenta
                         </button>
                     )}
                 </div>
@@ -558,7 +587,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
       {showVoidReason && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full animate-in zoom-in-95 shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-900 mb-2 text-rose-600">Anular Recibo</h3>
+            <h3 className="text-xl font-bold mb-2 text-rose-600">Anular Recibo</h3>
             <p className="text-sm text-gray-500 mb-4">
                Ingrese el motivo de la anulación. Esta acción quedará registrada en auditoría y reabrirá la cuenta para correcciones.
             </p>
@@ -571,7 +600,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
             />
 
             <div className="mb-2">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">Seleccione pagos a eliminar (Soft Delete)</label>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-2">Seleccione pagos a eliminar</label>
                 <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-100 rounded-xl p-2 bg-gray-50">
                    {payments.filter(p => p.status === 'verified').length === 0 && <p className="text-xs text-gray-400 p-2">No hay pagos verificados para eliminar.</p>}
                    {payments.filter(p => !p.deleted_at).map(p => (
