@@ -21,7 +21,8 @@ export function mapMovementType(t){
     expense_out: 'Egreso',
     adjustment_in: 'Ajuste (+)',
     adjustment_out: 'Ajuste (-)',
-    initial_balance: 'Apertura'
+    initial_balance: 'Apertura',
+    reversal: 'Reverso de Operación'
   };
   return map[t] || t;
 }

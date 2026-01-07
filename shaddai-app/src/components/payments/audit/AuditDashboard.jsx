@@ -3,6 +3,7 @@ import { AlertCircle, DollarSign, Activity, Clock, History, CheckCircle2, Credit
 import * as paymentsApi from '../../../api/payments';
 import * as cashApi from '../../../api/cashregister';
 import { useAuth } from '../../../context/AuthContext';
+import SessionDetailModal from './SessionDetailModal';
 
 function StatCard({ label, value, icon: Icon, color, desc }) {
   const colors = {
@@ -29,6 +30,7 @@ export default function AuditDashboard({ navigateTo }) {
   const { token } = useAuth();
   const [pending, setPending] = useState([]);
   const [sessions, setSessions] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
   
   useEffect(() => {
     (async () => {
@@ -68,6 +70,13 @@ export default function AuditDashboard({ navigateTo }) {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {selectedSessionId && (
+        <SessionDetailModal 
+          sessionId={selectedSessionId} 
+          onClose={() => setSelectedSessionId(null)} 
+        />
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard 
           label="Pagos por Verificar" 
@@ -147,9 +156,13 @@ export default function AuditDashboard({ navigateTo }) {
                   No hay actividad de sesiones
                </div>
             ) : sessions.slice(0, 5).map(s => (
-              <div key={s.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+              <div 
+                key={s.id} 
+                onClick={() => setSelectedSessionId(s.id)}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-white hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border border-transparent hover:border-gray-100"
+              >
                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-xl shadow-sm ${s.status === 'open' ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-gray-400'}`}>
+                    <div className={`p-2 rounded-xl shadow-sm ${s.status === 'open' ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-gray-400 mobile-hidden'}`}>
                        <User className="w-5 h-5" />
                     </div>
                     <div>

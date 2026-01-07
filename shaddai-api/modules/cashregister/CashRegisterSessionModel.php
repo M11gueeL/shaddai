@@ -32,5 +32,91 @@ class CashRegisterSessionModel {
         $sql .= ' ORDER BY s.start_time DESC';
         return $this->db->query($sql, $params);
     }
+
+    public function getFullDetails($sessionId) {
+        // 1. Session Info
+        $session = $this->db->query("
+            SELECT s.*, u.first_name, u.last_name 
+            FROM cash_register_sessions s 
+            JOIN users u ON s.user_id = u.id 
+            WHERE s.id = :id", 
+            [':id' => $sessionId]
+        )[0] ?? null;
+
+        if (!$session) return null;
+
+        $endTime = $session['end_time'] ?? date('Y-m-d H:i:s');
+
+        // 2. Movements with Payment Info
+        $movements = $this->db->query("
+            SELECT m.*, p.payment_method, p.reference_number
+            FROM cash_register_movements m
+            LEFT JOIN payments p ON m.payment_id = p.id
+            WHERE m.session_id = :id
+            ORDER BY m.created_at DESC
+        ", [':id' => $sessionId]);
+
+        // 3. Opened Accounts (Created by this user in this timeframe)
+        $openedAccounts = $this->db->query("
+            SELECT ba.id, ba.created_at, ba.total_usd, ba.total_bs, ba.status, p.full_name, 
+                   (SELECT COUNT(*) FROM billing_account_details WHERE account_id = ba.id) as items_count
+            FROM billing_accounts ba
+            JOIN patients p ON ba.patient_id = p.id
+            WHERE ba.created_by = :uid
+              AND ba.created_at >= :start AND ba.created_at <= :end
+            ORDER BY ba.created_at DESC
+        ", [
+            ':uid' => $session['user_id'], 
+            ':start' => $session['start_time'], 
+            ':end' => $endTime
+        ]);
+
+        // 4. Cancelled Accounts (Updated to cancelled in this timeframe)
+        $cancelledAccounts = $this->db->query("
+            SELECT ba.id, ba.updated_at as cancelled_at, ba.total_usd, ba.total_bs, p.full_name
+            FROM billing_accounts ba
+            JOIN patients p ON ba.patient_id = p.id
+            WHERE ba.status = 'cancelled'
+              AND ba.updated_at >= :start AND ba.updated_at <= :end
+            ORDER BY ba.updated_at DESC
+        ", [':start' => $session['start_time'], ':end' => $endTime]);
+
+        // 5. Aggregated Metrics (Calculated here for ease of use)
+        // Group by Payment Method and Currency
+        $metrics = [
+             'USD' => ['cash' => 0, 'zelle' => 0, 'other' => 0],
+             'BS' => ['cash' => 0, 'mobile_payment' => 0, 'transfer' => 0, 'card' => 0]
+        ];
+        
+        // This can be done via SQL or Loop. Loop is fine for session scale (usually < 100 txns)
+        foreach($movements as $m) {
+            if($m['movement_type'] !== 'payment_in') continue; // Only count income
+            
+            $amt = (float)$m['amount'];
+            $method = $m['payment_method'] ?? 'cash'; // Default if null (e.g. manual entry without payment link)
+            
+            // Normalize method names if needed, or just map exactly
+            // enum: 'cash_usd','cash_bs','transfer_bs','mobile_payment_bs'
+            
+            if ($m['currency'] === 'USD') {
+                 if(strpos($method, 'cash') !== false) $metrics['USD']['cash'] += $amt;
+                 else if(strpos($method, 'zelle') !== false) $metrics['USD']['zelle'] += $amt;
+                 else $metrics['USD']['other'] += $amt;
+            } else {
+                 if(strpos($method, 'cash') !== false) $metrics['BS']['cash'] += $amt;
+                 else if(strpos($method, 'mobile') !== false) $metrics['BS']['mobile_payment'] += $amt;
+                 else if(strpos($method, 'transfer') !== false) $metrics['BS']['transfer'] += $amt;
+                 else $metrics['BS']['card'] += $amt;
+            }
+        }
+
+        return [
+            'session' => $session,
+            'movements' => $movements,
+            'metrics' => $metrics,
+            'opened_accounts' => $openedAccounts,
+            'cancelled_accounts' => $cancelledAccounts
+        ];
+    }
 }
 ?>

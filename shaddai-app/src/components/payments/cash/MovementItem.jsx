@@ -13,7 +13,8 @@ export default function MovementItem({ movement }){
     expense_out: 'text-rose-500 bg-rose-50',
     adjustment_in: 'text-indigo-500 bg-indigo-50',
     adjustment_out: 'text-orange-500 bg-orange-50',
-    initial_balance: 'text-sky-500 bg-sky-50'
+    initial_balance: 'text-sky-500 bg-sky-50',
+    reversal: 'text-purple-500 bg-purple-50'
   };
   const c = colors[movement.movement_type] || 'text-gray-500 bg-gray-50';
 

@@ -11,3 +11,4 @@ export const getStatus = (token) => axios.get(`${API_URL}/cash-sessions/status`,
 export const listMyMovements = (token) => axios.get(`${API_URL}/cash-sessions/movements`, auth(token));
 export const closeSession = (data, token) => axios.post(`${API_URL}/cash-sessions/close`, data, auth(token));
 export const adminListSessions = (token) => axios.get(`${API_URL}/cash-sessions/admin/all`, auth(token));
+export const getSessionDetails = (id, token) => axios.get(`${API_URL}/cash-sessions/details?id=${id}`, auth(token));

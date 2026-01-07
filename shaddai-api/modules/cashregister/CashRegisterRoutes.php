@@ -10,6 +10,7 @@ class CashRegisterRoutes {
         $router->add('POST', 'cash-sessions/close', [$c, 'closeSession'], ['auth','role:recepcionista,admin']);
         // admin
         $router->add('GET', 'cash-sessions/admin/all', [$c, 'adminListSessions'], ['auth','role:admin']);
+        $router->add('GET', 'cash-sessions/details', [$c, 'getSessionDetails'], ['auth','role:admin']);
     }
 }
 ?>

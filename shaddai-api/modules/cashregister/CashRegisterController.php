@@ -87,5 +87,24 @@ class CashRegisterController {
         $status = $_GET['status'] ?? null;
         echo json_encode($this->sessionModel->listAll(null, $status));
     }
+
+    public function getSessionDetails() {
+        try {
+            $id = $_GET['id'] ?? null;
+            if (!$id) throw new Exception("ID de sesión requerido");
+            
+            $details = $this->sessionModel->getFullDetails($id);
+            if (!$details) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Sesión no encontrada']);
+                return;
+            }
+            
+            echo json_encode($details);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
 }
 ?>
