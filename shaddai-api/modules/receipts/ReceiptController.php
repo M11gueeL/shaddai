@@ -97,8 +97,9 @@ class ReceiptController {
             if(!$rows){ http_response_code(404); echo json_encode(['error'=>'Not found']); return; }
             $r = $rows[0];
             $path = $r['pdf_path'] ?? null;
-            if(!$path){
-                try { $path = $this->service->generatePdfForAccountReceipt($id); } catch (Exception $e) { /* ignore */ }
+            if(!$path || !is_file(__DIR__ . '/../../public' . $path)){
+                // Don't suppress error, let it bubble up so we know why it fails
+                $path = $this->service->generatePdfForAccountReceipt($id);
             }
             if($path){
                 $abs = __DIR__ . '/../../public' . $path;

@@ -50,16 +50,23 @@ class ReceiptService {
         
         $paySql = 'SELECT payment_date, payment_method, amount, currency, amount_usd_equivalent, reference_number, status, id 
                    FROM payments 
-                   WHERE account_id = :acc AND deleted_at IS NULL ';
+                   WHERE account_id = :acc ';
         
-        // If NOT annulled, hide rejected payments generally (unless it's the specific linked one which is rare but safe to include)
-        // If annulled, show EVERYTHING so the user sees what happened (including the payment that "disappeared").
+        // If NOT annulled, hide rejected payments. But specifically for annulled receipts, 
+        // we want to see even soft-deleted payments to reconstruct the history.
+        // The issue: "deleted_at IS NULL" hides them.
         if (!$isAnnulled) {
-             $paySql .= ' AND (status <> "rejected" OR id = :pid)';
+             // Normal active receipt: Only show active payments, hide soft-deleted
+             $paySql .= ' AND deleted_at IS NULL AND (status <> "rejected" OR id = :pid)';
+             $queryParams = [':acc'=>$receipt['account_id'], ':pid'=>$receipt['payment_id'] ?? 0];
+        } else {
+             // Annulled receipt: Show EVERYTHING, including soft-deleted payments (deleted_at IS NOT NULL)
+             // Because they were likely part of the receipt when it was active.
+             $queryParams = [':acc'=>$receipt['account_id']];
         }
         $paySql .= ' ORDER BY id ASC';
 
-        $payments = $this->db->query($paySql, [':acc'=>$receipt['account_id'], ':pid'=>$receipt['payment_id'] ?? 0]);
+        $payments = $this->db->query($paySql, $queryParams);
 
         // --- Logic to consolidate Cash payments (USD & BS) ---
         $processedPayments = [];

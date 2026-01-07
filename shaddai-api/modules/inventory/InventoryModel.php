@@ -253,9 +253,13 @@ class InventoryModel {
      * RESTOCK: Crea lote con cantidad inicial y actual sincronizadas
      */
     public function restock($id, $quantity, $userId, $expirationDate, $batchNumber = null, $notes = null) {
-        try {
+        $startedTransaction = false;
+        if (!$this->db->inTransaction()) {
             $this->db->beginTransaction();
+            $startedTransaction = true;
+        }
 
+        try {
             // 1. Insertar Lote con initial_quantity
             $sqlBatch = 'INSERT INTO inventory_batches (item_id, batch_number, quantity, initial_quantity, expiration_date, status) 
                          VALUES (:item_id, :batch_number, :quantity, :initial_quantity, :expiration_date, "active")';
@@ -274,11 +278,16 @@ class InventoryModel {
             $this->recordMovement($id, 'in_restock', $quantity, $userId, "Entrada Lote: $batchNumber", $batchId);
 
             $this->syncItemStats($id);
-            $this->db->commit();
+            
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
             return true;
         } catch (Exception $e) {
-            $this->db->rollBack();
-            throw $e;
+            if ($startedTransaction) {
+                $this->db->rollBack();
+            }
+            throw $e; // If we didn't start the transaction, the caller handles rollback
         }
     }
 
