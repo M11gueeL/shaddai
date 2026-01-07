@@ -91,9 +91,47 @@
             color: #94a3b8;
             font-size: 10px;
         }
+
+        /* Anulacion styles */
+        .watermark {
+            position: fixed;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            color: rgba(220, 38, 38, 0.15); /* Red transparent */
+            font-weight: 900;
+            z-index: -1000;
+            pointer-events: none;
+            border: 10px solid rgba(220, 38, 38, 0.15);
+            padding: 20px;
+            text-transform: uppercase;
+        }
+        .annulled-banner {
+            background-color: #fef2f2;
+            border: 2px solid #dc2626;
+            color: #991b1b;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            border-radius: 8px;
+        }
+        .annulled-title { font-weight: bold; font-size: 14px; text-transform: uppercase; margin-bottom: 5px; }
+        .annulled-reason { font-size: 11px; }
     </style>
 </head>
 <body>
+    <?php if (($receipt['status'] ?? '') === 'annulled'): ?>
+        <div class="watermark">ANULADO</div>
+        <div class="annulled-banner">
+            <div class="annulled-title">Este Documento ha sido ANULADO</div>
+            <div class="annulled-reason">
+                <strong>Motivo:</strong> <?php echo htmlspecialchars($receipt['annulled_reason'] ?? 'Sin motivo especificado'); ?> <br/>
+                <strong>Fecha de anulación:</strong> <?php echo date('d/m/Y h:i A', strtotime($receipt['annulled_at'])); ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Header -->
     <div class="header">
         <h1>Centro de Especialidades Médicas Shaddai Rafa</h1>

@@ -41,13 +41,28 @@ class ReceiptService {
 
         $services = $this->db->query('SELECT d.*, s.name as service_name FROM billing_account_details d INNER JOIN services s ON s.id = d.service_id WHERE d.account_id = :acc ORDER BY d.id ASC', [':acc'=>$receipt['account_id']]);
         $supplies = $this->db->query('SELECT s.*, ii.name as item_name, ii.unit_of_measure FROM billing_account_supplies s INNER JOIN inventory_items ii ON ii.id = s.item_id WHERE s.account_id = :acc ORDER BY s.id ASC', [':acc'=>$receipt['account_id']]);
-        $payments = $this->db->query('SELECT payment_date, payment_method, amount, currency, amount_usd_equivalent, reference_number, status FROM payments WHERE account_id = :acc AND status <> "rejected" ORDER BY id ASC', [':acc'=>$receipt['account_id']]);
+
+        // Logic to fetch payments: Include 'rejected' ONLY if it is the payment linked to this receipt (in case of annulment)
+        // or if the receipt itself is annulled, we might want to show what was attempting to be paid. 
+        // Safer approach: Always show non-rejected, OR show the specific payment_id linked even if rejected.
+        $paySql = 'SELECT payment_date, payment_method, amount, currency, amount_usd_equivalent, reference_number, status, id 
+                   FROM payments 
+                   WHERE account_id = :acc 
+                   AND (status <> "rejected" OR id = :pid)
+                   ORDER BY id ASC';
+        $payments = $this->db->query($paySql, [':acc'=>$receipt['account_id'], ':pid'=>$receipt['payment_id'] ?? 0]);
 
         // Calculate totals logic for the view
         $paidUsdTotal = 0;
         foreach($payments as $p){
-            $paidUsdTotal += (float)$p['amount_usd_equivalent'];
+            // If payment is rejected but shown (because it's the linked one), we might NOT want to count it towards "Paid Total" in the logic?
+            // Actually, for an annulled receipt, the "Paid" amount usually reflects 0 or the annulled amount.
+            // But visually, we list the payment.
+            if ($p['status'] !== 'rejected') {
+                $paidUsdTotal += (float)$p['amount_usd_equivalent'];
+            }
         }
+        // If the receipt is annulled, the total due might effectively be everything since payment was revoked.
         $saldoUsd = max(0, (float)$receipt['total_usd'] - $paidUsdTotal);
 
         // -- Generate HTML from Template --

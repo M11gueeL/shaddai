@@ -206,7 +206,7 @@ function MetricCard({ label, value, subtext, color }) {
    return (
       <div className={`p-4 rounded-2xl border ${colors[color]}`}>
          <p className="text-xs font-bold uppercase opacity-70 mb-1">{label}</p>
-         <p className="text-xl font-black tracking-tight">{value}</p>
+         <p className="text-xl font-bold tracking-tight">{value}</p>
          {subtext && <p className="text-[10px] opacity-80 mt-1 font-medium">{subtext}</p>}
       </div>
    )

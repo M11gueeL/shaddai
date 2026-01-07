@@ -169,7 +169,7 @@ class ReceiptController {
             }
 
             // 1. Validar: Verificar que el recibo existe y su status no sea ya 'annulled'.
-            $sql = "SELECT id, receipt_number, status, payment_id, account_id FROM payment_receipts WHERE id = :id FOR UPDATE";
+            $sql = "SELECT id, receipt_number, status, payment_id, account_id, pdf_path FROM payment_receipts WHERE id = :id FOR UPDATE";
             $rows = $db->query($sql, [':id' => $receiptId]);
             if (empty($rows)) {
                 throw new Exception("Recibo no encontrado.");
@@ -180,9 +180,17 @@ class ReceiptController {
                 throw new Exception("El recibo ya se encuentra anulado.");
             }
 
-            // 2. Actualizar payment_receipts: Set status='annulled', llenar annulled_at, by y reason.
-            $sqlVoid = "UPDATE payment_receipts SET status = 'annulled', annulled_at = NOW(), annulled_by = :uid, annulled_reason = :reason WHERE id = :id";
+            // 2. Actualizar payment_receipts: Set status='annulled', clear pdf_path, fill annulled info
+            $sqlVoid = "UPDATE payment_receipts SET status = 'annulled', pdf_path = NULL, annulled_at = NOW(), annulled_by = :uid, annulled_reason = :reason WHERE id = :id";
             $db->execute($sqlVoid, [':uid' => $userId, ':reason' => $reason, ':id' => $receiptId]);
+
+            // Force removal of existing PDF so it regenerates with "ANULADO" watermark on next download
+            if (!empty($receipt['pdf_path'])) {
+                 $physicalPath = __DIR__ . '/../../public' . $receipt['pdf_path'];
+                 if (is_file($physicalPath)) {
+                     @unlink($physicalPath);
+                 }
+            }
 
             // 3. Obtener monto y moneda antes de anular el pago
             $amount = 0;
