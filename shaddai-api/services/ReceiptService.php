@@ -62,36 +62,29 @@ class ReceiptService {
         $payments = $this->db->query($paySql, [':acc'=>$receipt['account_id'], ':pid'=>$receipt['payment_id'] ?? 0]);
 
         // --- Logic to consolidate Cash payments (USD & BS) ---
-        // Requirement: "if two payment methods of cash_usd and cash_bs are added, they should automatically be summed and count as one... this does not apply to transfer and mobile payment"
         $processedPayments = [];
-        $cashConsolidation = [
-            'cash_usd' => null,
-            'cash_bs' => null
-        ];
+        $cashConsolidation = [];
 
         foreach($payments as $p) {
             $key = $p['payment_method'];
-
-            // We only consolidate if the status matches (to avoid mixing rejected with active cash, although technically cash is fungible, for audit clearer is better?)
-            // Assuming "Active Receipt" usually has only verified payments.
-            // If Reciept is Annulled, mixed states might exist.
-            // Let's create a composite key: method + status to be safe.
-            // But user requirement implies summing up. "cash_usd 40" instead of "20 and 20".
-            // If one is verified and one rejected, they shouldn't be mixed.
-            // So we consolidate separately per status.
             
             if (in_array($key, ['cash_usd', 'cash_bs'])) {
+                // Key sensitive found to status. e.g. "cash_usd_verified" vs "cash_usd_rejected"
+                // We typically only find active ones, but if annulled, mixed types exist.
                 $compositeKey = $key . '_' . $p['status'];
+                
                 if (!isset($cashConsolidation[$compositeKey])) {
                     $cashConsolidation[$compositeKey] = $p;
                     $cashConsolidation[$compositeKey]['original_count'] = 1;
+                    $cashConsolidation[$compositeKey]['notes'] = $p['notes'] ?? ''; // Initialize notes
                 } else {
                     $cashConsolidation[$compositeKey]['amount'] += $p['amount'];
                     $cashConsolidation[$compositeKey]['amount_usd_equivalent'] += $p['amount_usd_equivalent'];
                     // Append notes if any
                     if (!empty($p['notes'])) {
                         $existingNotes = $cashConsolidation[$compositeKey]['notes'] ?? '';
-                        $cashConsolidation[$compositeKey]['notes'] = trim($existingNotes . ' | ' . $p['notes'], ' | ');
+                        $separator = $existingNotes ? ' | ' : '';
+                        $cashConsolidation[$compositeKey]['notes'] = $existingNotes . $separator . $p['notes'];
                     }
                     $cashConsolidation[$compositeKey]['original_count']++;
                 }
@@ -101,16 +94,14 @@ class ReceiptService {
         }
 
         // Merge consolidated cash back into the list
-        // Prefer putting them at the top or bottom? Or preserve original order?
-        // Original order is lost if we merge. Put them at the beginning.
         foreach ($cashConsolidation as $c) {
-            array_unshift($processedPayments, $c);
+            if ($c) {
+                // Ensure date is valid for template (take last or keep first? First is fine)
+                array_unshift($processedPayments, $c);
+            }
         }
         
-        // Sorting: Maybe by date?
-        // Let's just keep the order where cash is first for simplicity, or re-sort by ID.
-        // Usually cash is handed over on spot.
-        // Let's perform a stable sort by ID (approx time) to keep logical flow.
+        // Logical sort by ID
         usort($processedPayments, function($a, $b) {
             return $a['id'] <=> $b['id'];
         });

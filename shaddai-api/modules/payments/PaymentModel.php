@@ -4,6 +4,9 @@ require_once __DIR__ . '/../../config/Database.php';
 class PaymentModel {
     private $db;
     public function __construct() { $this->db = Database::getInstance(); }
+    
+    // Allow access to raw DB for controller consolidation logic
+    public function db() { return $this->db; }
 
     public function create($data) {
         $sql = 'INSERT INTO payments (account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by) VALUES

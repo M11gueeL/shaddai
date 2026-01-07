@@ -121,6 +121,46 @@ class PaymentController {
                 $notes = trim(($notes ?? '') . ' Sobrepago en efectivo, monto ingresado: ' . $amount . ' ' . $currency . ', registrado: ' . $finalAmount . ' ' . $currency);
             }
 
+            // [NEW] Consolidation Logic: Update existing cash payment if exists today
+            if ($isCash) {
+                // Look for an existing verify payment for this account, method, currency, AND created today
+                $sqlCheck = "SELECT id, amount, amount_usd_equivalent, notes, currency FROM payments 
+                             WHERE account_id = :aid 
+                             AND payment_method = :pm 
+                             AND currency = :curr 
+                             AND status = 'verified' 
+                             AND DATE(payment_date) = CURDATE() 
+                             AND deleted_at IS NULL
+                             ORDER BY id DESC LIMIT 1";
+                
+                $existing = $this->model->db()->query($sqlCheck, [
+                    ':aid' => $accountId,
+                    ':pm'  => $payment_method,
+                    ':curr'=> $currency
+                ]);
+
+                if (!empty($existing)) {
+                    $old = $existing[0];
+                    $newTotalAmount = (float)$old['amount'] + (float)$finalAmount;
+                    $newTotalUsd = (float)$old['amount_usd_equivalent'] + (float)$finalUsdEq;
+                    $newNotes = trim($old['notes'] . ' | ' . ($notes ?? 'Adición: ' . $finalAmount));
+
+                    $this->model->db()->execute(
+                        "UPDATE payments SET amount = :amt, amount_usd_equivalent = :usd, notes = :notes WHERE id = :id",
+                        [':amt' => $newTotalAmount, ':usd' => $newTotalUsd, ':notes' => $newNotes, ':id' => $old['id']]
+                    );
+                    
+                    // Side effects (triggers) might need to run but usually they update account totals.
+                    // Recalculating totals is safe.
+                    $updatedPayment = $this->model->getById($old['id']);
+                    $this->paymentService->postPaymentSideEffects($updatedPayment, $payload->sub);
+
+                    http_response_code(200);
+                    echo json_encode(['id' => (int)$old['id'], 'message' => 'Payment consolidated']);
+                    return;
+                }
+            }
+
             $paymentId = $this->model->create([
                 'account_id' => (int)$accountId,
                 'payment_method' => $payment_method,
