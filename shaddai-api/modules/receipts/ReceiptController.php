@@ -38,6 +38,30 @@ class ReceiptController {
         echo json_encode($this->model->listByPatient((int)$patientId));
     }
 
+    public function listAllReceipts() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+
+            // Admin only usually, but let's check roles if critical
+            $roles = $payload->roles ?? [];
+            if (!in_array('admin', $roles)) {
+                http_response_code(403); echo json_encode(['error'=>'Acceso denegado']); return;
+            }
+
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $search = $_GET['search'] ?? '';
+            $status = $_GET['status'] ?? '';
+            $offset = ($page - 1) * $limit;
+
+            $data = $this->model->listAll($limit, $offset, $search, $status);
+            echo json_encode($data);
+        } catch (Exception $e) {
+            http_response_code(500); echo json_encode(['error'=>$e->getMessage()]);
+        }
+    }
+
     // Get latest receipt metadata for an account (no generation; auto handled by system)
     public function getByAccount($accountId) {
         try {
@@ -117,6 +141,14 @@ class ReceiptController {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
             if (!$payload) throw new Exception('No autorizado');
+
+            // 1. Role Restriction: Only admins can annul receipts
+            $roles = $payload->roles ?? [];
+            if (!in_array('admin', $roles)) {
+                http_response_code(403); 
+                echo json_encode(['error' => 'Acceso denegado. Solo administradores pueden anular recibos.']);
+                return;
+            }
             
             $input = json_decode(file_get_contents('php://input'), true);
             $reason = $input['reason'] ?? 'Sin motivo especificado';
@@ -167,14 +199,31 @@ class ReceiptController {
                     $db->execute("UPDATE payments SET status = 'rejected' WHERE id = :pid", [':pid' => $receipt['payment_id']]);
                 }
             } else {
-                // FALLBACK: Si no hay payment_id directo, intentar recuperar datos de la cuenta asociada
-                // Esto es crucial para mantener integridad si el recibo agrupa pagos o si el link es indirecto
-                 /* 
-                 * NOTA: Según requerimiento estricto, usamos "El pago asociado". 
-                 * Si es null, asumimos monto 0 o lógica futura. 
-                 * Mantenemos 0 para evitar errores de lógica no especificada.
-                 */
+                 // Si no hay payment_id directo (ej. recibo agrupa varios), la lógica sería más compleja.
+                 // Asumimos modelo actual: 1 Recibo = 1 Pago (o null).
             }
+
+            // [NUEVO] 4.1. Reabrir la Cuenta (BillingAccount)
+            // Cambiar estado a 'pending' o 'partially_paid' para permitir ediciones.
+            // Al anular el pago, el saldo pendiente aumenta.
+            // En este caso, lo pasaremos a 'pending' o 'partially_paid' dependiendo si quedan otros pagos.
+            // Para simplificar y cumplir requerimiento de "modificarla nuevamente", 'pending' o 'partially_paid' 
+            // no bloquean edición. Si hay otros pagos parciales, debería ser 'partially_paid'.
+            // Verificamos si hay otros pagos válidos.
+            
+            $otherPayments = $db->query("SELECT COUNT(*) as c FROM payments WHERE account_id = :acc AND status = 'verified' AND id <> :pid", [
+                ':acc' => $receipt['account_id'], 
+                ':pid' => $receipt['payment_id'] ?? 0
+            ]);
+            $hasOtherPayments = ($otherPayments[0]['c'] > 0);
+            
+            $newAccountStatus = $hasOtherPayments ? 'partially_paid' : 'pending';
+            
+            $db->execute("UPDATE billing_accounts SET status = :st WHERE id = :acc", [
+                ':st' => $newAccountStatus, 
+                ':acc' => $receipt['account_id']
+            ]);
+
 
             // 5. Insertar contra-partida en cash_register_movements
             // Validar sesión abierta
@@ -182,7 +231,10 @@ class ReceiptController {
             $session = $sessionModel->findOpenByUser($userId);
             
             if (!$session) {
-                throw new Exception("Error: No tienes una sesión de caja abierta para registrar el reverso.");
+                // Si es admin y no tiene caja abierta, podríamos permitirlo (logueando sin session_id)?
+                // Pero el requerimiento "Reverso de Caja" implica caja.
+                // Si el admin no es cajero, esto fallará. Asumimos Admin DEBE abrir caja para anular (para registrar el movimiento).
+                throw new Exception("Error: Debes tener una sesión de caja abierta para registrar el reverso contable.");
             }
 
             if ($amount > 0) {

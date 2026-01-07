@@ -4,12 +4,14 @@ import {
   CreditCard, 
   Package, 
   History, 
-  LayoutDashboard 
+  LayoutDashboard,
+  FileText 
 } from 'lucide-react';
 import AuditDashboard from './AuditDashboard';
 import PendingPayments from './PendingPayments';
 import ServicesManager from './ServicesManager';
 import SessionsAdmin from './SessionsAdmin';
+import ReceiptsAdmin from './ReceiptsAdmin';
 
 export default function PaymentAudit() {
   const [tab, setTab] = useState('dashboard');
@@ -29,6 +31,7 @@ export default function PaymentAudit() {
         <div className="flex bg-gray-100 p-1.5 rounded-xl self-start md:self-auto overflow-x-auto max-w-full">
           <NavTab active={tab === 'dashboard'} onClick={() => setTab('dashboard')} icon={LayoutDashboard} label="Resumen" />
           <NavTab active={tab === 'payments'} onClick={() => setTab('payments')} icon={CreditCard} label="Pagos" count={null} />
+          <NavTab active={tab === 'receipts'} onClick={() => setTab('receipts')} icon={FileText} label="Recibos" />
           <NavTab active={tab === 'services'} onClick={() => setTab('services')} icon={Package} label="Servicios" />
           <NavTab active={tab === 'sessions'} onClick={() => setTab('sessions')} icon={History} label="Cajas" />
         </div>
@@ -38,6 +41,7 @@ export default function PaymentAudit() {
       <div className="min-h-[500px]">
         {tab === 'dashboard' && <AuditDashboard navigateTo={setTab} />}
         {tab === 'payments' && <PendingPayments />}
+        {tab === 'receipts' && <ReceiptsAdmin />}
         {tab === 'services' && <ServicesManager />}
         {tab === 'sessions' && <SessionsAdmin />}
       </div>

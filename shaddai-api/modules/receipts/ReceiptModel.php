@@ -71,5 +71,45 @@ class ReceiptModel {
         $res = $this->db->query($sql, [':acc'=>$accountId]);
         return $res[0] ?? null;
     }
+
+    public function listAll($limit = 50, $offset = 0, $search = '', $status = '') {
+        $conn = $this->db->getConnection();
+        $sql = "SELECT r.*, 
+                       ba.patient_id, 
+                       p.full_name as patient_name,
+                       u.first_name as issued_by_name
+                FROM payment_receipts r 
+                INNER JOIN billing_accounts ba ON ba.id = r.account_id 
+                INNER JOIN patients p ON p.id = ba.patient_id
+                LEFT JOIN users u ON u.id = r.issued_by
+                WHERE 1=1";
+        
+        if ($search) {
+            $sql .= " AND (r.receipt_number LIKE :search OR p.full_name LIKE :search)";
+        }
+
+        if ($status && in_array($status, ['active', 'annulled'])) {
+            $sql .= " AND r.status = :status";
+        }
+        
+        $sql .= " ORDER BY r.issued_at DESC LIMIT :limit OFFSET :offset";
+
+        $stmt = $conn->prepare($sql);
+        
+        if ($search) {
+            $stmt->bindValue(':search', "%$search%", PDO::PARAM_STR);
+        }
+        
+        if ($status && in_array($status, ['active', 'annulled'])) {
+            $stmt->bindValue(':status', $status, PDO::PARAM_STR);
+        }
+        
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
+
 ?>

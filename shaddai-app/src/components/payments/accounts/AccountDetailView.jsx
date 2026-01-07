@@ -8,7 +8,8 @@ import {
   DollarSign,
   FileText,
   HandCoins,
-  CheckCircle2
+  CheckCircle2,
+  ReceiptText
 } from 'lucide-react';
 
 import * as accountsApi from '../../../api/accounts';
@@ -29,6 +30,10 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   const toast = useToast();
   const [tab, setTab] = useState('services'); // services | payments | supplies
   const { hasRole } = useAuth();
+
+  // Void Reason Modal State
+  const [showVoidReason, setShowVoidReason] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
   
   const PAYMENT_METHODS = {
     cash_bs: 'Bolívares en efectivo',
@@ -159,6 +164,31 @@ export default function AccountDetailView({ account, details, setDetails, onBack
     } catch(e) { toast.error('Error al descargar recibo'); }
   };
 
+  const initiateVoidReceipt = () => {
+    setVoidReason('');
+    setShowVoidReason(true);
+  };
+
+  const confirmVoidReceipt = async () => {
+    if(!voidReason.trim()) return toast.warning('Debe especificar un motivo para anular');
+    if(!receiptInfo) return;
+    
+    // Final confirm
+    if(!await confirm({ 
+        title: 'ANULACIÓN PERMANENTE', 
+        message: 'Esta acción anulará el recibo, el pago asociado y generará un reverso en caja. La cuenta se reabrirá para edición. ¿Proceder?' 
+    })) return;
+
+    try {
+        await receiptsApi.annulReceipt(receiptInfo.id, voidReason, token);
+        toast.success('Recibo anulado y cuenta reabierta exitosamente.');
+        setShowVoidReason(false);
+        onReload(); // Reload to update UI state
+    } catch(e) {
+        toast.error(e.response?.data?.error || 'Error al anular recibo');
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto py-6 space-y-6 animate-in slide-in-from-right duration-500">
       {/* Top Navigation */}
@@ -182,9 +212,18 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                 <p className="text-sm text-gray-500 mt-1">Responsable: <span className="font-medium text-gray-700">{account.payer_name}</span></p>
                 
                 {account.status === 'paid' && receiptInfo && (
-                  <button onClick={handleReceipt} className="mt-4 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Descargar Recibo
-                  </button>
+                  <div className="flex gap-2 mt-4">
+                      <button onClick={handleReceipt} className="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-medium hover:bg-emerald-100 transition-colors flex items-center gap-2">
+                        <ReceiptText className="w-4 h-4" /> Descargar Recibo
+                      </button>
+                      
+                      {/* Admin Void Button */}
+                      {hasRole(['admin']) && (
+                          <button onClick={initiateVoidReceipt} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-xl text-sm font-medium hover:bg-rose-100 transition-colors flex items-center gap-2">
+                            <HandCoins className="w-4 h-4" /> Anular Recibo
+                          </button>
+                      )}
+                  </div>
                 )}
               </div>
 
@@ -415,6 +454,38 @@ export default function AccountDetailView({ account, details, setDetails, onBack
         </div>
 
       </div>
+      {/* Modal de Motivo de Anulación */}
+      {showVoidReason && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full animate-in zoom-in-95 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-2 text-rose-600">Anular Recibo</h3>
+            <p className="text-sm text-gray-500 mb-4">
+               Ingrese el motivo de la anulación. Esta acción quedará registrada en auditoría y reabrirá la cuenta para correcciones.
+            </p>
+            <textarea
+              value={voidReason}
+              onChange={e => setVoidReason(e.target.value)}
+              className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 outline-none resize-none"
+              placeholder="Ej: Error en el cobro del servicio X..."
+              autoFocus
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <button 
+                onClick={() => setShowVoidReason(false)}
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmVoidReceipt}
+                className="px-4 py-2 bg-rose-600 text-white hover:bg-rose-700 rounded-xl font-medium shadow-lg shadow-rose-200 transition-colors"
+              >
+                Confirmar Anulación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
