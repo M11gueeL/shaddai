@@ -47,14 +47,50 @@ class CashRegisterSessionModel {
 
         $endTime = $session['end_time'] ?? date('Y-m-d H:i:s');
 
-        // 2. Movements with Payment Info
-        $movements = $this->db->query("
+        // 2. Movements (Cash Registry)
+        $cashMovements = $this->db->query("
             SELECT m.*, p.payment_method, p.reference_number
             FROM cash_register_movements m
             LEFT JOIN payments p ON m.payment_id = p.id
             WHERE m.session_id = :id
             ORDER BY m.created_at DESC
         ", [':id' => $sessionId]);
+
+        // 2b. Non-Cash Payments (Transfers/Mobile/Zelle) in this Timeframe/User
+        // These are not in cash_register_movements but belong to the session report
+        $nonCashPayments = $this->db->query("
+            SELECT 
+                0 as id, 
+                :sid as session_id, 
+                id as payment_id, 
+                'payment_in' as movement_type, 
+                amount, 
+                currency, 
+                created_at, 
+                registered_by as created_by, 
+                notes as description,
+                payment_method, 
+                reference_number
+            FROM payments
+            WHERE registered_by = :uid
+              AND created_at >= :start AND created_at <= :end
+              AND payment_method NOT IN ('cash_usd', 'cash_bs')
+              AND deleted_at IS NULL
+            ORDER BY created_at DESC
+        ", [
+            ':sid' => $sessionId,
+            ':uid' => $session['user_id'],
+            ':start' => $session['start_time'],
+            ':end' => $endTime
+        ]);
+
+        // Merge and Sort
+        $movements = array_merge($cashMovements, $nonCashPayments);
+        
+        // Sort by created_at DESC
+        usort($movements, function($a, $b) {
+            return strtotime($b['created_at']) - strtotime($a['created_at']);
+        });
 
         // 3. Opened Accounts (Created by this user in this timeframe)
         $openedAccounts = $this->db->query("

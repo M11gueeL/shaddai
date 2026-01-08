@@ -39,8 +39,8 @@ export default function AuditDashboard({ navigateTo }) {
     })();
   }, [token]);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const sessionsToday = sessions.filter(s => (s.start_time || s.opened_at || '').startsWith(todayIso)).length;
+  const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD in local time
+  const sessionsToday = sessions.filter(s => (s.start_time || s.opened_at || '').startsWith(todayLocal)).length;
   const pendingUsd = pending.reduce((acc, p) => acc + Number(p.amount_usd_equivalent || 0), 0);
 
   const formatDateTime = (dt) => {

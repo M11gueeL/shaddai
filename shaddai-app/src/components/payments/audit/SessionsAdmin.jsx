@@ -3,12 +3,14 @@ import { History, Archive, User } from 'lucide-react';
 import * as cashApi from '../../../api/cashregister';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import SessionDetailModal from './SessionDetailModal';
 
 export default function SessionsAdmin() {
   const { token } = useAuth();
   const toast = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
 
   const load = async () => {
     try { setLoading(true); const res = await cashApi.adminListSessions(token); setItems(res.data || []); } catch (e) { toast.error('No se pudo cargar sesiones'); } finally { setLoading(false); }
@@ -32,6 +34,13 @@ export default function SessionsAdmin() {
 
   return (
     <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {selectedSessionId && (
+        <SessionDetailModal 
+          sessionId={selectedSessionId} 
+          onClose={() => setSelectedSessionId(null)} 
+        />
+      )}
+
       <div className="flex justify-between items-center mb-6">
          <div>
             <h3 className="text-xl font-bold text-gray-900">Historial de Sesiones</h3>
@@ -51,8 +60,12 @@ export default function SessionsAdmin() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {items.map(s => (
-            <div key={s.id} className="group flex flex-col p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-xl hover:shadow-gray-200/50 hover:border-gray-200 transition-all duration-300">
-              <div className="flex justify-between items-start mb-4">
+            <button 
+                key={s.id} 
+                onClick={() => setSelectedSessionId(s.id)}
+                className="group flex flex-col p-5 bg-white border border-gray-100 rounded-2xl hover:shadow-xl hover:shadow-gray-200/50 hover:border-gray-200 transition-all duration-300 text-left w-full"
+            >
+              <div className="flex justify-between items-start mb-4 w-full">
                  <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.status === 'open' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
                        <Archive className="w-5 h-5" />
@@ -90,7 +103,7 @@ export default function SessionsAdmin() {
                     <div className="font-bold text-gray-900">Bs {Number(s.start_balance_bs || 0).toFixed(2)}</div>
                  </div>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

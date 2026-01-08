@@ -64,28 +64,28 @@ export default function SessionDetailModal({ sessionId, onClose }) {
               {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                  <MetricCard 
-                    label="Total Entradas USD"
+                    label="Total USD"
                     value={`$${(data.metrics.USD.cash + data.metrics.USD.zelle + data.metrics.USD.other).toFixed(2)}`}
-                    subtext={`Efectivo: $${data.metrics.USD.cash.toFixed(2)}`}
+                    subtext={`En caja: $${data.metrics.USD.cash.toFixed(2)}`}
                     color="emerald"
                  />
                  <MetricCard 
-                    label="Total Entradas BS"
-                    value={`Bs ${data.metrics.BS.cash + data.metrics.BS.mobile_payment + data.metrics.BS.transfer + data.metrics.BS.card}`}
-                    subtext={`Efectivo: Bs. ${data.metrics.BS.cash}`}
+                    label="Efectivo BS"
+                    value={`Bs ${data.metrics.BS.cash.toFixed(2)}`}
+                    subtext="En caja física"
                     color="indigo"
                  />
                  <MetricCard 
-                    label="Cuentas Abiertas"
-                    value={data.opened_accounts.length}
-                    subtext="Nuevos pacientes atendidos"
+                    label="Transferencias BS"
+                    value={`Bs ${data.metrics.BS.transfer.toFixed(2)}`}
+                    subtext="Bancos nacionales"
                     color="blue"
                  />
                  <MetricCard 
-                    label="Cuentas Canceladas"
-                    value={data.cancelled_accounts.length}
-                    subtext="Cancelaciones en el turno"
-                    color="rose"
+                    label="Pago Móvil BS"
+                    value={`Bs ${data.metrics.BS.mobile_payment.toFixed(2)}`}
+                    subtext="Pagos móviles recibidos"
+                    color="purple"
                  />
               </div>
 
@@ -118,7 +118,14 @@ export default function SessionDetailModal({ sessionId, onClose }) {
                               <div className={`text-sm font-bold ${m.movement_type === 'reversal' ? 'text-purple-600' : 'text-gray-900'}`}>
                                  {m.amount} {m.currency}
                               </div>
-                              <div className="text-[10px] text-gray-400 uppercase">{m.movement_type}</div>
+                              <div className="text-[10px] text-gray-400 uppercase">
+                                 {{
+                                    payment_in: 'Ingreso',
+                                    payment_out: 'Egreso',
+                                    reversal: 'Corrección',
+                                    restock: 'Devolución'
+                                 }[m.movement_type] || m.movement_type}
+                              </div>
                            </div>
                         </div>
                       ))}
@@ -202,7 +209,9 @@ function MetricCard({ label, value, subtext, color }) {
       emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
       indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
       blue: 'bg-blue-50 text-blue-700 border-blue-100',
-      rose: 'bg-rose-50 text-rose-700 border-rose-100'
+      rose: 'bg-rose-50 text-rose-700 border-rose-100',
+      amber: 'bg-amber-50 text-amber-700 border-amber-100',
+      purple: 'bg-purple-50 text-purple-700 border-purple-100',
    };
    
    return (
