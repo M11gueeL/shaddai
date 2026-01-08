@@ -107,5 +107,18 @@ class BillingAccountModel {
     public function removeSupply($supplyId) {
         return $this->db->execute('DELETE FROM billing_account_supplies WHERE id = :id', [':id' => $supplyId]);
     }
+
+    public function addSupplyBatch($supplyId, $batchId, $quantity) {
+        $sql = 'INSERT INTO billing_account_supply_batches (supply_id, batch_id, quantity) VALUES (:sid, :bid, :qty)';
+        $this->db->execute($sql, [
+            ':sid' => $supplyId,
+            ':bid' => $batchId,
+            ':qty' => $quantity
+        ]);
+    }
+
+    public function getSupplyBatches($supplyId) {
+        return $this->db->query('SELECT * FROM billing_account_supply_batches WHERE supply_id = :sid', [':sid' => $supplyId]);
+    }
 }
 ?>

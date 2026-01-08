@@ -302,6 +302,7 @@ class InventoryModel {
             $this->db->beginTransaction();
             $startedTransaction = true;
         }
+        $usedBatches = [];
         try {
             $remaining = $quantity;
             
@@ -331,6 +332,12 @@ class InventoryModel {
                 // 2. Registrar movimiento POR CADA LOTE afectado (Trazabilidad Pura)
                 $batchNote = $notes . " (Del Lote: " . ($batch['batch_number'] ?? 'S/N') . ")";
                 $this->recordMovement($id, $movementType, $deduct, $userId, $batchNote, $batch['id']);
+                
+                // Track used batches to return them
+                $usedBatches[] = [
+                    'batch_id' => $batch['id'],
+                    'quantity' => $deduct
+                ];
 
                 $remaining -= $deduct;
             }
@@ -343,7 +350,7 @@ class InventoryModel {
             if ($startedTransaction) {
                 $this->db->commit();
             }
-            return true;
+            return $usedBatches;
         } catch (Exception $e) {
             if ($startedTransaction) {
                 $this->db->rollBack();
@@ -720,6 +727,50 @@ class InventoryModel {
                 ORDER BY i.name ASC, b.expiration_date ASC";
         
         return $this->db->query($sql);
+    }
+
+    public function restoreToBatch($itemId, $batchId, $quantity, $userId, $notes = null) {
+        $startedTransaction = false;
+        if (!$this->db->inTransaction()) {
+            $this->db->beginTransaction();
+            $startedTransaction = true;
+        }
+        try {
+            $batchRes = $this->db->query("SELECT * FROM inventory_batches WHERE id = :id", [':id' => $batchId]);
+            if (empty($batchRes)) throw new Exception("Lote original no encontrado (ID: $batchId)");
+            $batch = $batchRes[0];
+
+            if ($batch['item_id'] != $itemId) throw new Exception("El lote no coincide con el insumo.");
+
+            $newQty = $batch['quantity'] + $quantity;
+            // Restore status if it was empty
+            $status = $batch['status'];
+            if ($status === 'empty' && $newQty > 0) {
+                $status = 'active';
+            }
+
+            $this->db->execute("UPDATE inventory_batches SET quantity = :qty, status = :st, updated_at = NOW() WHERE id = :id", [
+                ':qty' => $newQty,
+                ':st' => $status,
+                ':id' => $batchId
+            ]);
+
+            // Record movement
+            $noteText = $notes ?? "Devolución a Lote Original: " . ($batch['batch_number']);
+            $this->recordMovement($itemId, 'in_restock', $quantity, $userId, $noteText, $batchId);
+
+            $this->syncItemStats($itemId);
+            
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
+            return true;
+        } catch (Exception $e) {
+            if ($startedTransaction) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
     }
 }
 ?>

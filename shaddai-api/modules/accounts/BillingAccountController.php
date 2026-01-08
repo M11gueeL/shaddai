@@ -105,8 +105,16 @@ class BillingAccountController {
             try {
                 $db->beginTransaction();
                 // Deduct stock + register inventory movement (Salida facturada)
-                $this->inventoryModel->registerOutflow($item_id, $qty, $payload->sub, 'out_billed', 'Consumo facturado en cuenta #' . (int)$id);
+                $usedBatches = $this->inventoryModel->registerOutflow($item_id, $qty, $payload->sub, 'out_billed', 'Consumo facturado en cuenta #' . (int)$id);
                 $supplyId = $this->model->addSupply((int)$id, $item_id, $item['name'], $qty, $priceUsd, $priceBs);
+                
+                // Track batches used for this supply
+                if (is_array($usedBatches)) {
+                    foreach ($usedBatches as $batchInfo) {
+                        $this->model->addSupplyBatch($supplyId, $batchInfo['batch_id'], $batchInfo['quantity']);
+                    }
+                }
+                
                 $db->commit();
             } catch (Exception $inner) {
                 $db->rollBack();
@@ -156,9 +164,19 @@ class BillingAccountController {
             if ($acc['status'] === 'cancelled' || $acc['status'] === 'paid') { http_response_code(400); echo json_encode(['error'=>'No se pueden eliminar insumos de una cuenta cancelada o pagada']); return; }
             try {
                 $db->beginTransaction();
+                // Find tracked batches
+                $trackedBatches = $this->model->getSupplyBatches((int)$supplyId);
+                
+                if (!empty($trackedBatches)) {
+                    foreach ($trackedBatches as $batchInfo) {
+                        $this->inventoryModel->restoreToBatch($itemId, $batchInfo['batch_id'], $batchInfo['quantity'], $payload->sub, 'Devolución consumo cuenta #' . (int)$accountId);
+                    }
+                } else {
+                    // Fallback for old records (before batch tracking)
+                    $this->inventoryModel->registerInflow($itemId, $qty, $payload->sub, 'in_restock', 'Devolución consumo cuenta #' . (int)$accountId . ' (eliminación de línea)');
+                }
+                
                 $this->model->removeSupply((int)$supplyId);
-                // Return stock + register inventory movement (Entrada por devolución usando in_restock)
-                $this->inventoryModel->registerInflow($itemId, $qty, $payload->sub, 'in_restock', 'Devolución consumo cuenta #' . (int)$accountId . ' (eliminación de línea)');
                 $db->commit();
             } catch (Exception $inner) {
                 $db->rollBack();
