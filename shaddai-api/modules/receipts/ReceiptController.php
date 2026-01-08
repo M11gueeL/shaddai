@@ -27,6 +27,13 @@ class ReceiptController {
             $paidSoFar = $billingService->getAccountPaymentUsdSum((int)$accountId);
             $total = (float)$acc['total_usd'];
             $isFullyPaid = ($paidSoFar + 0.0001 >= $total);
+            
+            // Check for Overpayment (Allowing small tolerance for floating point)
+            if ($paidSoFar > $total + 0.01) {
+                http_response_code(400); 
+                echo json_encode(['error'=>'El monto pagado ($'.$paidSoFar.') excede el total de la cuenta ($'.$total.'). Por favor elimine o ajuste los pagos sobrantes antes de cerrar la cuenta.']);
+                return;
+            }
 
             // If not fully paid, deny
             if (!$isFullyPaid) { 

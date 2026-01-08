@@ -87,6 +87,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   const totalUsd = Number(account.total_usd || 0);
   const totalBs = Number(account.total_bs || 0);
   const pendingUsd = Math.max(0, totalUsd - paidUsd);
+  const isOverpaid = paidUsd > totalUsd + 0.01;
   
   // Local estimated Bs pending
   const currentRate = Number(account.rate_bcv || rate || 0);
@@ -199,6 +200,12 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   };
 
   const handleCloseAccount = async () => {
+    // Frontend validation for overpayment
+    if (paidUsd > totalUsd + 0.01) {
+        toast.error(`Excedente de pago detectado. Pagado: $${paidUsd.toFixed(2)} vs Total: $${totalUsd.toFixed(2)}. Por favor elimine pagos sobrantes.`);
+        return;
+    }
+
     if(!await confirm({ 
         title: 'Cerrar Cuenta', 
         message: 'El saldo ha sido cubierto en su totalidad. ¿Desea cerrar la cuenta y generar el recibo definitivo?' 
@@ -307,7 +314,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                     )}
                     
                     {/* Manual Close Button for Full Payments */}
-                    {account.status !== 'paid' && pendingUsd < 0.01 && totalUsd > 0 && (
+                    {account.status !== 'paid' && pendingUsd < 0.01 && totalUsd > 0 && !isOverpaid && (
                         <button 
                             onClick={handleCloseAccount} 
                             className="w-fit px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 animate-pulse"
@@ -315,6 +322,19 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                             <CheckCircle2 className="w-4 h-4" /> 
                             Cerrar Cuenta y Generar Recibo
                         </button>
+                    )}
+
+                    {/* Warning for Overpayment */}
+                    {account.status !== 'paid' && isOverpaid && (
+                        <div className="w-fit px-4 py-3 bg-amber-50 text-amber-700 rounded-xl text-sm font-medium shadow-sm border border-amber-200 flex items-center gap-3">
+                            <div className="p-1 bg-amber-100 rounded-full">
+                                <HandCoins className="w-4 h-4 text-amber-600" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-amber-800">Pagos exceden el total</p>
+                                <p className="text-xs opacity-90">Ajuste los pagos para cerrar (${(paidUsd - totalUsd).toFixed(2)} sobrantes)</p>
+                            </div>
+                        </div>
                     )}
 
                     {/* Admin Cancel Button (Only for non-paid accounts) */}

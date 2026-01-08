@@ -34,10 +34,9 @@ class PaymentController {
         // Validate mime
         $allowed = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','application/pdf'=>'pdf'];
         $mime = null;
-        if (function_exists('finfo_open')) {
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime = $finfo ? finfo_file($finfo, $file['tmp_name']) : null;
-            if ($finfo) finfo_close($finfo);
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($file['tmp_name']);
         }
         if (!$mime || !isset($allowed[$mime])) {
             throw new Exception('Tipo de archivo no permitido. Solo JPG, PNG, WEBP o PDF');
