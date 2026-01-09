@@ -65,6 +65,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   const [method, setMethod] = useState('cash_bs');
   const [ref, setRef] = useState('');
   const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
 
   // Load lists
   useEffect(() => {
@@ -124,6 +125,26 @@ export default function AccountDetailView({ account, details, setDetails, onBack
     } catch(e) { toast.error('Error al eliminar'); }
   };
 
+  const handleDownloadOriginal = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if(!previewImage?.id) return;
+    try {
+        const response = await paymentsApi.downloadPayment(previewImage.id, token);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', previewImage.filename || 'comprobante');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch(e) {
+        console.error(e);
+        toast.error('Error descargando el archivo');
+    }
+  };
+
   const handlePayment = async (e) => {
     e.preventDefault();
     if(!amount) return;
@@ -158,7 +179,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
     try {
       await paymentsApi.createPayment(account.id, form, token);
       toast.success('Pago registrado');
-      setAmount(''); setRef(''); setFile(null);
+      setAmount(''); setRef(''); setFile(null); setFilePreview(null);
       // Reset file input value
       const fileInput = document.getElementById('payment-file-input');
       if(fileInput) fileInput.value = '';
@@ -479,18 +500,32 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                              <div className="flex items-center gap-3">
                                 <div className="p-2.5 bg-white rounded-xl text-gray-600 shadow-sm relative group">
                                    {p.payment_method?.includes('cash') ? <DollarSign className="w-5 h-5"/> : <CreditCard className="w-5 h-5"/>}
-                                   
-                                   {/* Image Preview Thumbnail */}
-                                   {(p.attachment_path) && (
-                                       <button 
-                                          onClick={() => setPreviewImage(`${import.meta.env.VITE_API_URL}${p.attachment_path}`)}
-                                          className="absolute -top-1 -right-1 w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:scale-110 transition shadow-sm"
-                                          title="Ver comprobante"
-                                       >
-                                           <ImageIcon className="w-2.5 h-2.5" />
-                                       </button>
-                                   )}
                                 </div>
+
+                                {p.attachment_path && (
+                                    <div 
+                                        className="h-10 w-10 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:opacity-80 transition bg-white flex items-center justify-center flex-shrink-0"
+                                        onClick={() => setPreviewImage({
+                                              url: `${import.meta.env.VITE_API_URL?.replace(/\/$/, '') || ''}/${p.attachment_path.replace(/^\//, '')}`,
+                                              id: p.id,
+                                              filename: p.attachment_path.split('/').pop(),
+                                              isPdf: p.attachment_path.toLowerCase().endsWith('.pdf')
+                                          })}
+                                        title="Ver comprobante"
+                                    >
+                                        {p.attachment_path.toLowerCase().endsWith('.pdf') ? (
+                                            <FileText className="w-5 h-5 text-red-500" />
+                                        ) : (
+                                            <img 
+                                                src={`${import.meta.env.VITE_API_URL?.replace(/\/$/, '') || ''}/${p.attachment_path.replace(/^\//, '')}`} 
+                                                alt="thumb" 
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {e.target.style.display='none';}} 
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
                                 <div>
                                    <div className="font-semibold text-gray-900">
                                       {p.currency} {Number(p.amount).toFixed(2)}
@@ -578,8 +613,25 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                          onChange={(e)=>setRef(e.target.value)}
                          className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                        />
-                       <div className="flex items-center gap-2 text-xs text-gray-400">
-                         <input type="file" onChange={(e)=>setFile(e.target.files?.[0])} className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors" />
+                       <div className="space-y-2">
+                         <input 
+                            id="payment-file-input"
+                            type="file" 
+                            accept="image/*,application/pdf"
+                            onChange={(e)=>{
+                                const f = e.target.files?.[0];
+                                setFile(f);
+                                if(f && f.type.startsWith('image/')) setFilePreview(URL.createObjectURL(f));
+                                else setFilePreview(null);
+                            }} 
+                            className="w-full file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors text-xs text-gray-500" 
+                         />
+                         {filePreview && (
+                             <div className="relative w-fit group">
+                                <img src={filePreview} alt="Preview" className="h-20 w-auto rounded-lg border border-gray-200 shadow-sm" />
+                                <button type="button" onClick={()=>{setFile(null);setFilePreview(null);document.getElementById('payment-file-input').value=''}} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow-sm"><X className="w-3 h-3"/></button>
+                             </div>
+                         )}
                        </div>
                     </div>
                  )}
@@ -674,27 +726,24 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                  >
                      <X className="w-8 h-8" />
                  </button>
-                 {previewImage.toLowerCase().endsWith('.pdf') ? (
-                     <iframe src={previewImage} className="w-[80vw] h-[80vh] bg-white rounded-lg shadow-2xl" title="Comprobante PDF" />
+                 {previewImage.isPdf ? (
+                     <iframe src={previewImage.url} className="w-[80vw] h-[80vh] bg-white rounded-lg shadow-2xl" title="Comprobante PDF" />
                  ) : (
                      <img 
-                        src={previewImage} 
+                        src={previewImage.url} 
                         alt="Comprobante" 
                         className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/10" 
                         onClick={(e) => e.stopPropagation()}
+                        onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=Error+Cargando+Imagen'; }}
                      />
                  )}
                  <div className="mt-4">
-                     <a 
-                        href={previewImage} 
-                        download 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="px-6 py-2 bg-white text-gray-900 rounded-full font-bold shadow hover:bg-gray-100 transition-colors"
-                        onClick={(e) => e.stopPropagation()}
+                     <button 
+                        onClick={handleDownloadOriginal}
+                        className="px-6 py-2 bg-white text-gray-900 rounded-full font-bold shadow hover:bg-gray-100 transition-colors cursor-pointer"
                      >
                          Descargar Original
-                     </a>
+                     </button>
                  </div>
             </div>
         </div>

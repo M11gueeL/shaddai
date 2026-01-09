@@ -229,6 +229,41 @@ class PaymentController {
         } catch(Exception $e){ http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
     }
 
+    public function downloadAttachment($paymentId) {
+        try {
+            // Auth check (middleware usually handles this, but we need payload for extra checks if needed)
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+
+            $payment = $this->model->getById((int)$paymentId);
+            if (!$payment || empty($payment['attachment_path'])) {
+                http_response_code(404); echo "Archivo no encontrado"; return;
+            }
+
+            // Path Cleaning
+            // stored: /uploads/payments/202501/xxx.jpg
+            $relPath = ltrim($payment['attachment_path'], '/');
+            // base: modules/payments/../../public/
+            $fullPath = realpath(__DIR__ . '/../../public/' . $relPath);
+
+            if (!$fullPath || !file_exists($fullPath)) {
+                http_response_code(404); echo "Archivo físico no encontrado"; return;
+            }
+
+            $mime = mime_content_type($fullPath);
+            $filename = basename($fullPath);
+
+            if (ob_get_level()) ob_end_clean();
+            header('Content-Type: ' . $mime);
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . filesize($fullPath));
+            readfile($fullPath);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(400); echo $e->getMessage();
+        }
+    }
+
     public function deletePayment($paymentId) {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
@@ -253,4 +288,4 @@ class PaymentController {
         } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
     }
 }
-?>
+
