@@ -18,6 +18,27 @@ export default function SessionDetailModal({ sessionId, onClose }) {
   const { token } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadReport = async () => {
+    try {
+        setDownloading(true);
+        const response = await cashApi.downloadSessionReport(sessionId, token);
+        const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Reporte_Caja_${sessionId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Error downloading report", error);
+        alert("Error al descargar el reporte.");
+    } finally {
+        setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     if (!sessionId) return;
@@ -188,13 +209,28 @@ export default function SessionDetailModal({ sessionId, onClose }) {
 
         {/* Footer */}
         <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
-           <div className="flex justify-end">
-              <button 
-                onClick={onClose}
-                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
-              >
-                 Cerrar Detalle
-              </button>
+           <div className="flex justify-between items-center w-full">
+              <div className="text-xs text-gray-400 font-mono">
+                  ID: {sessionId} • Open: {new Date(data?.session?.start_time).toLocaleString()}
+              </div>
+              <div className="flex gap-3">
+                  {data?.session?.status !== 'open' && (
+                    <button 
+                        onClick={handleDownloadReport}
+                        disabled={downloading}
+                        className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <FileText className="w-4 h-4" />
+                        {downloading ? 'Generando...' : 'Descargar Reporte'}
+                    </button>
+                  )}
+                  <button 
+                    onClick={onClose}
+                    className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                  >
+                     Cerrar
+                  </button>
+              </div>
            </div>
         </div>
 

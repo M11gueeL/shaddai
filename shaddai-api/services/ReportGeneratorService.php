@@ -226,4 +226,27 @@ class ReportGeneratorService {
         fclose($output);
         exit;
     }
+
+    public function generateSessionReportPdf($data, $filename) {
+        // Extract all data keys into variables for the template
+        extract($data);
+        
+        // Ensure manual fallbacks for variables used in previous logic if not present in data
+        $generated_by = $data['meta']['generated_by'] ?? 'Sistema';
+        $generated_at = $data['meta']['generated_at'] ?? date('d/m/Y');
+
+        ob_start();
+        require __DIR__ . '/../templates/reports/cashregister/session_report_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'Helvetica');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->output();
+    }
 }

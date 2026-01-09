@@ -8,7 +8,8 @@ import {
   Wallet, 
   Users, 
   ShieldCheck,
-  LayoutDashboard
+  LayoutDashboard,
+  FileBarChart
 } from 'lucide-react';
 
 export default function PaymentPanel() {
@@ -37,6 +38,7 @@ export default function PaymentPanel() {
               {hasRole(['admin']) && (
                 <>
                   <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
+                  <Tab to="/payment/reports" label="Reportes" icon={FileBarChart} />
                   <Tab to="/payment/audit" label="Auditoría" icon={ShieldCheck} />
                 </>
               )}

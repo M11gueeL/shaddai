@@ -11,6 +11,8 @@ class CashRegisterRoutes {
         // admin
         $router->add('GET', 'cash-sessions/admin/all', [$c, 'adminListSessions'], ['auth','role:admin']);
         $router->add('GET', 'cash-sessions/details', [$c, 'getSessionDetails'], ['auth','role:admin']);
+        $router->add('GET', 'cash-sessions/report', [$c, 'generateSessionReport'], ['auth','role:admin']);
     }
 }
+
 ?>

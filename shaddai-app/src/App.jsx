@@ -13,6 +13,7 @@ import RateManager from "./components/payments/rate/RateManager";
 import CashManager from "./components/payments/cash/CashManager";
 import AccountsWorkspace from "./components/payments/accounts/AccountsWorkspace";
 import PaymentAudit from "./components/payments/audit/PaymentAudit";
+import PaymentReports from "./components/payments/reports/PaymentReports";
 import MedicalRecordsPanel from "./components/medicalRecords/MedicalRecordsPanel";
 import InventoryPanel from "./components/inventory/InventoryPanel";
 import UserPanel from "./components/controlPanel/users/UserPanel";
@@ -102,6 +103,12 @@ export default function App() {
                     <Route path="accounts" element={
                       <RoleProtectedRoute allowedRoles={['admin', 'recepcionista']}>
                         <AccountsWorkspace />
+                      </RoleProtectedRoute>
+                    } />
+
+                    <Route path="reports" element={
+                      <RoleProtectedRoute allowedRoles={['admin']}>
+                        <PaymentReports />
                       </RoleProtectedRoute>
                     } />
 

@@ -94,10 +94,12 @@ class CashRegisterSessionModel {
 
         // 3. Opened Accounts (Created by this user in this timeframe)
         $openedAccounts = $this->db->query("
-            SELECT ba.id, ba.created_at, ba.total_usd, ba.total_bs, ba.status, p.full_name, 
-                   (SELECT COUNT(*) FROM billing_account_details WHERE account_id = ba.id) as items_count
+            SELECT ba.id, ba.created_at, ba.total_usd, ba.total_bs, ba.status, 
+                   p.full_name, p.cedula as dni,
+                   (SELECT COUNT(*) FROM billing_account_details WHERE account_id = ba.id) as items_count,
+                   (SELECT full_name FROM patients WHERE id = ba.payer_patient_id) as payer_name
             FROM billing_accounts ba
-            JOIN patients p ON ba.patient_id = p.id
+            LEFT JOIN patients p ON ba.patient_id = p.id
             WHERE ba.created_by = :uid
               AND ba.created_at >= :start AND ba.created_at <= :end
             ORDER BY ba.created_at DESC
@@ -109,9 +111,10 @@ class CashRegisterSessionModel {
 
         // 4. Cancelled Accounts (Updated to cancelled in this timeframe)
         $cancelledAccounts = $this->db->query("
-            SELECT ba.id, ba.updated_at as cancelled_at, ba.total_usd, ba.total_bs, p.full_name
+            SELECT ba.id, ba.updated_at as cancelled_at, ba.total_usd, ba.total_bs, 
+                   p.full_name, p.cedula as dni
             FROM billing_accounts ba
-            JOIN patients p ON ba.patient_id = p.id
+            LEFT JOIN patients p ON ba.patient_id = p.id
             WHERE ba.status = 'cancelled'
               AND ba.updated_at >= :start AND ba.updated_at <= :end
             ORDER BY ba.updated_at DESC
