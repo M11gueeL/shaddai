@@ -596,7 +596,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                         className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl pl-4 pr-12 py-3 text-lg font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all" 
                         placeholder="0.00" 
                       />
-                      <button type="button" onClick={() => setAmount(method.includes('usd') ? pendingUsd.toFixed(2) : pendingBs.toFixed(2))} className="absolute right-2 top-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition">Complete</button>
+                      <button type="button" onClick={() => setAmount(method.includes('usd') ? pendingUsd.toFixed(2) : pendingBs.toFixed(2))} className="absolute right-2 top-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition">Completo</button>
                    </div>
                    {method.includes('bs') && amount && (
                      <div className="text-right mt-1 text-xs text-gray-400">
