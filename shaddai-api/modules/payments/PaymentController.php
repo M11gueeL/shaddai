@@ -69,10 +69,37 @@ class PaymentController {
             $currency = $data['currency'] ?? null; // 'USD' or 'BS'
             $reference = $data['reference_number'] ?? null;
             $notes = $data['notes'] ?? null;
+            $payment_date = $data['payment_date'] ?? null;
 
             if (!$payment_method || !$amount || !$currency) { http_response_code(400); echo json_encode(['error'=>'payment_method, amount and currency are required']); return; }
             if (!in_array($payment_method, ['cash_usd','cash_bs','transfer_bs','mobile_payment_bs'])) { http_response_code(400); echo json_encode(['error'=>'Invalid payment_method']); return; }
             if (!in_array($currency, ['USD','BS'])) { http_response_code(400); echo json_encode(['error'=>'Invalid currency']); return; }
+
+            // Validate custom date if provided
+            $finalDate = null;
+            if ($payment_date && in_array($payment_method, ['transfer_bs','mobile_payment_bs'])) {
+                // strict validation Y-m-d
+                $d = DateTime::createFromFormat('Y-m-d', $payment_date);
+                if (!$d || $d->format('Y-m-d') !== $payment_date) {
+                    http_response_code(400); echo json_encode(['error'=>'Formato de fecha inválido. Use YYYY-MM-DD']); return;
+                }
+                $today = new DateTime('now');
+                $today->setTime(0, 0, 0); // start of today
+                $inputDate = new DateTime($payment_date);
+                $inputDate->setTime(0, 0, 0);
+
+                if ($inputDate > $today) {
+                    http_response_code(400); echo json_encode(['error'=>'La fecha de pago no puede ser futura']); return;
+                }
+
+                // If date is today, check if we should just use NOW() (backend time) or keep 00:00:00
+                // If it is in the past, maybe set to 12:00:00 to avoid timezone edge cases
+                if ($inputDate == $today) {
+                   $finalDate = date('Y-m-d H:i:s'); // Use current time for "Today"
+                } else {
+                   $finalDate = $payment_date . ' 12:00:00'; // Midday for past dates
+                }
+            }
 
             $todayRate = $this->rateService->getTodayOrFail();
 
@@ -106,10 +133,10 @@ class PaymentController {
             if (!empty($_FILES['attachment'])) {
                 $attachment_path = $this->saveAttachment($_FILES['attachment']);
             }
-            // Require attachment for transfer/mobile
-            if (in_array($payment_method, ['transfer_bs','mobile_payment_bs']) && !$attachment_path) {
-                http_response_code(400); echo json_encode(['error'=>'El comprobante es obligatorio para transferencias o pago móvil']); return;
-            }
+            // Optional attachment for transfer/mobile
+            // if (in_array($payment_method, ['transfer_bs','mobile_payment_bs']) && !$attachment_path) {
+            //    http_response_code(400); echo json_encode(['error'=>'El comprobante es obligatorio para transferencias o pago móvil']); return;
+            // }
 
             // Validaciones de sobrepago:
             // $paidSoFar calculado previamente al inicio
@@ -186,6 +213,7 @@ class PaymentController {
                 'attachment_path' => $attachment_path,
                 'status' => $status,
                 'notes' => $notes,
+                'payment_date' => $finalDate,
                 'registered_by' => $payload->sub,
             ]);
 

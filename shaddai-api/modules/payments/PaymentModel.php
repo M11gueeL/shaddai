@@ -9,9 +9,13 @@ class PaymentModel {
     public function db() { return $this->db; }
 
     public function create($data) {
-        $sql = 'INSERT INTO payments (account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by) VALUES
-                (:account_id, NOW(), :payment_method, :amount, :currency, :exchange_rate_id, :amount_usd_equivalent, :reference_number, :attachment_path, :status, :notes, :registered_by)';
-        $this->db->execute($sql, [
+        // Allow custom date or default to NOW()
+        $dateExp = empty($data['payment_date']) ? 'NOW()' : ':payment_date';
+
+        $sql = "INSERT INTO payments (account_id, payment_date, payment_method, amount, currency, exchange_rate_id, amount_usd_equivalent, reference_number, attachment_path, status, notes, registered_by) VALUES
+                (:account_id, $dateExp, :payment_method, :amount, :currency, :exchange_rate_id, :amount_usd_equivalent, :reference_number, :attachment_path, :status, :notes, :registered_by)";
+        
+        $params = [
             ':account_id'=>$data['account_id'],
             ':payment_method'=>$data['payment_method'],
             ':amount'=>$data['amount'],
@@ -23,7 +27,13 @@ class PaymentModel {
             ':status'=>$data['status'],
             ':notes'=>$data['notes'] ?? null,
             ':registered_by'=>$data['registered_by']
-        ]);
+        ];
+        
+        if (!empty($data['payment_date'])) {
+            $params[':payment_date'] = $data['payment_date'];
+        }
+
+        $this->db->execute($sql, $params);
         return $this->db->lastInsertId();
     }
 

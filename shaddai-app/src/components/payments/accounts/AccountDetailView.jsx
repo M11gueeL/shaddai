@@ -66,6 +66,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
   const [ref, setRef] = useState('');
   const [file, setFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
+  const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Load lists
   useEffect(() => {
@@ -169,23 +170,41 @@ export default function AccountDetailView({ account, details, setDetails, onBack
        if(val > maxBs) return toast.warning('El monto excede el saldo pendiente en Bs');
     }
 
+    // 4. Reference check for Electronic
+    if (['transfer_bs','mobile_payment_bs'].includes(method)) {
+         if (!ref) return toast.warning('El número de referencia es obligatorio');
+         if (ref.length < 8) return toast.warning('Referencia incompleta (min 8 dígitos)');
+         // The user specifically asked for "last 8 digits", implying EXACTLY 8 or AT LEAST? 
+         // "el input de referencia debe ser los ultimos 8 digitos" implies we want exactly 8 usually, 
+         // but let's stick to user request "los ultimos 8 digitos".
+         // I'll enforce exactly 8 for cleanliness if user means "capture only last 8".
+         if (ref.length !== 8) return toast.warning('Ingrese los últimos 8 dígitos de la referencia');
+         
+         // Date check
+         const today = new Date().toISOString().split('T')[0];
+         if (payDate > today) return toast.warning('La fecha de pago no puede ser futura');
+    }
+
     const form = new FormData();
     form.append('payment_method', method);
     form.append('amount', val);
     form.append('currency', method === 'cash_usd' ? 'USD' : 'BS');
     if(ref) form.append('reference_number', ref);
     if(file) form.append('attachment', file);
+    if(['transfer_bs','mobile_payment_bs'].includes(method) && payDate) {
+        form.append('payment_date', payDate);
+    }
 
     try {
       await paymentsApi.createPayment(account.id, form, token);
       toast.success('Pago registrado');
-      setAmount(''); setRef(''); setFile(null); setFilePreview(null);
+      setAmount(''); setRef(''); setFile(null); setFilePreview(null); setPayDate(new Date().toISOString().split('T')[0]);
       // Reset file input value
       const fileInput = document.getElementById('payment-file-input');
       if(fileInput) fileInput.value = '';
       
       onReload();
-    } catch(e) { toast.error('Error al registrar pago'); }
+    } catch(e) { toast.error(e.response?.data?.error || 'Error al registrar pago'); }
   };
 
   const deletePayment = async (paymentId) => {
@@ -607,13 +626,34 @@ export default function AccountDetailView({ account, details, setDetails, onBack
 
                  {(method === 'transfer_bs' || method === 'mobile_payment_bs') && (
                     <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2">
-                       <input 
-                         placeholder="Nro. Referencia" 
-                         value={ref} 
-                         onChange={(e)=>setRef(e.target.value)}
-                         className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
-                       />
+                       <div className="grid grid-cols-2 gap-3">
+                           <div>
+                               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Fecha Pago</label>
+                               <input 
+                                    type="date"
+                                    max={new Date().toISOString().split('T')[0]}
+                                    value={payDate}
+                                    onChange={(e)=>setPayDate(e.target.value)}
+                                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-3 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                               />
+                           </div>
+                           <div>
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 mb-1 block">Referencia (Últ. 8)</label>
+                                <input 
+                                    placeholder="12345678" 
+                                    value={ref} 
+                                    maxLength={8}
+                                    onChange={(e)=>{
+                                        const v = e.target.value.replace(/[^0-9]/g,'');
+                                        setRef(v);
+                                    }}
+                                    className="w-full bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-mono"
+                                />
+                           </div>
+                       </div>
+                       
                        <div className="space-y-2">
+                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1 block">Comprobante (Opcional)</label>
                          <input 
                             id="payment-file-input"
                             type="file" 
