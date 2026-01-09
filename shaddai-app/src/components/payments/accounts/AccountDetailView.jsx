@@ -506,7 +506,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                                     <div 
                                         className="h-10 w-10 rounded-lg border border-gray-200 overflow-hidden cursor-pointer hover:opacity-80 transition bg-white flex items-center justify-center flex-shrink-0"
                                         onClick={() => setPreviewImage({
-                                              url: `${import.meta.env.VITE_API_URL?.replace(/\/$/, '') || ''}/${p.attachment_path.replace(/^\//, '')}`,
+                                              url: `${paymentsApi.API_URL?.replace(/\/$/, '') || ''}/${p.attachment_path.replace(/^\//, '')}`,
                                               id: p.id,
                                               filename: p.attachment_path.split('/').pop(),
                                               isPdf: p.attachment_path.toLowerCase().endsWith('.pdf')
@@ -517,7 +517,7 @@ export default function AccountDetailView({ account, details, setDetails, onBack
                                             <FileText className="w-5 h-5 text-red-500" />
                                         ) : (
                                             <img 
-                                                src={`${import.meta.env.VITE_API_URL?.replace(/\/$/, '') || ''}/${p.attachment_path.replace(/^\//, '')}`} 
+                                                src={`${paymentsApi.API_URL?.replace(/\/$/, '') || ''}/${p.attachment_path.replace(/^\//, '')}`} 
                                                 alt="thumb" 
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {e.target.style.display='none';}} 
