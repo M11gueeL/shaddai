@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, ChevronDown, Stethoscope, FileText, AlertCircle } from 'lucide-react';
+import { X, ChevronDown, Stethoscope, FileText, AlertCircle, Sparkles, Lightbulb } from 'lucide-react';
 import medicalRecordsApi from '../../../api/medicalRecords';
 import { useToast } from '../../../context/ToastContext';
 import userApi from '../../../api/userApi';
@@ -63,8 +63,8 @@ export default function EncounterEditor({ record, token, user, doctors = [], spe
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/30 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
-        <div className="flex items-center justify-between border-b border-slate-50 px-6 py-4 bg-slate-50/50">
+      <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-3xl bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+        <div className="flex-shrink-0 flex items-center justify-between border-b border-slate-50 px-6 py-4 bg-slate-50/50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-xl text-blue-600">
                 <Stethoscope className="w-5 h-5" />
@@ -79,25 +79,32 @@ export default function EncounterEditor({ record, token, user, doctors = [], spe
           </button>
         </div>
 
-        <form onSubmit={submit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={submit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
           
-          {isAdmin && (
-            <div className="relative">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Doctor</label>
-              <select
-                className="w-full appearance-none rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-                value={form.doctor_id}
-                onChange={(e) => setForm({ ...form, doctor_id: e.target.value })}
-                required
-              >
-                <option value="">Seleccione doctor</option>
-                {doctors.map(d => (
-                  <option key={d.id} value={d.id}>{d.first_name} {d.last_name}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-4 top-[2.4rem] h-4 w-4 text-slate-400" />
-            </div>
-          )}
+          <div className="relative">
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Doctor</label>
+            <select
+              className={`w-full appearance-none rounded-xl border-0 bg-slate-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 focus:bg-white focus:ring-2 focus:ring-blue-500/20 transition-all outline-none ${!isAdmin ? 'opacity-75 bg-slate-100 cursor-not-allowed' : ''}`}
+              value={form.doctor_id}
+              onChange={(e) => isAdmin && setForm({ ...form, doctor_id: e.target.value })}
+              disabled={!isAdmin}
+              required
+            >
+              {isAdmin ? (
+                <>
+                  <option value="">Seleccione doctor</option>
+                  {doctors.map(d => (
+                    <option key={d.id} value={d.id}>{d.first_name} {d.last_name}</option>
+                  ))}
+                </>
+              ) : (
+                <option value={user?.id}>
+                  {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : (user?.name || user?.username || 'Usuario Actual')}
+                </option>
+              )}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-4 top-[2.4rem] h-4 w-4 text-slate-400" />
+          </div>
 
           <div className="relative">
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5 block">Especialidad</label>
@@ -193,20 +200,43 @@ function FirstTimeSuggestion({ record, doctorId, specialtyId, onUse }) {
   const [suggest, setSuggest] = useState(false);
 
   useEffect(() => {
-    if (!record?.recent_encounters || !doctorId || !specialtyId) { setSuggest(false); return; }
-    const prev = (record.recent_encounters || []).some(e => String(e.doctor_id) === String(doctorId) && String(e.specialty_id) === String(specialtyId));
-    setSuggest(!prev);
+    if (!record?.recent_encounters || !Array.isArray(record.recent_encounters) || !doctorId || !specialtyId) { 
+        setSuggest(false); 
+        return; 
+    }
+    
+    // Check if ANY previous encounter matches this doctor AND specialty
+    // Using loose equality (==) to handle string/number differences reliably
+    const hasPrior = record.recent_encounters.some(e => 
+        e.doctor_id == doctorId && e.specialty_id == specialtyId
+    );
+    
+    setSuggest(!hasPrior);
   }, [record?.recent_encounters, doctorId, specialtyId]);
 
   if (!suggest) return null;
+
   return (
-    <div className="mt-3 flex items-center gap-2 text-xs animate-in fade-in slide-in-from-top-1">
-      <span className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-amber-700 font-medium border border-amber-100">
-        💡 Sugerencia: Parece ser la primera vez con este especialista.
-      </span>
-      <button type="button" onClick={onUse} className="font-semibold text-amber-700 hover:text-amber-800 hover:underline decoration-amber-300 underline-offset-2">
-        Usar “Primera vez”
-      </button>
+    <div className="mt-4 flex gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100 animate-in fade-in slide-in-from-top-2">
+      <div className="flex-shrink-0 mt-0.5">
+          <div className="p-1.5 bg-white rounded-lg shadow-sm text-amber-500 border border-amber-50">
+              <Sparkles className="w-4 h-4" />
+          </div>
+      </div>
+      <div className="flex-1">
+          <h4 className="text-sm font-semibold text-amber-900">Primera vez con este especialista</h4>
+          <p className="text-xs text-amber-700/80 mt-1 mb-2 leading-relaxed">
+              No encontramos consultas previas con este médico en esta especialidad.
+          </p>
+          <button
+              type="button"
+              onClick={onUse}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 text-xs font-semibold hover:bg-amber-200 transition-colors"
+          >
+              <Lightbulb className="w-3.5 h-3.5" />
+              Marcar como "Primera vez"
+          </button>
+      </div>
     </div>
   );
 }

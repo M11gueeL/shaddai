@@ -190,7 +190,6 @@ export default function MedicalRecordsPanel() {
     };
 
     const onEncounterCreated = (encounter) => {
-        toast.success('Encuentro creado');
         setShowNewEncounter(false);
         reloadEncounters();
         setSelectedEncounterId(encounter?.id);
