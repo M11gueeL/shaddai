@@ -718,30 +718,40 @@ export default function AccountDetailView({ account, details, setDetails, onBack
 
       {/* Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in" onClick={() => setPreviewImage(null)}>
-            <div className="relative max-w-4xl max-h-[90vh] bg-transparent flex flex-col items-center">
-                 <button 
-                    onClick={() => setPreviewImage(null)}
-                    className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
-                 >
-                     <X className="w-8 h-8" />
-                 </button>
-                 {previewImage.isPdf ? (
-                     <iframe src={previewImage.url} className="w-[80vw] h-[80vh] bg-white rounded-lg shadow-2xl" title="Comprobante PDF" />
-                 ) : (
-                     <img 
-                        src={previewImage.url} 
-                        alt="Comprobante" 
-                        className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-white/10" 
-                        onClick={(e) => e.stopPropagation()}
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=Error+Cargando+Imagen'; }}
-                     />
-                 )}
-                 <div className="mt-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex flex-col items-center justify-center p-4 animate-in fade-in" onClick={() => setPreviewImage(null)}>
+            
+            {/* Close Button - Fixed to viewport top-right */}
+            <button 
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-4 right-4 z-[70] p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all backdrop-blur-md"
+            >
+                <X className="w-8 h-8" />
+            </button>
+
+            {/* Content Container */}
+            <div className="relative w-full max-w-6xl h-full flex flex-col items-center justify-center gap-6" onClick={e => e.stopPropagation()}>
+                 
+                 {/* Image/PDF Area - Takes available space but keeps aspect ratio */}
+                 <div className="flex-1 min-h-0 w-full flex items-center justify-center overflow-hidden rounded-2xl">
+                    {previewImage.isPdf ? (
+                        <iframe src={previewImage.url} className="w-full h-full max-w-4xl bg-white shadow-2xl rounded-xl" title="Comprobante PDF" />
+                    ) : (
+                        <img 
+                            src={previewImage.url} 
+                            alt="Comprobante" 
+                            className="max-w-full max-h-full object-contain drop-shadow-2xl"
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/400?text=Error+Cargando+Imagen'; }}
+                        />
+                    )}
+                 </div>
+
+                 {/* Download Button - Always at bottom */}
+                 <div className="flex-shrink-0 z-10 pb-4">
                      <button 
                         onClick={handleDownloadOriginal}
-                        className="px-6 py-2 bg-white text-gray-900 rounded-full font-bold shadow hover:bg-gray-100 transition-colors cursor-pointer"
+                        className="px-8 py-3 bg-white text-gray-900 rounded-full font-bold shadow-[0_0_20px_rgba(255,255,255,0.3)] hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-3"
                      >
+                         <div className="bg-gray-900 text-white p-1 rounded-full"><ArrowRight className="w-3 h-3 rotate-90" /></div>
                          Descargar Original
                      </button>
                  </div>
