@@ -100,8 +100,7 @@ export default function PaymentReports() {
   };
 
   return (
-    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 relative">
-      
+    <>
       {showSessionModal && (
           <CashSessionReportModal 
              token={token}
@@ -117,6 +116,8 @@ export default function PaymentReports() {
              onClose={() => setShowGeneralReportModal(false)}
           />
       )}
+
+      <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 relative">
 
       {/* Header & Controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -197,5 +198,6 @@ export default function PaymentReports() {
       </div>
 
     </div>
+    </>
   );
 }
