@@ -13,7 +13,16 @@ export default function SessionsAdmin() {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
 
   const load = async () => {
-    try { setLoading(true); const res = await cashApi.adminListSessions(token); setItems(res.data || []); } catch (e) { toast.error('No se pudo cargar sesiones'); } finally { setLoading(false); }
+    try { 
+        setLoading(true); 
+        const res = await cashApi.adminListSessions(token); 
+        // Handle paginated response { data, total, ... } vs old array response
+        setItems(res.data.data ? res.data.data : (Array.isArray(res.data) ? res.data : [])); 
+    } catch (e) { 
+        toast.error('No se pudo cargar sesiones'); 
+    } finally { 
+        setLoading(false); 
+    }
   };
   useEffect(() => { load(); }, []);
 

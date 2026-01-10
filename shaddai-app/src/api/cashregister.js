@@ -10,9 +10,10 @@ export const openSession = (data, token) => axios.post(`${API_URL}/cash-sessions
 export const getStatus = (token) => axios.get(`${API_URL}/cash-sessions/status`, auth(token));
 export const listMyMovements = (token) => axios.get(`${API_URL}/cash-sessions/movements`, auth(token));
 export const closeSession = (data, token) => axios.post(`${API_URL}/cash-sessions/close`, data, auth(token));
-export const adminListSessions = (token, status = null) => {
+export const adminListSessions = (token, params = {}) => {
     let url = `${API_URL}/cash-sessions/admin/all`;
-    if (status) url += `?status=${status}`;
+    const query = new URLSearchParams(params).toString();
+    if (query) url += `?${query}`;
     return axios.get(url, auth(token));
 };
 export const getSessionDetails = (id, token) => axios.get(`${API_URL}/cash-sessions/details?id=${id}`, auth(token));

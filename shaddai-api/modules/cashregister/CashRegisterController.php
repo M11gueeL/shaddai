@@ -85,7 +85,15 @@ class CashRegisterController {
 
     public function adminListSessions() {
         $status = $_GET['status'] ?? null;
-        echo json_encode($this->sessionModel->listAll(null, $status));
+        $page = $_GET['page'] ?? 1;
+        $limit = $_GET['limit'] ?? 10;
+        $startDate = $_GET['startDate'] ?? null;
+        $endDate = $_GET['endDate'] ?? null;
+        $userSearch = $_GET['userSearch'] ?? null;
+        $sessionId = $_GET['sessionId'] ?? null;
+
+        // Ensure userSearch is actually passed if front-end changes
+        echo json_encode($this->sessionModel->listAll(null, $status, $startDate, $endDate, $userSearch, $page, $limit, $sessionId));
     }
 
     public function getSessionDetails() {

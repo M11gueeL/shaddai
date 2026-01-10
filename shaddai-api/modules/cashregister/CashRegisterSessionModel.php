@@ -23,14 +23,79 @@ class CashRegisterSessionModel {
         ]);
     }
 
-    public function listAll($userId = null, $status = null) {
-        $where = [];$params=[];
-        if ($userId) { $where[]='s.user_id = :u'; $params[':u']=$userId; }
-        if ($status) { $where[]='s.status = :st'; $params[':st']=$status; }
-        $sql = 'SELECT s.*, u.first_name, u.last_name FROM cash_register_sessions s INNER JOIN users u ON u.id = s.user_id';
-        if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+    public function listAll($userId = null, $status = null, $startDate = null, $endDate = null, $userSearch = null, $page = 1, $limit = 10, $sessionId = null) {
+        $where = [];
+        $params = [];
+
+        if ($userId) { $where[] = 's.user_id = :u'; $params[':u'] = $userId; }
+        if ($status) { $where[] = 's.status = :st'; $params[':st'] = $status; }
+        if ($sessionId) { $where[] = 's.id = :sid'; $params[':sid'] = $sessionId; }
+        
+        // Date Range
+        if ($startDate && $endDate) {
+            $where[] = 's.start_time BETWEEN :start AND :end';
+            $params[':start'] = $startDate . ' 00:00:00';
+            $params[':end'] = $endDate . ' 23:59:59';
+        }
+
+        // User Search (ID, Name, Email, Phone, DNI)
+        if ($userSearch) {
+            $userSearch = trim($userSearch);
+            $searchTerm = '%' . $userSearch . '%';
+            
+            $orConditions = [
+                'u.first_name LIKE :us1',
+                'u.last_name LIKE :us2',
+                'u.email LIKE :us3',
+                'u.cedula LIKE :us4',
+                'u.phone LIKE :us5',
+                // Fallback de compatibilidad: ID como string para búsqueda parcial
+                'u.id LIKE :us6' 
+            ];
+            
+            $params[':us1'] = $searchTerm;
+            $params[':us2'] = $searchTerm;
+            $params[':us3'] = $searchTerm;
+            $params[':us4'] = $searchTerm;
+            $params[':us5'] = $searchTerm;
+            $params[':us6'] = $searchTerm;
+
+            // Importante: Agregar coincidencia exacta si es numérico para evitar ambigüedades con LIKE
+            if (is_numeric($userSearch)) {
+                 $orConditions[] = "u.id = :us7";
+                 $params[':us7'] = $userSearch;
+            }
+
+            $where[] = '(' . implode(' OR ', $orConditions) . ')';
+        }
+
+        $sql = 'SELECT SQL_CALC_FOUND_ROWS s.*, u.first_name, u.last_name, u.email 
+                FROM cash_register_sessions s 
+                INNER JOIN users u ON u.id = s.user_id';
+        
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
         $sql .= ' ORDER BY s.start_time DESC';
-        return $this->db->query($sql, $params);
+
+        // Pagination
+        $offset = ($page - 1) * $limit;
+        $sql .= " LIMIT $limit OFFSET $offset";
+
+        $sessions = $this->db->query($sql, $params);
+        
+        // Count total for pagination
+        $totalRes = $this->db->query('SELECT FOUND_ROWS() as total');
+        $total = $totalRes[0]['total'] ?? 0;
+
+        return [
+            'data' => $sessions,
+            'total' => (int)$total,
+            'page' => (int)$page,
+            'limit' => (int)$limit,
+            'last_page' => ceil($total / $limit)
+        ];
     }
 
     public function getFullDetails($sessionId) {

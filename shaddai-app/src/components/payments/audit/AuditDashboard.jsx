@@ -35,7 +35,11 @@ export default function AuditDashboard({ navigateTo }) {
   useEffect(() => {
     (async () => {
       try { const p = await paymentsApi.listPendingPayments(token); setPending(p.data || []); } catch {}
-      try { const s = await cashApi.adminListSessions(token); setSessions(s.data || []); } catch {}
+      try { 
+          const s = await cashApi.adminListSessions(token); 
+          // Handle object response with data/pagination
+          setSessions(s.data.data ? s.data.data : (Array.isArray(s.data) ? s.data : [])); 
+      } catch {}
     })();
   }, [token]);
 
