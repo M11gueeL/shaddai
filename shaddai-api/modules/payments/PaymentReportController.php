@@ -66,8 +66,14 @@ class PaymentReportController {
             // Extract user name from token if available (standard practice in this codebase)
             $generatedBy = 'Administrador';
             if (isset($_REQUEST['jwt_payload'])) {
-               // Assuming user info is in payload or we can fetch it. For now generic.
-               $generatedBy = 'Usuario Sistema';
+               $payload = $_REQUEST['jwt_payload'];
+               $userId = $payload->sub;
+               $userName = $this->model->getUserNameById($userId);
+               if ($userName) {
+                   $generatedBy = $userName;
+               } else {
+                   $generatedBy = 'Usuario Sistema'; 
+               }
             }
 
             $filename = 'Reporte_General_Ingresos_' . str_replace('-', '', $startDate) . '_' . str_replace('-', '', $endDate);

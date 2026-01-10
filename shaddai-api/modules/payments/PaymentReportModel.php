@@ -83,8 +83,8 @@ class PaymentReportModel {
             'bs_cash'      => 0, // Efectivo Bolívares
             'bs_transfer'  => 0, // Transferencias BS
             'bs_mobile'    => 0, // Pago Móvil
-            'zelle'        => 0, // Zelle
-            'other_usd'    => 0, // Tarjetas internacionales, etc
+            // 'zelle'        => 0, // Zelle (Removed as requested)
+            'other_usd'    => 0, // Tarjetas internacionales, services, etc
             'total_global_usd_eq' => 0 // Suma de TODO convertido a USD
         ];
 
@@ -95,12 +95,23 @@ class PaymentReportModel {
             $currency = strtoupper($row['currency']);
             $amt = (float)$row['total_amount'];
 
-            if ($method === 'cash' && $currency === 'USD') $summary['usd_cash'] += $amt;
-            elseif ($method === 'cash' && $currency === 'BS') $summary['bs_cash'] += $amt;
-            elseif (strpos($method, 'transfer') !== false && $currency === 'BS') $summary['bs_transfer'] += $amt;
-            elseif (strpos($method, 'mobile') !== false && $currency === 'BS') $summary['bs_mobile'] += $amt;
-            elseif (strpos($method, 'zelle') !== false) $summary['zelle'] += $amt;
-            elseif ($currency === 'USD') $summary['other_usd'] += $amt;
+            // Match methods exactly as they appear in DB or by pattern
+            if ($method === 'cash_usd' || ($method === 'cash' && $currency === 'USD')) {
+                $summary['usd_cash'] += $amt;
+            }
+            elseif ($method === 'cash_bs' || ($method === 'cash' && $currency === 'BS')) {
+                $summary['bs_cash'] += $amt;
+            }
+            elseif (strpos($method, 'transfer') !== false && $currency === 'BS') {
+                $summary['bs_transfer'] += $amt;
+            }
+            elseif (strpos($method, 'mobile') !== false && $currency === 'BS') {
+                $summary['bs_mobile'] += $amt;
+            }
+            // Zelle removed
+            elseif ($currency === 'USD') {
+                $summary['other_usd'] += $amt;
+            }
         }
 
         // 2. LISTA DETALLADA DE TRANSACCIONES (EL "TODO")
@@ -146,9 +157,11 @@ class PaymentReportModel {
         // Para consistencia visual, mostramos cuentas creadas en el rango
         $sqlAccounts = "SELECT ba.id, ba.created_at, ba.status, ba.total_usd,
                                pat.full_name as patient_name,
+                               payer.full_name as payer_name,
                                u.first_name as created_by_name
                         FROM billing_accounts ba
                         INNER JOIN patients pat ON ba.patient_id = pat.id
+                        LEFT JOIN patients payer ON ba.payer_patient_id = payer.id
                         LEFT JOIN users u ON ba.created_by = u.id
                         WHERE ba.created_at BETWEEN :start AND :end
                         ORDER BY ba.created_at DESC";

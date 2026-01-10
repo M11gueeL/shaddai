@@ -40,8 +40,8 @@
         <h2>Reporte General de Ingresos y Auditoría</h2>
         <p>
             <strong>Desde:</strong> <?= date('d/m/Y', strtotime($startDate)) ?> 
-            <strong>Hasta:</strong> <?= date('d/m/Y', strtotime($endDate)) ?> 
-            | Generado por: <?= htmlspecialchars($generatedBy) ?>
+            <strong>Hasta:</strong> <?= date('d/m/Y', strtotime($endDate)) ?> <br>
+            Generado por: <?= htmlspecialchars($generatedBy) ?> | Fecha: <?= date('d/m/Y H:i A') ?>
         </p>
     </div>
 
@@ -64,11 +64,6 @@
                 <span class="summary-value">Bs <?= number_format($data['summary']['bs_mobile'] + $data['summary']['bs_transfer'], 2) ?></span>
                 <span class="summary-sub">Pago Móvil + Transf.</span>
             </td>
-            <td>
-                <span class="summary-label">Zelle (USD)</span>
-                <span class="summary-value">$ <?= number_format($data['summary']['zelle'], 2) ?></span>
-                <span class="summary-sub">Transferencias Int.</span>
-            </td>
         </tr>
     </table>
 
@@ -78,22 +73,47 @@
         <thead>
             <tr>
                 <th style="width: 80px;">Fecha</th>
-                <th style="width: 90px;">Método</th>
+                <th style="width: 100px;">Método</th>
                 <th>Paciente / Responsable</th>
                 <th>Referencia / Notas</th>
                 <th class="text-right" style="width: 80px;">Monto</th>
-                <th class="text-center" style="width: 50px;">Estatus</th>
+                <th class="text-center" style="width: 80px;">Estatus</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($data['details']['all_movements'] as $pay): ?>
+                <?php
+                    // Method Mapping
+                    $rawMethod = strtolower($pay['payment_method']);
+                    $methodName = $rawMethod;
+                    if (strpos($rawMethod, 'transfer') !== false) $methodName = 'Transferencia';
+                    if (strpos($rawMethod, 'mobile') !== false) $methodName = 'Pago Móvil';
+                    if (strpos($rawMethod, 'cash') !== false) $methodName = 'Efectivo';
+                    if (strpos($rawMethod, 'zelle') !== false) $methodName = 'Zelle';
+                    if (strpos($rawMethod, 'card') !== false) $methodName = 'T. Débito/Crédito';
+
+                    // Status Mapping
+                    $statusTrans = [
+                        'pending'  => 'Pendiente',
+                        'verified' => 'Verificado',
+                        'approved' => 'Aprobado',
+                        'rejected' => 'Rechazado',
+                        'annulled' => 'Anulado'
+                    ];
+                    $statusDisplay = $statusTrans[$pay['status']] ?? ucfirst($pay['status']);
+                    
+                    // Patient/Payer Logic
+                    $patient = $pay['patient_name'] ?? 'N/A';
+                    $payer = $pay['payer_name'] ?? null;
+                    $displayNames = "<strong>" . htmlspecialchars($patient) . "</strong>";
+                    if ($payer && $payer !== $patient) {
+                        $displayNames .= "<br><span class='text-xs text-gray'>Resp: " . htmlspecialchars($payer) . "</span>";
+                    }
+                ?>
                 <tr>
                     <td class="text-sm"><?= date('d/m/Y H:i', strtotime($pay['payment_date'])) ?></td>
-                    <td class="text-sm"><?= ucfirst(str_replace('_', ' ', $pay['payment_method'])) ?></td>
-                    <td>
-                        <strong><?= htmlspecialchars($pay['patient_name'] ?? 'N/A') ?></strong><br>
-                        <span class="text-xs text-gray">Reg: <?= htmlspecialchars($pay['registered_by_name'] ?? 'Sistema') ?></span>
-                    </td>
+                    <td class="text-sm"><?= htmlspecialchars($methodName) ?> (<?= $pay['currency'] ?>)</td>
+                    <td><?= $displayNames ?></td>
                     <td class="text-sm">
                         <?= htmlspecialchars($pay['reference_number'] ?? '-') ?>
                         <?php if(!empty($pay['notes'])): ?>
@@ -114,7 +134,7 @@
                                 default => 'text-gray'
                             };
                         ?>
-                        <span class="<?= $stColor ?> font-bold text-xs"><?= strtoupper($pay['status']) ?></span>
+                        <span class="<?= $stColor ?> font-bold text-xs"><?= strtoupper($statusDisplay) ?></span>
                     </td>
                 </tr>
             <?php endforeach; ?>
@@ -155,34 +175,62 @@
         </tbody>
     </table>
 
-    <!-- Cuentas Creadas -->
-    <div class="section-title">Nuevos Pacientes / Cuentas Aperturadas</div>
+    <!-- Cuentas Aperturadas -->
+    <div class="section-title">Cuentas Aperturadas</div>
     <table>
         <thead>
             <tr>
                 <th>ID Cuenta</th>
                 <th>Fecha Apertura</th>
-                <th>Paciente</th>
-                <th>Creado Por</th>
-                <th class="text-right">Total Facturado (al cierre)</th>
+                <th>Paciente / Responsable</th>
+                <th class="text-right">Total Facturado</th>
+                <th class="text-center">Estatus</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($data['details']['new_accounts'] as $acc): ?>
+                <?php 
+                    $patient = $acc['patient_name'] ?? 'N/A';
+                    $payer = $acc['payer_name'] ?? null; 
+                    $displayNames = htmlspecialchars($patient);
+                    if ($payer && $payer !== $patient) {
+                        $displayNames .= " / " . htmlspecialchars($payer);
+                    }
+                    
+                    $stName = $acc['status'] ?? 'pending';
+                    
+                    $accStatusMap = [
+                        'open' => 'Abierta',
+                        'closed' => 'Cerrada',
+                        'paid' => 'Pagada',
+                        'annulled' => 'Anulada',
+                        'pending' => 'Pendiente'
+                    ];
+                    $stDisplay = $accStatusMap[$stName] ?? $stName;
+
+                    $stColor = match($stName) {
+                        'paid' => 'text-emerald',
+                        'annulled' => 'text-red',
+                         default => 'text-gray'
+                    };
+                ?>
                 <tr>
-                    <td>#<?= $acc['id'] ?></td>
+                    <td class="font-bold text-center">#<?= $acc['id'] ?></td>
                     <td><?= date('d/m/Y H:i', strtotime($acc['created_at'])) ?></td>
-                    <td><?= htmlspecialchars($acc['patient_name']) ?></td>
-                    <td><?= htmlspecialchars($acc['created_by_name'] ?? 'N/A') ?></td>
+                    <td><?= $displayNames ?></td>
                     <td class="text-right">$ <?= number_format($acc['total_usd'], 2) ?></td>
+                    <td class="text-center text-xs font-bold <?= $stColor ?>"><?= strtoupper($stDisplay) ?></td>
                 </tr>
             <?php endforeach; ?>
+            <?php if(empty($data['details']['new_accounts'])): ?>
+                <tr><td colspan="5" class="text-center text-gray">No se crearon nuevas cuentas en este periodo.</td></tr>
+            <?php endif; ?>
         </tbody>
     </table>
 
     <div class="footer">
-        Centro de Especialidades Médicas Shaddai Rafa - Reporte de Control Interno<br>
-        Página <span class="page-number"></span>
+        Este documento es confidencial y para uso exclusivo del departamento administrativo. <br> 
+        Generado por Sistema Médico Shaddai
     </div>
 </body>
 </html>
