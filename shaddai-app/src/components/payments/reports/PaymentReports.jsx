@@ -22,8 +22,42 @@ import ServicesPerformanceModal from './modals/ServicesPerformanceModal';
 
 export default function PaymentReports() {
   const { token } = useAuth();
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Helper to get dates
+  const getInitialDates = () => {
+    // 1. Get current date in Caracas Timezone to establish "Today"
+    const formatter = new Intl.DateTimeFormat('en-CA', { 
+        timeZone: 'America/Caracas',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    
+    // Format returns YYYY-MM-DD
+    const caracasDateStr = formatter.format(new Date());
+    const [year, month, day] = caracasDateStr.split('-').map(Number);
+
+    // 2. Start Date: Jan 1st of that year
+    const startString = `${year}-01-01`;
+
+    // 3. End Date: Tomorrow relative to Caracas "Today"
+    // Construct local date object to safely add days without timezone shifts
+    const d = new Date(year, month - 1, day);
+    d.setDate(d.getDate() + 1);
+    
+    // Format manually to YYYY-MM-DD to avoid toISOString UTC conversion issues
+    const endString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    return {
+      start: startString,
+      end: endString
+    };
+  };
+
+  const initialDates = getInitialDates();
+
+  const [startDate, setStartDate] = useState(initialDates.start);
+  const [endDate, setEndDate] = useState(initialDates.end);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showGeneralReportModal, setShowGeneralReportModal] = useState(false);
   const [showServicesModal, setShowServicesModal] = useState(false);
