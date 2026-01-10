@@ -249,4 +249,28 @@ class ReportGeneratorService {
 
         return $dompdf->output();
     }
+
+    public function generateGeneralIncomePdf($data, $startDate, $endDate, $filename, $generatedBy = '') {
+        ob_start();
+        require __DIR__ . '/../templates/reports/payments/general_income_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'Helvetica');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+        header("Cache-Control: no-cache, must-revalidate");
+        echo $dompdf->output();
+        exit;
+    }
 }
