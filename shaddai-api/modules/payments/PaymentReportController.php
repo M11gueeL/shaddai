@@ -78,4 +78,64 @@ class PaymentReportController {
             echo json_encode(['error' => $e->getMessage()]);
         }
     }
+
+    public function downloadDebtorsReportPdf() {
+        try {
+            require_once __DIR__ . '/../../services/ReportGeneratorService.php';
+            $generator = new ReportGeneratorService();
+            
+            $data = $this->model->getDebtorsReport();
+            
+            $generatedBy = 'Administrador';
+            if (isset($_REQUEST['jwt_payload'])) {
+               $payload = $_REQUEST['jwt_payload'];
+               $userId = $payload->sub;
+               // Get name from DB
+               $userName = $this->model->getUserNameById($userId);
+               if ($userName) {
+                   $generatedBy = $userName;
+               } else {
+                   $generatedBy = 'Usuario Sistema'; 
+               }
+            }
+
+            $filename = 'Reporte_Cuentas_Por_Cobrar_' . date('Ymd');
+            $generator->generateDebtorsPdf($data, $filename, $generatedBy);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function downloadServicesPerformancePdf() {
+        try {
+            $startDate = $_GET['startDate'] ?? date('Y-m-01');
+            $endDate = $_GET['endDate'] ?? date('Y-m-d');
+            
+            require_once __DIR__ . '/../../services/ReportGeneratorService.php';
+            $generator = new ReportGeneratorService();
+            
+            $data = $this->model->getServicesPerformanceStats($startDate, $endDate);
+            
+            $generatedBy = 'Administrador';
+            if (isset($_REQUEST['jwt_payload'])) {
+               $payload = $_REQUEST['jwt_payload'];
+               $userId = $payload->sub;
+               $userName = $this->model->getUserNameById($userId);
+               if ($userName) {
+                   $generatedBy = $userName;
+               } else {
+                   $generatedBy = 'Usuario Sistema'; 
+               }
+            }
+
+            $filename = 'Reporte_Rendimiento_Servicios_' . str_replace('-', '', $startDate) . '_' . str_replace('-', '', $endDate);
+            $generator->generateServicesPerformancePdf($data, $startDate, $endDate, $filename, $generatedBy);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
 }

@@ -15,3 +15,5 @@ export const downloadPayment = (paymentId, token) => axios.get(`${API_URL}/payme
 export const getPaymentStats = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/stats?startDate=${startDate}&endDate=${endDate}`, auth(token));
 export const getGeneralReport = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/general?startDate=${startDate}&endDate=${endDate}`, auth(token));
 export const downloadGeneralReportPdf = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/general/pdf?startDate=${startDate}&endDate=${endDate}`, { ...auth(token), responseType: 'blob' });
+export const downloadDebtorsReportPdf = (token) => axios.get(`${API_URL}/payments/reports/debtors/pdf`, { ...auth(token), responseType: 'blob' });
+export const downloadServicesPerformanceReportPdf = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/services/pdf?startDate=${startDate}&endDate=${endDate}`, { ...auth(token), responseType: 'blob' });

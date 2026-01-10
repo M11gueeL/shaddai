@@ -273,4 +273,56 @@ class ReportGeneratorService {
         echo $dompdf->output();
         exit;
     }
+
+    public function generateDebtorsPdf($data, $filename, $generatedBy = '') {
+        ob_start();
+        // Variables needed in the template: $data, $generatedBy
+        require __DIR__ . '/../templates/reports/payments/debtors_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true); 
+        $options->set('defaultFont', 'Helvetica');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+        header("Cache-Control: no-cache, must-revalidate");
+        header("Pragma: public");
+        echo $dompdf->output();
+        exit;
+    }
+
+    public function generateServicesPerformancePdf($data, $startDate, $endDate, $filename, $generatedBy = '') {
+        ob_start();
+        // Variables: $data, $startDate, $endDate, $generatedBy
+        require __DIR__ . '/../templates/reports/payments/services_performance_pdf.php';
+        $html = ob_get_clean();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true); 
+        $options->set('defaultFont', 'Helvetica');
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '.pdf"');
+        header("Cache-Control: no-cache, must-revalidate");
+        header("Pragma: public");
+        echo $dompdf->output();
+        exit;
+    }
 }

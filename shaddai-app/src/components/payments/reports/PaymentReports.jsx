@@ -13,10 +13,12 @@ import {
 } from 'lucide-react';
 import * as paymentApi from '../../../api/payments';
 import { useAuth } from '../../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 // Import Refactored Components
 import CashSessionReportModal from './modals/CashSessionReportModal';
 import GeneralIncomeReportModal from './modals/GeneralIncomeReportModal';
+import ServicesPerformanceModal from './modals/ServicesPerformanceModal';
 
 export default function PaymentReports() {
   const { token } = useAuth();
@@ -24,6 +26,7 @@ export default function PaymentReports() {
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showGeneralReportModal, setShowGeneralReportModal] = useState(false);
+  const [showServicesModal, setShowServicesModal] = useState(false);
   const [statsData, setStatsData] = useState({
     total_income: 0,
     total_receipts: 0,
@@ -89,13 +92,29 @@ export default function PaymentReports() {
     }
   ];
 
-  const handleReportAction = (id) => {
+  const handleReportAction = async (id) => {
       if (id === 'daily_closing') {
           setShowSessionModal(true);
       } else if (id === 'general_income') {
           setShowGeneralReportModal(true);
+      } else if (id === 'debtors') {
+          try {
+              const response = await paymentApi.downloadDebtorsReportPdf(token);
+              const url = window.URL.createObjectURL(new Blob([response.data]));
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', `Reporte_Cuentas_Por_Cobrar_${new Date().toISOString().slice(0,10)}.pdf`);
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+          } catch (error) {
+              console.error("Failed to download debtors report", error);
+              toast.error("Error al descargar el reporte.");
+          }
+      } else if (id === 'services') {
+          setShowServicesModal(true);
       } else {
-          alert("Próximamente");
+          toast.error("Próximamente");
       }
   };
 
@@ -114,6 +133,13 @@ export default function PaymentReports() {
           <GeneralIncomeReportModal
              token={token}
              onClose={() => setShowGeneralReportModal(false)}
+          />
+      )}
+
+      {showServicesModal && (
+          <ServicesPerformanceModal
+             token={token}
+             onClose={() => setShowServicesModal(false)}
           />
       )}
 

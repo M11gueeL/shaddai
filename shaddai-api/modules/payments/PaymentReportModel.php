@@ -171,4 +171,57 @@ class PaymentReportModel {
             ]
         ];
     }
+
+    public function getDebtorsReport() {
+        $sql = "SELECT ba.id, ba.created_at, ba.status, ba.total_usd,
+                       p.full_name as patient_name,
+                       p.cedula as patient_cedula,
+                       p.phone as patient_phone,
+                       COALESCE(u.first_name, 'Sistema') as created_by_name,
+                       
+                       (SELECT COALESCE(SUM(pay.amount_usd_equivalent), 0) 
+                        FROM payments pay 
+                        WHERE pay.account_id = ba.id 
+                        AND pay.status IN ('verified', 'approved') 
+                        AND pay.deleted_at IS NULL) as paid_usd
+
+                FROM billing_accounts ba
+                INNER JOIN patients p ON ba.patient_id = p.id
+                LEFT JOIN users u ON ba.created_by = u.id
+                
+                WHERE ba.status NOT IN ('closed', 'annulled', 'paid') 
+                AND ba.total_usd > 0
+                
+                HAVING total_usd > paid_usd
+                ORDER BY ba.created_at ASC";
+        
+        return $this->db->query($sql);
+    }
+
+    public function getServicesPerformanceStats($startDate, $endDate) {
+        $start = $startDate . ' 00:00:00';
+        $end = $endDate . ' 23:59:59';
+        
+        $sql = "SELECT 
+                    s.name as service_name,
+                    SUM(bad.quantity) as total_quantity,
+                    SUM(bad.quantity * bad.price_usd) as total_usd_generated,
+                    COUNT(DISTINCT bad.account_id) as total_accounts
+                FROM billing_account_details bad
+                JOIN billing_accounts ba ON bad.account_id = ba.id
+                JOIN services s ON bad.service_id = s.id
+                WHERE ba.created_at BETWEEN :start AND :end
+                AND ba.status != 'annulled'
+                GROUP BY s.id, s.name
+                ORDER BY total_quantity DESC";
+
+        return $this->db->query($sql, [':start' => $start, ':end' => $end]);
+    }
+
+    public function getUserNameById($userId) {
+        $sql = "SELECT first_name, last_name FROM users WHERE id = :id";
+        $result = $this->db->query($sql, [':id' => $userId]);
+        return isset($result[0]) ? $result[0]['first_name'] . ' ' . $result[0]['last_name'] : null;
+    }
 }
+
