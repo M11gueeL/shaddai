@@ -11,9 +11,12 @@ import {
   ArrowRight,
   X,
   User,
-  CheckCircle2
+  CheckCircle2,
+  FileText,
+  Users
 } from 'lucide-react';
 import * as cashApi from '../../../api/cashregister';
+import * as paymentApi from '../../../api/payments';
 import { useAuth } from '../../../context/AuthContext';
 
 // Este es solo un componente de interfaz visual (mock), la funcionalidad se agregará después.
@@ -22,14 +25,39 @@ export default function PaymentReports() {
   const { token } = useAuth();
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [reportType, setReportType] = useState('daily'); // daily | monthly | custom
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [statsData, setStatsData] = useState({
+    total_income: 0,
+    total_receipts: 0,
+    total_accounts: 0,
+    total_transactions: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
 
-  // Mock stats
+  useEffect(() => {
+    fetchStats();
+  }, [startDate, endDate]);
+
+  const fetchStats = async () => {
+    try {
+      setLoadingStats(true);
+      const res = await paymentApi.getPaymentStats(startDate, endDate, token);
+      if (res.data) {
+        setStatsData(res.data);
+      }
+    } catch (error) {
+      console.error("Error fetching payment stats", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Stats derived from API
   const stats = [
-    { label: 'Ingresos Totales', value: '$12,450.00', trend: '+12%', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Transacciones', value: '145', trend: '+5%', icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Promedio Ticket', value: '$85.00', trend: '-2%', icon: PieIcon, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Ingresos Totales', value: `$${Number(statsData.total_income).toLocaleString('en-US', {minimumFractionDigits: 2})}`, icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Transacciones Recibidas', value: statsData.total_transactions, icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Recibos Generados', value: statsData.total_receipts, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Cuentas Creadas', value: statsData.total_accounts, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   const reportCards = [
@@ -89,24 +117,6 @@ export default function PaymentReports() {
           <h2 className="text-2xl font-bold text-gray-900">Reportes Financieros</h2>
           <p className="text-gray-500 text-sm">Genere y descargue analíticas detalladas de su gestión.</p>
         </div>
-
-        <div className="flex flex-wrap gap-3 bg-white p-1.5 rounded-2xl border border-gray-100 shadow-sm">
-           {['daily', 'monthly', 'custom'].map((type) => (
-             <button
-               key={type}
-               onClick={() => setReportType(type)}
-               className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                 reportType === type 
-                 ? 'bg-gray-900 text-white shadow-md' 
-                 : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-               }`}
-             >
-               {type === 'daily' && 'Diario'}
-               {type === 'monthly' && 'Mensual'}
-               {type === 'custom' && 'Personalizado'}
-             </button>
-           ))}
-        </div>
       </div>
 
       {/* Date Filter Bar */}
@@ -137,14 +147,14 @@ export default function PaymentReports() {
                  </div>
              </div>
          </div>
-         <button className="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2">
+         <button onClick={fetchStats} className="w-full md:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2">
              <Search className="w-4 h-4" />
-             Actualizar Vista
+             {loadingStats ? 'Cargando...' : 'Actualizar Vista'}
          </button>
       </div>
 
-      {/* Stats Overview (Mock) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, idx) => (
              <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-all">
                 <div className={`absolute top-0 right-0 p-4 rounded-bl-3xl ${stat.bg} ${stat.color} transition-transform group-hover:scale-110`}>
@@ -153,9 +163,6 @@ export default function PaymentReports() {
                 <div>
                    <p className="text-gray-500 text-sm font-medium mb-1">{stat.label}</p>
                    <h3 className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</h3>
-                   <span className={`text-xs font-bold px-2 py-1 rounded-full ${stat.trend.startsWith('+') ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {stat.trend} vs periodo anterior
-                   </span>
                 </div>
              </div>
           ))}
@@ -180,43 +187,6 @@ export default function PaymentReports() {
                </button>
             </div>
          ))}
-      </div>
-
-      {/* Recent generations table (Mock) */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden mt-8">
-         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-             <h3 className="font-bold text-gray-900">Historial de Descargas</h3>
-             <button className="text-sm text-indigo-600 font-medium hover:underline">Ver todo</button>
-         </div>
-         <div className="overflow-x-auto">
-             <table className="w-full text-left text-sm">
-                 <thead className="bg-gray-50/50 text-gray-500">
-                     <tr>
-                         <th className="px-6 py-4 font-semibold">Reporte</th>
-                         <th className="px-6 py-4 font-semibold">Fecha Generado</th>
-                         <th className="px-6 py-4 font-semibold">Generado Por</th>
-                         <th className="px-6 py-4 font-semibold text-right">Acción</th>
-                     </tr>
-                 </thead>
-                 <tbody className="divide-y divide-gray-100">
-                     {[1,2,3].map(i => (
-                         <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                             <td className="px-6 py-4 font-medium text-gray-900 flex items-center gap-3">
-                                 <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600"><FileBarChart className="w-4 h-4" /></div>
-                                 Reporte General de Ingresos
-                             </td>
-                             <td className="px-6 py-4 text-gray-500">09 Ene 2026, 10:30 AM</td>
-                             <td className="px-6 py-4 text-gray-500">Admin</td>
-                             <td className="px-6 py-4 text-right">
-                                 <button className="text-indigo-600 hover:text-indigo-800 font-medium text-xs border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-all">
-                                     Descargar PDF
-                                 </button>
-                             </td>
-                         </tr>
-                     ))}
-                 </tbody>
-             </table>
-         </div>
       </div>
 
     </div>

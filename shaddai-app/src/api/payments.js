@@ -12,3 +12,4 @@ export const verifyPayment = (paymentId, token) => axios.put(`${API_URL}/payment
 export const deletePayment = (paymentId, token) => axios.delete(`${API_URL}/payments/${paymentId}`, auth(token));
 export const listPendingPayments = (token) => axios.get(`${API_URL}/payments/admin/pending`, auth(token));
 export const downloadPayment = (paymentId, token) => axios.get(`${API_URL}/payments/${paymentId}/download`, { ...auth(token), responseType: 'blob' });
+export const getPaymentStats = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/stats?startDate=${startDate}&endDate=${endDate}`, auth(token));
