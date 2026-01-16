@@ -1,11 +1,12 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Activity, DownloadCloud } from 'lucide-react';
+import { Shield, Users, Activity, DownloadCloud, DoorOpen } from 'lucide-react';
 
 export default function ControlPanel() {
   const location = useLocation();
   
   const isUsersSection = location.pathname.includes('/controlpanel/users');
+  const isRoomsSection = location.pathname.includes('/controlpanel/rooms');
   const isSessionsSection = location.pathname.includes('/controlpanel/sessions');
   const isBackupSection = location.pathname.includes('/controlpanel/backup');
   
@@ -45,7 +46,21 @@ export default function ControlPanel() {
           </Link>
 
           <Link
+            to="/controlpanel/rooms"
+            aria-selected={isRoomsSection}
+            className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
+              isRoomsSection
+                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
+                : 'text-gray-600 hover:bg-gray-50 border-transparent'
+            }`}
+          >
+            <DoorOpen className={`w-4 h-4 ${isRoomsSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
+            <span className="text-sm font-medium">Gestión de Consultorios</span>
+          </Link>
+
+          <Link
             to="/controlpanel/sessions"
+
             aria-selected={isSessionsSection}
             className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
               isSessionsSection

@@ -5,6 +5,7 @@ import PatientSearch from './PatientSearch';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
+import { getConsultingRoomsBySpecialty } from '../../../api/consultingRooms';
 import schedulesAPI from '../../../api/medicalSchedules';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
@@ -17,7 +18,7 @@ const AppointmentForm = ({ onClose }) => {
     doctor_id: '',
     appointment_date: '',
     appointment_time: '',
-    office_number: 1,
+    office_number: '',
     specialty_id: '',
     duration: 30,
     appointment_type: 'primera_vez',
@@ -31,6 +32,7 @@ const AppointmentForm = ({ onClose }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [availableSpecialties, setAvailableSpecialties] = useState([]);
+  const [availableRooms, setAvailableRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOutsidePreferred, setIsOutsidePreferred] = useState(false);
   const { confirm } = useConfirm();
@@ -142,7 +144,32 @@ const AppointmentForm = ({ onClose }) => {
     return ((js + 6) % 7) + 1; // -> 1..7 (Lunes..Domingo)
   };
 
+
+  // Fetch rooms when specialty changes
+  useEffect(() => {
+    const fetchRooms = async () => {
+      if (!formData.specialty_id) {
+        setAvailableRooms([]);
+        return;
+      }
+      try {
+        const response = await getConsultingRoomsBySpecialty(formData.specialty_id);
+        if (response.success && Array.isArray(response.data)) {
+          setAvailableRooms(response.data);
+          // If currently selected room is not in result, might want to reset or keep
+        } else {
+             setAvailableRooms([]);
+        }
+      } catch (error) {
+        console.error("Error fetching rooms", error);
+        setAvailableRooms([]);
+      }
+    };
+    fetchRooms();
+  }, [formData.specialty_id]);
+
   // Checar si la cita está fuera de los horarios preferidos del médico
+
   const checkOutsidePreferred = async () => {
     try {
       const token = getToken();
@@ -427,16 +454,39 @@ const AppointmentForm = ({ onClose }) => {
               <label className="block text-sm font-medium text-gray-700">
                 Consultorio
               </label>
-              <select
-                name="office_number"
-                value={formData.office_number}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value={1}>Consultorio 1</option>
-                <option value={2}>Consultorio 2</option>
-                <option value={3}>Consultorio 3</option>
-              </select>
+              {availableRooms.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                      {availableRooms.map(room => (
+                          <button
+                            key={room.id}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, office_number: room.id }))}
+                            className={`flex items-center justify-center p-2 rounded-lg border transition-all ${
+                                formData.office_number == room.id 
+                                ? 'ring-2 ring-offset-1 ring-blue-500 border-transparent shadow-md' 
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                            style={{
+                                backgroundColor: formData.office_number == room.id ? room.color : 'white',
+                            }}
+                          >
+                              <span className={`font-medium truncate ${formData.office_number == room.id 
+                                ? 'text-white' 
+                                : 'text-gray-700'}`}
+                                style={{
+                                    textShadow: formData.office_number == room.id ? '0px 1px 2px rgba(0,0,0,0.5)' : 'none'
+                                }}
+                              >
+                                  {room.name}
+                              </span>
+                          </button>
+                      ))}
+                  </div>
+              ) : (
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 text-center">
+                      {formData.specialty_id ? "No hay consultorios disponibles" : "Seleccione una especialidad primero"}
+                  </div>
+              )}
             </div>
 
             <div className="space-y-2">

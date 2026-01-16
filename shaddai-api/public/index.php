@@ -27,3 +27,4 @@ Utilities::handleJsonInput();
 $requestPath = Utilities::getRequestPath();
 
 $router->dispatch($requestPath, $_SERVER['REQUEST_METHOD']);
+

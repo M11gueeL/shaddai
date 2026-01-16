@@ -17,6 +17,7 @@ import PaymentReports from "./components/payments/reports/PaymentReports";
 import MedicalRecordsPanel from "./components/medicalRecords/MedicalRecordsPanel";
 import InventoryPanel from "./components/inventory/InventoryPanel";
 import UserPanel from "./components/controlPanel/users/UserPanel";
+import RoomsPanel from "./components/controlPanel/rooms/RoomsPanel";
 import AllSessionsPanel from "./components/controlPanel/sessions/AllSessionsPanel";
 import ProfilePanel from "./components/controlPanel/users/ProfilePanel";
 import DatabaseBackupPanel from "./components/controlPanel/system/DatabaseBackupPanel";
@@ -63,6 +64,7 @@ export default function App() {
                     </RoleProtectedRoute>
                   } >
                     <Route path="users" element={<UserPanel />} />
+                    <Route path="rooms" element={<RoomsPanel />} />
                     <Route path="sessions" element={<AllSessionsPanel />} />
                     <Route path="backup" element={<DatabaseBackupPanel />} />
                   </Route>

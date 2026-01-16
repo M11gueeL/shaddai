@@ -30,7 +30,7 @@ class AppointmentsModel {
 
         $mainFields = [
             'patient_id', 'doctor_id', 'appointment_date', 'appointment_time',
-            'office_number', 'specialty_id', 'duration', 'status', 'appointment_type', 'created_by'
+            'consulting_room_id', 'specialty_id', 'duration', 'status', 'appointment_type', 'created_by'
         ];
         $values = [];
         foreach ($mainFields as $f) {
@@ -40,19 +40,20 @@ class AppointmentsModel {
                 $values[$f] = $data[$f] ?? 30;
             } elseif ($f === 'appointment_type') {
                 $values[$f] = $data[$f] ?? 'primera_vez';
+            } elseif ($f === 'consulting_room_id') {
+                $values[$f] = $data['consulting_room_id'] ?? $data['office_number'] ?? null;
             } else {
                 $values[$f] = $data[$f] ?? null;
             }
         }
 
         $sql = "INSERT INTO appointments (
-            patient_id, doctor_id, appointment_date, appointment_time, office_number,
+            patient_id, doctor_id, appointment_date, appointment_time, consulting_room_id,
             specialty_id, duration, status, appointment_type, created_by
         ) VALUES (
-            :patient_id, :doctor_id, :appointment_date, :appointment_time, :office_number,
+            :patient_id, :doctor_id, :appointment_date, :appointment_time, :consulting_room_id,
             :specialty_id, :duration, :status, :appointment_type, :created_by
         )";
-        $params = [];
         $params = [];
         foreach ($mainFields as $f) {
             $params[":$f"] = $values[$f];
@@ -189,11 +190,14 @@ class AppointmentsModel {
             p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
             ms.name as specialty_name,
+            cr.name as consulting_room_name,
+            cr.color as consulting_room_color,
             CONCAT(uc.first_name, ' ', uc.last_name) as created_by_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN consulting_rooms cr ON a.consulting_room_id = cr.id
         LEFT JOIN users uc ON a.created_by = uc.id
         LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
         ORDER BY a.appointment_date DESC, a.appointment_time DESC";
@@ -226,11 +230,14 @@ class AppointmentsModel {
             ami.chief_complaint, ami.symptoms, ami.notes,
             p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
-            ms.name as specialty_name
+            ms.name as specialty_name,
+            cr.name as consulting_room_name,
+            cr.color as consulting_room_color
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
+        LEFT JOIN consulting_rooms cr ON a.consulting_room_id = cr.id
         LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
         WHERE a.appointment_date = :date
         ORDER BY a.appointment_time ASC";
@@ -374,27 +381,6 @@ class AppointmentsModel {
             $this->db->rollBack();
             throw $e;
         }
-    }
-
-    /**
-     * Validar disponibilidad completa antes de crear/actualizar cita
-     */
-    public function validateAppointmentAvailability($data, $excludeId = null) {
-        $errors = [];
-        
-        // 1. Validar disponibilidad de consultorio
-        if (!$this->isOfficeAvailable($data['appointment_date'], $data['appointment_time'], 
-                                    $data['office_number'], $data['duration'] ?? 30, $excludeId)) {
-            $errors[] = "El consultorio {$data['office_number']} no está disponible en esa fecha y hora";
-        }
-        
-        // 2. Validar disponibilidad de médico
-        if (!$this->isDoctorAvailable($data['doctor_id'], $data['appointment_date'], 
-                                    $data['appointment_time'], $data['duration'] ?? 30, $excludeId)) {
-            $errors[] = "El médico no está disponible en esa fecha y hora";
-        }
-        
-        return $errors;
     }
 
     /**
@@ -793,4 +779,78 @@ class AppointmentsModel {
         ]);
     }
     
+    public function validateAppointmentAvailability($data, $excludeId = null) {
+        $errors = [];
+        // Validar reglas aquí:
+
+        $consultingRoomId = $data['consulting_room_id'] ?? $data['office_number'] ?? null;
+        
+        if(!$consultingRoomId) {
+             $errors[] = "El consultorio es obligatorio";
+        }
+        
+        $date = $data['appointment_date'];
+        $time = $data['appointment_time'];
+        $duration = $data['duration'] ?? 30;
+        $doctorId = $data['doctor_id'] ?? null;
+        $specialtyId = $data['specialty_id'] ?? null;
+
+        if ($consultingRoomId) {
+            // Verificar especialidad
+            if ($specialtyId && !$this->checkRoomSpecialty($consultingRoomId, $specialtyId)) {
+                $errors[] = "El consultorio seleccionado no admite la especialidad indicada.";
+            }
+
+            // Verificar disponibilidad horario consultorio
+            if (!$this->isRoomAvailable($consultingRoomId, $date, $time, $duration, $excludeId)) {
+                $errors[] = "El consultorio ya se encuentra ocupado en ese horario.";
+            }
+        }
+        
+        // Verificar disponibilidad de médico
+        if ($doctorId && !$this->isDoctorAvailable($doctorId, $date, $time, $duration, $excludeId)) {
+            $errors[] = "El médico no está disponible en esa fecha y hora";
+        }
+
+        return $errors; 
+    }
+
+    public function isRoomAvailable($roomId, $date, $time, $durationMinutes = 30, $excludeId = null) {
+        // Calcular hora fin de la nueva cita
+        $startTime = strtotime("$date $time");
+        $endTime = $startTime + ($durationMinutes * 60);
+        $endTimeFormatted = date('H:i:s', $endTime);
+
+        $sql = "SELECT COUNT(*) as count FROM appointments 
+                WHERE (consulting_room_id = :room_id OR office_number = :room_id_fallback)
+                AND appointment_date = :date 
+                AND status NOT IN ('cancelada', 'no_se_presento')
+                AND (
+                    (appointment_time < :end_time AND ADDTIME(appointment_time, SEC_TO_TIME(duration * 60)) > :start_time)
+                )";
+        
+        $params = [
+            ':room_id' => $roomId,
+            ':room_id_fallback' => $roomId,
+            ':date' => $date,
+            ':end_time' => $endTimeFormatted,
+            ':start_time' => $time
+        ];
+
+        if ($excludeId) {
+            $sql .= " AND id != :exclude_id";
+            $params[':exclude_id'] = $excludeId;
+        }
+
+        $result = $this->db->query($sql, $params);
+
+        return ($result[0]['count'] == 0);
+    }
+
+    public function checkRoomSpecialty($roomId, $specialtyId) {
+        $sql = "SELECT COUNT(*) as count FROM room_specialties WHERE room_id = :room_id AND specialty_id = :specialty_id";
+        $result = $this->db->query($sql, [':room_id' => $roomId, ':specialty_id' => $specialtyId]);
+        return (!empty($result) && $result[0]['count'] > 0);
+    }
+
 }

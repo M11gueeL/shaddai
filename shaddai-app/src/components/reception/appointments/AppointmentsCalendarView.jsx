@@ -145,16 +145,18 @@ const AppointmentsCalendarView = ({ appointments, onViewAppointment, getStatusBa
                         <div
                           key={appointment.id}
                           onClick={() => onViewAppointment(appointment)}
-                          className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity truncate"
+                          className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity truncate border-l-4 shadow-sm"
                           style={{
-                            backgroundColor: getAppointmentColor(appointment.status),
-                            color: 'white'
+                            backgroundColor: appointment.consulting_room_color || 'white',
+                            borderLeftColor: getAppointmentColor(appointment.status),
+                            color: appointment.consulting_room_color ? 'white' : 'black',
+                            textShadow: appointment.consulting_room_color ? '0 1px 2px rgba(0,0,0,0.4)' : 'none'
                           }}
-                          title={`${appointment.appointment_time} - ${appointment.patient_name}`}
+                          title={`${appointment.appointment_time} - ${appointment.patient_name} - ${appointment.consulting_room_name || 'Sin consultorio'}`}
                         >
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate">
+                            <span className="truncate font-semibold">
                               {appointment.appointment_time?.substring(0, 5)} {appointment.patient_name}
                             </span>
                           </div>
