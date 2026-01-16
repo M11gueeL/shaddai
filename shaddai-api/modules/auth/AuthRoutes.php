@@ -23,6 +23,9 @@ class AuthRoutes {
 
         // Ruta para enviar el token y la nueva clave
         $router->add('POST', 'auth/reset-password', [$authController, 'resetPassword']);
+        
+        // Ruta para aceptar invitación (establecer contraseña inicial)
+        $router->add('POST', 'auth/accept-invitation', [$authController, 'acceptInvitation']);
 
     }
 }

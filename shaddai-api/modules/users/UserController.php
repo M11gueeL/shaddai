@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/UserModel.php';
+require_once __DIR__ . '/../../services/EmailServive.php';
 
 class UsersController {
     private $model;
@@ -58,7 +59,7 @@ class UsersController {
             $data['created_by'] = $jwtPayload->sub;
 
             // Validación básica
-            $requiredFields = ['first_name', 'last_name', 'cedula', 'phone', 'email', 'password', 'roles'];
+            $requiredFields = ['first_name', 'last_name', 'cedula', 'phone', 'email', 'roles'];
             foreach ($requiredFields as $field) {
                 if (empty($data[$field])) {
                     throw new Exception("El campo $field es obligatorio");
@@ -79,8 +80,25 @@ class UsersController {
             }
 
             $userId = $this->model->createUser($data);
-            http_response_code(201);
-            echo json_encode(['message' => 'Usuario creado', 'user_id' => $userId]);
+
+            // Si no se envió contraseña, manejar como invitación
+            if (empty($data['password'])) {
+                $token = bin2hex(random_bytes(16));
+                $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+                
+                $this->model->createInvitation($userId, $token, $expiresAt);
+                
+                $emailService = new EmailService();
+                $inviteLink = "http://localhost:5173/set-password?token=" . $token;
+                
+                $emailService->sendInvitation($data['email'], $data['first_name'], $inviteLink);
+                
+                http_response_code(201);
+                echo json_encode(['message' => 'Usuario invitado correctamente', 'user_id' => $userId]);
+            } else {
+                http_response_code(201);
+                echo json_encode(['message' => 'Usuario creado', 'user_id' => $userId]);
+            }
         } catch (Exception $e) {
             http_response_code(400);
             echo json_encode(['error' => $e->getMessage()]);
@@ -170,6 +188,35 @@ class UsersController {
             } else {
                 throw new Exception('No se pudo actualizar el estado del usuario');
             }
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function resendInvitation($id) {
+        try {
+            $user = $this->model->getUserById($id);
+            if (!$user) {
+                http_response_code(404);
+                throw new Exception('Usuario no encontrado');
+            }
+
+            if (empty($user['email'])) {
+                 throw new Exception('El usuario no tiene email registrado');
+            }
+
+            $token = bin2hex(random_bytes(16));
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+            
+            $this->model->createInvitation($id, $token, $expiresAt);
+            
+            $emailService = new EmailService();
+            $inviteLink = "http://localhost:5173/set-password?token=" . $token;
+            
+            $emailService->sendInvitation($user['email'], $user['first_name'], $inviteLink);
+            
+            echo json_encode(['message' => 'Invitación reenviada correctamente']);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => $e->getMessage()]);

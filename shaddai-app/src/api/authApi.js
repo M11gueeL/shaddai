@@ -48,3 +48,6 @@ export const requestPasswordReset = (email) =>
  */
 export const resetPassword = (token, new_password) =>
   axios.post(`${API}/reset-password`, { token, new_password });
+
+export const acceptInvitation = (token, password) =>
+  axios.post(`${API}/accept-invitation`, { token, password });

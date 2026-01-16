@@ -7,6 +7,7 @@ use PHPMailer\PHPMailer\SMTP;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 require_once __DIR__ . '/AuthModel.php';
+require_once __DIR__ . '/../users/UserModel.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
@@ -14,10 +15,12 @@ require_once __DIR__ . '/../../services/EmailServive.php';
 
 class AuthController {
     private $model;
+    private $userModel;
     private $emailService;
 
     public function __construct() {
         $this->model = new AuthModel();
+        $this->userModel = new UserModel();
         $this->emailService = new EmailService();
     }
 
@@ -335,6 +338,33 @@ class AuthController {
             http_response_code(500);
             echo json_encode(['error' => 'Error interno del servidor.']);
             error_log('Error al resetear password: ' . $e->getMessage());
+        }
+    }
+
+    public function acceptInvitation() {
+        $data = json_decode(file_get_contents('php://input'), true);
+
+        if (empty($data['token']) || empty($data['password'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Token y contraseña son requeridos']);
+            return;
+        }
+
+        try {
+            $invitation = $this->userModel->getInvitationByToken($data['token']);
+            
+            if (!$invitation) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Invitación inválida o expirada']);
+                return;
+            }
+
+            $this->userModel->completeRegistration($invitation['user_id'], $data['password']);
+            
+            echo json_encode(['message' => 'Cuenta activada correctamente. Ya puedes iniciar sesión.']);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
         }
     }
 }

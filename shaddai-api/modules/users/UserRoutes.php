@@ -20,6 +20,7 @@ class UserRoutes {
         $router->add('PUT', 'users/{id}', [$controller, 'updateUser'], ['auth', 'role:admin']);
         $router->add('DELETE', 'users/{id}', [$controller, 'deleteUser'], ['auth', 'role:admin']);
         $router->add('PATCH', 'users/{id}/status', [$controller, 'toggleUserStatus'], ['auth', 'role:admin']);
+        $router->add('POST', 'users/{id}/resend-invitation', [$controller, 'resendInvitation'], ['auth', 'role:admin']);
         
     }
 }

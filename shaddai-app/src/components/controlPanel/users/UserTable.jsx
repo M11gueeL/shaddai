@@ -9,7 +9,9 @@ const UserTable = ({
   users, 
   onEdit, 
   onToggleStatus,
-  medicalColleges
+  medicalColleges,
+  isPendingView,
+  onResendInvitation
 }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [filteredUsers, setFilteredUsers] = useState(Array.isArray(users) ? users : []);
@@ -397,15 +399,21 @@ const UserTable = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.active === 1
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {user.active === 1 ? "Activo" : "Inactivo"}
-                    </span>
+                    {user.registration_status === 'pending' ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                        Invitación Pendiente
+                      </span>
+                    ) : (
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          user.active === 1
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {user.active === 1 ? "Activo" : "Inactivo"}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))
@@ -451,21 +459,31 @@ const UserTable = ({
               Editar
             </button>
             
-            <button
-              onClick={handleToggleStatusClick}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                selectedUser.active === 1
-                  ? 'bg-yellow-50 border border-yellow-200 text-yellow-700 hover:bg-yellow-100'
-                  : 'bg-green-50 border border-green-200 text-green-700 hover:bg-green-100'
-              }`}
-            >
-              {selectedUser.active === 1 ? (
-                <FiToggleLeft className="text-yellow-600" />
-              ) : (
-                <FiToggleRight className="text-green-600" />
-              )}
-              {selectedUser.active === 1 ? 'Desactivar' : 'Activar'}
-            </button>
+            {isPendingView ? (
+              <button
+                onClick={() => onResendInvitation && onResendInvitation(selectedUser.id)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 hover:bg-blue-100 transition"
+              >
+                <FiMail className="text-blue-600" />
+                Reenviar Invitación
+              </button>
+            ) : (
+                <button
+                onClick={handleToggleStatusClick}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                    selectedUser.active === 1
+                    ? 'bg-yellow-50 border border-yellow-200 text-yellow-700 hover:bg-yellow-100'
+                    : 'bg-green-50 border border-green-200 text-green-700 hover:bg-green-100'
+                }`}
+                >
+                {selectedUser.active === 1 ? (
+                    <FiToggleLeft className="text-yellow-600" />
+                ) : (
+                    <FiToggleRight className="text-green-600" />
+                )}
+                {selectedUser.active === 1 ? 'Desactivar' : 'Activar'}
+                </button>
+            )}
             
             {isMedico(selectedUser) && (
               <button

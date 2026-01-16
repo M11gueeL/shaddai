@@ -17,11 +17,15 @@ class UserModel {
             // Insertar en users
             $query = "INSERT INTO users (
                 first_name, last_name, cedula, birth_date, gender, address,
-                phone, email, password, created_by
+                phone, email, password, created_by, registration_status
             ) VALUES (
                 :first_name, :last_name, :cedula, :birth_date, :gender, :address,
-                :phone, :email, :password, :created_by
+                :phone, :email, :password, :created_by, :registration_status
             )";
+
+            // Determinar estado y contraseña
+            $password = !empty($data['password']) ? password_hash($data['password'], PASSWORD_DEFAULT) : null;
+            $registrationStatus = !empty($data['password']) ? 'active' : 'pending';
 
             $params = [
                 ':first_name' => $data['first_name'],
@@ -32,8 +36,9 @@ class UserModel {
                 ':address' => $data['address'] ?? null,
                 ':phone' => $data['phone'],
                 ':email' => $data['email'],
-                ':password' => password_hash($data['password'], PASSWORD_DEFAULT),
+                ':password' => $password,
                 ':created_by' => $data['created_by'] ?? null,
+                ':registration_status' => $registrationStatus
             ];
 
             $this->db->execute($query, $params);
@@ -84,10 +89,67 @@ class UserModel {
         }
     }
 
+    public function createInvitation($userId, $token, $expiresAt) {
+        // Eliminar invitaciones anteriores para este usuario
+        $this->db->execute("DELETE FROM user_invitations WHERE user_id = :user_id", [':user_id' => $userId]);
+
+        $this->db->execute(
+            "INSERT INTO user_invitations (user_id, token, expires_at) VALUES (:user_id, :token, :expires_at)",
+            [
+                ':user_id' => $userId,
+                ':token' => $token,
+                ':expires_at' => $expiresAt
+            ]
+        );
+    }
+
+    public function getInvitationByUserId($userId) {
+        $result = $this->db->query(
+            "SELECT * FROM user_invitations WHERE user_id = :user_id AND expires_at > NOW() AND used_at IS NULL ORDER BY created_at DESC LIMIT 1",
+            [':user_id' => $userId]
+        );
+        return $result[0] ?? null;
+    }
+
+    public function getInvitationByToken($token) {
+        $result = $this->db->query(
+            "SELECT * FROM user_invitations WHERE token = :token AND expires_at > NOW() AND used_at IS NULL LIMIT 1",
+            [':token' => $token]
+        );
+        return $result[0] ?? null;
+    }
+
+    public function completeRegistration($userId, $password) {
+        try {
+            $this->db->execute("START TRANSACTION");
+
+            // Actualizar usuario
+            $this->db->execute(
+                "UPDATE users SET password = :password, registration_status = 'active', active = 1 WHERE id = :id",
+                [
+                    ':password' => password_hash($password, PASSWORD_DEFAULT),
+                    ':id' => $userId
+                ]
+            );
+
+            // Marcar invitación como usada
+            $this->db->execute(
+                "UPDATE user_invitations SET used_at = NOW() WHERE user_id = :user_id AND used_at IS NULL",
+                [':user_id' => $userId]
+            );
+
+            $this->db->execute("COMMIT");
+            return true;
+        } catch (Exception $e) {
+            $this->db->execute("ROLLBACK");
+            throw $e;
+        }
+    }
+
     // Obtener todos los usuarios con roles y datos médicos si es medico
     public function getAllUsers() {
         $users = $this->db->query("SELECT id, first_name, last_name, cedula, birth_date, gender, address,
-                phone, email, created_by, created_at, updated_at, active FROM users");
+                phone, email, created_by, created_at, updated_at, active, registration_status FROM users");
 
         // Traer roles para cada usuario
         foreach ($users as &$user) {

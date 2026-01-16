@@ -105,8 +105,8 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
     if (!formData.first_name) newErrors.first_name = 'Nombre es requerido';
     if (!formData.last_name) newErrors.last_name = 'Apellido es requerido';
     if (!formData.cedula_number) newErrors.cedula = 'Cédula es requerida';
-    // Email is now optional
-    if (!user && !formData.password) newErrors.password = 'Contraseña es requerida';
+    if (!formData.email) newErrors.email = 'Email es requerido para enviar invitación';
+    // Password not required for creation (invitation) or edit (optional)
     if (formData.roles.length === 0) newErrors.roles = 'Debe seleccionar al menos un rol';
     
     if (isMedico) {
@@ -326,7 +326,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                     {/* Email */}
                     <div className="group">
                         <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                            Email
+                            Email <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -337,32 +337,34 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
+                                required
                                 className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
                             />
                         </div>
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                     </div>
 
-                    {/* Password */}
-                    <div className="group">
-                        <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                            Contraseña {user ? '(Opcional)' : <span className="text-red-500">*</span>}
-                        </label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Lock className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                    {/* Password - Only shown for editing */}
+                    {user && (
+                        <div className="group">
+                            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                                Contraseña (Opcional)
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Lock className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                </div>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400`}
+                                />
                             </div>
-                            <input
-                                type="password"
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required={!user}
-                                className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${errors.password ? 'border-red-500' : 'border-gray-200'}`}
-                            />
+                            <p className="text-xs text-gray-500 mt-1">Dejar en blanco para mantener la contraseña actual.</p>
                         </div>
-                        {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-                    </div>
+                    )}
 
                     {/* Address */}
                     <div className="group md:col-span-2">
@@ -539,7 +541,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                   type="submit"
                   className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30 text-sm font-medium hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-[1.02]"
                 >
-                  {user ? 'Actualizar Usuario' : 'Crear Usuario'}
+                  {user ? 'Actualizar Usuario' : 'Guardar y Enviar Invitación'}
                 </button>
             </div>
 

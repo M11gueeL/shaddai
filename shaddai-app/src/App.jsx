@@ -26,6 +26,7 @@ import { ToastProvider } from "./context/ToastContext";
 import { ConfirmProvider } from "./context/ConfirmContext";
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
+import SetPassword from './components/auth/SetPassword';
 import ScrollToTop  from "./utils/ScrollToTop";
 import AppPrivacy from "./components/legal/AppPrivacy";
 import AppTerms from "./components/legal/AppTerms";
@@ -43,6 +44,7 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/set-password" element={<SetPassword />} />
               </Route>
 
               <Route element={<ProtectedRoute />}>

@@ -35,6 +35,9 @@ export default {
   
   // Cambiar estado (activar/desactivar)
   toggleStatus: (id, token) => axios.patch(`${API_URL}/users/${id}/status`, {}, getAuthHeaders(token)),
+
+  // Reenviar invitación
+  resendInvitation: (id, token) => axios.post(`${API_URL}/users/${id}/resend-invitation`, {}, getAuthHeaders(token)),
   
   // Obtener especialidades
   getSpecialties: (token) => axios.get(`${API_URL}/specialties`, getAuthHeaders(token)),

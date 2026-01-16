@@ -124,6 +124,26 @@ class EmailService {
         }
     }
 
+    public function sendInvitation($toEmail, $userName, $inviteLink) {
+        try {
+            $this->mailer->clearAddresses();
+            $this->mailer->addAddress($toEmail);
+            $this->mailer->Subject = 'Bienvenido a Shaddai Rafa - Invitación';
+            
+            $body = $this->renderTemplate('invitation', 'Bienvenido', [
+                'userName' => $userName,
+                'inviteLink' => $inviteLink
+            ]);
+            
+            $this->mailer->Body = $body;
+            $this->mailer->send();
+            return true;
+        } catch (Exception $e) {
+            error_log("Error enviando invitación: " . $this->mailer->ErrorInfo);
+            return false;
+        }
+    }
+
     // Mantenemos este método por compatibilidad si se usa en otro lado, pero redirigimos
     public function sendAppointmentConfirmation($toEmail, $patientName, $doctorName, $date, $time) {
         return $this->sendPatientConfirmation($toEmail, $patientName, $doctorName, $date, $time);

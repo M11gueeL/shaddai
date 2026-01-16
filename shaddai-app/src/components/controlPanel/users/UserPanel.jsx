@@ -17,6 +17,7 @@ export default function UserPanel() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [specialties, setSpecialties] = useState([]);
   const [medicalColleges, setMedicalColleges] = useState([]);
+  const [activeTab, setActiveTab] = useState('active');
   
   // Cargar datos iniciales
   useEffect(() => {
@@ -93,6 +94,16 @@ export default function UserPanel() {
     }
   };
 
+  const handleResendInvitation = async (userId) => {
+    try {
+      await userApi.resendInvitation(userId, token);
+      toast.success('Invitación reenviada correctamente');
+    } catch (err) {
+      console.error('Error al reenviar invitación:', err);
+      toast.error('Error al reenviar invitación: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   const handleCreateSubmit = async (formData) => {
     try {
       await userApi.create(formData, token);
@@ -149,6 +160,11 @@ export default function UserPanel() {
   if (loading) return <div className="text-center py-10">Cargando usuarios...</div>;
   if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
 
+  const filteredUsersByTab = Array.isArray(users) ? users.filter(u => {
+      if (activeTab === 'pending') return u.registration_status === 'pending';
+      return u.registration_status !== 'pending';
+  }) : [];
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -161,12 +177,43 @@ export default function UserPanel() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex space-x-1 rounded-xl bg-gray-100 p-1 mb-6 w-fit">
+        <button
+          onClick={() => setActiveTab('active')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'active'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Usuarios Activos
+        </button>
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+            activeTab === 'pending'
+              ? 'bg-white text-gray-800 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Invitaciones Pendientes
+          {Array.isArray(users) && users.filter(u => u.registration_status === 'pending').length > 0 && (
+             <span className="bg-red-500 text-white text-xs px-2 rounded-full">
+                {users.filter(u => u.registration_status === 'pending').length}
+             </span>
+          )}
+        </button>
+      </div>
+
       {/* Mostrar tabla de usuarios */}
       <UserTable 
-        users={users} 
+        users={filteredUsersByTab} 
         onEdit={handleEdit} 
         onToggleStatus={handleToggleStatus}
         medicalColleges={medicalColleges} // Pasamos los colegios médicos
+        isPendingView={activeTab === 'pending'} // New prop
+        onResendInvitation={handleResendInvitation} // New prop
       />
 
       {/* Formulario para crear usuario (modal) */}
