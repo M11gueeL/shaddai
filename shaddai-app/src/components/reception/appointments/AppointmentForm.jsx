@@ -455,32 +455,43 @@ const AppointmentForm = ({ onClose }) => {
                 Consultorio
               </label>
               {availableRooms.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                      {availableRooms.map(room => (
-                          <button
-                            key={room.id}
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, office_number: room.id }))}
-                            className={`flex items-center justify-center p-2 rounded-lg border transition-all ${
-                                formData.office_number == room.id 
-                                ? 'ring-2 ring-offset-1 ring-blue-500 border-transparent shadow-md' 
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                            }`}
-                            style={{
-                                backgroundColor: formData.office_number == room.id ? room.color : 'white',
-                            }}
-                          >
-                              <span className={`font-medium truncate ${formData.office_number == room.id 
-                                ? 'text-white' 
-                                : 'text-gray-700'}`}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1">
+                      {availableRooms.map(room => {
+                          const isSelected = formData.office_number == room.id;
+                          return (
+                            <button
+                                key={room.id}
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, office_number: room.id }))}
+                                className={`flex items-center px-3 py-2 rounded-lg border transition-all group relative ${
+                                    isSelected
+                                    ? 'ring-2 ring-offset-1 ring-blue-500 border-transparent shadow-md' 
+                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
                                 style={{
-                                    textShadow: formData.office_number == room.id ? '0px 1px 2px rgba(0,0,0,0.5)' : 'none'
+                                    backgroundColor: isSelected ? room.color : 'white',
                                 }}
-                              >
-                                  {room.name}
-                              </span>
-                          </button>
-                      ))}
+                            >
+                                {/* Indicador de color cuando no está seleccionado */}
+                                {!isSelected && (
+                                    <div 
+                                        className="w-4 h-4 rounded-full mr-3 flex-shrink-0 border border-gray-200 shadow-sm"
+                                        style={{ backgroundColor: room.color }}
+                                    />
+                                )}
+                                
+                                <span className={`font-medium truncate text-sm flex-1 ${isSelected
+                                    ? 'text-white text-center' 
+                                    : 'text-gray-700 text-left'}`}
+                                    style={{
+                                        textShadow: isSelected ? '0px 1px 2px rgba(0,0,0,0.5)' : 'none'
+                                    }}
+                                >
+                                    {room.name}
+                                </span>
+                            </button>
+                          );
+                      })}
                   </div>
               ) : (
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 text-center">

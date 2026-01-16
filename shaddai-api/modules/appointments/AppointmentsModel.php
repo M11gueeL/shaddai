@@ -290,16 +290,21 @@ class AppointmentsModel {
         if (!empty($errors)) {
             throw new Exception(implode('. ', $errors));
         }
+
+        // Map office_number to consulting_room_id
+        if (isset($data['office_number']) && !isset($data['consulting_room_id'])) {
+            $data['consulting_room_id'] = $data['office_number'];
+        }
         
         $fields = [
             'patient_id', 'doctor_id', 'appointment_date', 'appointment_time',
-            'office_number', 'specialty_id', 'duration', 'status', 'appointment_type'
+            'consulting_room_id', 'specialty_id', 'duration', 'status', 'appointment_type'
         ];
         $set = [];
         $params = [];
         foreach ($fields as $f) {
             $set[] = "$f = :$f";
-            $params[":$f"] = $data[$f];
+            $params[":$f"] = $data[$f] ?? null;
         }
         $params[':id'] = $id;
 
@@ -392,7 +397,7 @@ class AppointmentsModel {
         
         $query = "SELECT COUNT(*) as count FROM appointments 
                 WHERE appointment_date = :date 
-                AND office_number = :office_number 
+                AND consulting_room_id = :consulting_room_id 
                 AND status NOT IN ('cancelada', 'no_se_presento')
                 AND (
                     (appointment_time < :end_time AND ADDTIME(appointment_time, SEC_TO_TIME(duration * 60)) > :start_time)
@@ -400,7 +405,7 @@ class AppointmentsModel {
         
         $params = [
             ':date' => $date,
-            ':office_number' => $officeNumber,
+            ':consulting_room_id' => $officeNumber,
             ':start_time' => $startTime,
             ':end_time' => $endTime
         ];
@@ -822,7 +827,7 @@ class AppointmentsModel {
         $endTimeFormatted = date('H:i:s', $endTime);
 
         $sql = "SELECT COUNT(*) as count FROM appointments 
-                WHERE (consulting_room_id = :room_id OR office_number = :room_id_fallback)
+                WHERE consulting_room_id = :room_id
                 AND appointment_date = :date 
                 AND status NOT IN ('cancelada', 'no_se_presento')
                 AND (
@@ -831,7 +836,6 @@ class AppointmentsModel {
         
         $params = [
             ':room_id' => $roomId,
-            ':room_id_fallback' => $roomId,
             ':date' => $date,
             ':end_time' => $endTimeFormatted,
             ':start_time' => $time
