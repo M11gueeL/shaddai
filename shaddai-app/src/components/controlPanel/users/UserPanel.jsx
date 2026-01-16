@@ -18,6 +18,7 @@ export default function UserPanel() {
   const [specialties, setSpecialties] = useState([]);
   const [medicalColleges, setMedicalColleges] = useState([]);
   const [activeTab, setActiveTab] = useState('active');
+  const [creating, setCreating] = useState(false);
   
   // Cargar datos iniciales
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function UserPanel() {
 
   const handleCreateSubmit = async (formData) => {
     try {
+      setCreating(true);
       await userApi.create(formData, token);
       const usersRes = await userApi.getAll(token);
       const payload = usersRes?.data;
@@ -118,10 +120,17 @@ export default function UserPanel() {
             : [];
       setUsers(refreshed);
       setShowCreateForm(false);
+      
       toast.success('Usuario creado exitosamente');
+      setTimeout(() => {
+        toast.success('Invitación enviada correctamente');
+      }, 1500);
+
     } catch (err) {
       console.error('Error al crear usuario:', err);
       toast.error('Error al crear: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -224,6 +233,7 @@ export default function UserPanel() {
               onCancel={handleFormClose}
               specialties={specialties}
               medicalColleges={medicalColleges}
+              loading={creating}
             />
         </div>
       )}

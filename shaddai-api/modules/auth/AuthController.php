@@ -49,6 +49,13 @@ class AuthController {
             return;
         }
 
+        // Check for pending invitation or null password
+        if ((isset($user['registration_status']) && $user['registration_status'] === 'pending') || empty($user['password'])) {
+            http_response_code(403);
+            echo json_encode(['error' => 'La cuenta aún no ha sido activada. Por favor revise su correo electrónico para aceptar la invitación y establecer su contraseña.']);
+            return;
+        }
+
         if (!$user['active']) {
             http_response_code(403);
             echo json_encode(['error' => 'Este usuario está inactivo. Contacta al administrador.']);
