@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Plus, Filter, Search, RefreshCw } from 'lucide-react';
+import { X, Plus, Filter, Search, RefreshCw, CalendarClock } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
@@ -111,66 +111,85 @@ export default function MedicalSchedulesPanel({ onClose }) {
   };
 
   return (
-    <div className="h-[85vh] flex flex-col">
-      <header className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Horarios Médicos</h2>
-          <p className="text-sm text-gray-500">Gestiona los horarios preferidos de los médicos</p>
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl mx-auto flex flex-col h-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+            <CalendarClock className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Horarios Médicos</h2>
+            <p className="text-gray-500 text-sm">Gestiona los horarios preferidos de los médicos</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={load} className="px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700 flex items-center gap-2">
-            <RefreshCw className="w-4 h-4" /> Refrescar
+          <button 
+            onClick={load} 
+            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all duration-200"
+            title="Refrescar"
+          >
+            <RefreshCw className="w-5 h-5" />
           </button>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
-            <X className="w-5 h-5 text-gray-600" />
+          <button 
+            onClick={onClose} 
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+          >
+            <X className="w-6 h-6" />
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Filters */}
-      <div className="px-6 py-3 border-b border-gray-100 bg-gray-50/60">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+      <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <div className="md:col-span-2">
-            <label className="text-xs font-medium text-gray-600">Médico</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Médico</label>
             <DoctorSelector selectedDoctor={selectedDoctor} onSelect={setSelectedDoctor} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Día</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Día</label>
             <div className="relative">
-              <select className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300" value={dayFilter} onChange={(e)=>setDayFilter(e.target.value)}>
+              <select className="w-full pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none" value={dayFilter} onChange={(e)=>setDayFilter(e.target.value)}>
                 <option value="">Todos</option>
                 {days.map(d=> <option key={d.value} value={d.value}>{d.label}</option>)}
               </select>
-              <Filter className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              <Filter className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Desde</label>
-            <input type="time" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300" value={timeStart} onChange={(e)=>setTimeStart(e.target.value)} />
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">De</label>
+            <input type="time" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" value={timeStart} onChange={(e)=>setTimeStart(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Hasta</label>
-            <input type="time" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300" value={timeEnd} onChange={(e)=>setTimeEnd(e.target.value)} />
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">A</label>
+            <input type="time" className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" value={timeEnd} onChange={(e)=>setTimeEnd(e.target.value)} />
           </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-gray-600">Buscar</label>
-            <div className="relative">
-              <input placeholder="Notas, nombre del médico..." className="w-full pl-9 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 border-gray-300" value={searchNotes} onChange={(e)=>setSearchNotes(e.target.value)} />
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            </div>
-          </div>
-          <div className="flex items-end">
-            {canEdit && (
-              <button onClick={onCreate} className="w-full md:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2">
-                <Plus className="w-4 h-4" /> Nuevo horario
+          <div className="md:col-span-1">
+             {canEdit && (
+              <button 
+                onClick={onCreate} 
+                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Nuevo
               </button>
             )}
           </div>
         </div>
+        
+         {/* Search Bar - Second Row */}
+         <div className="mt-4 relative">
+            <input 
+              placeholder="Buscar por notas, nombre del médico..." 
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+              value={searchNotes} 
+              onChange={(e)=>setSearchNotes(e.target.value)} 
+            />
+            <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-y-auto bg-gray-50 p-6">
         <SchedulesTable
           items={filtered}
           loading={loading}
@@ -184,8 +203,8 @@ export default function MedicalSchedulesPanel({ onClose }) {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-black/40" onClick={()=>setShowForm(false)} />
-          <div className="relative bg-white w-full max-w-xl rounded-2xl shadow-2xl p-5">
+          <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onClick={()=>setShowForm(false)} />
+          <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 p-6">
             <ScheduleForm
               initial={editing}
               onCancel={()=>{ setShowForm(false); setEditing(null); }}
