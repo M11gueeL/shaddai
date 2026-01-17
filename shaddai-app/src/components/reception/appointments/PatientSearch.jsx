@@ -106,8 +106,8 @@ const PatientSearch = ({ onSelect, error, selectedPatient }) => {
           onChange={handleInputChange}
           onFocus={() => setShowDropdown(true)}
           placeholder="Buscar por cédula o nombre del paciente..."
-          className={`w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-            error ? 'border-red-500' : 'border-gray-300'
+          className={`w-full pl-10 pr-10 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${
+            error ? 'border-red-500' : 'border-gray-200'
           }`}
         />
         

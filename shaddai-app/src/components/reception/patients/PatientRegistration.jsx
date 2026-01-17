@@ -63,19 +63,24 @@ export default function PatientRegistration({ onClose }) {
   return (
     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden">
       {/* Header del Modal */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white">
         <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                <UserPlus className="w-6 h-6 text-white" />
+            {/* Fondo del icono cambiado a azul claro suave */}
+            <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+                {/* Icono cambiado a azul primario */}
+                <UserPlus className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-                <h2 className="text-xl font-bold">Registrar Nuevo Paciente</h2>
-                <p className="text-blue-100 text-sm">Complete la información para dar de alta un nuevo paciente</p>
+                {/* Título en negro/gris oscuro */}
+                <h2 className="text-xl font-bold text-gray-900">Registrar Nuevo Paciente</h2>
+                {/* Subtítulo en gris medio */}
+                <p className="text-gray-500 text-sm">Complete la información para dar de alta un nuevo paciente</p>
             </div>
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-white/20 rounded-full text-blue-100 hover:text-white transition-all duration-200"
+          /* Botón de cerrar adaptado para fondo blanco */
+          className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-all duration-200"
         >
           <X className="w-6 h-6" />
         </button>

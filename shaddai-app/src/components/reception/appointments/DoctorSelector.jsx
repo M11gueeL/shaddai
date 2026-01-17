@@ -53,9 +53,9 @@ const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
       {/* 👈 CAMBIAR A DIV EN LUGAR DE BUTTON PRINCIPAL */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 text-left border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex items-center justify-between cursor-pointer ${
-          error ? 'border-red-500' : 'border-gray-300'
-        }`}
+        className={`w-full px-4 py-2.5 text-left border rounded-lg focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 flex items-center justify-between cursor-pointer transition-all ${
+          error ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+        } ${isOpen ? 'bg-white ring-2 ring-blue-500/20 border-blue-500' : ''}`}
       >
         <div className="flex items-center flex-1">
           <Stethoscope className="w-4 h-4 text-gray-400 mr-2" />

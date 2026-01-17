@@ -11,9 +11,9 @@ const SpecialtySelector = ({ specialties, value, onChange, error, disabled }) =>
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+        className={`w-full px-4 py-2.5 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none transition-all text-sm text-gray-800 ${
+          error ? 'border-red-500 bg-red-50' : 'border-gray-200'
+        } ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-gray-50 hover:bg-gray-100'}`}
       >
         <option value="">
           {disabled ? 'Primero seleccione un médico' : 'Seleccionar especialidad...'}

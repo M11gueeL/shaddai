@@ -39,6 +39,7 @@ export default function TimePicker({
   placeholder = 'Seleccionar hora',
   error,
   disabled = false,
+  className = '',
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
@@ -84,19 +85,21 @@ export default function TimePicker({
 
   return (
     <div className="relative" ref={containerRef}>
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+        <Clock className="w-4 h-4 text-gray-400" />
+      </div>
       <button
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
-        className={`w-full px-3 py-2 border rounded-lg text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-          error ? 'border-red-500' : 'border-gray-300'
-        } ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'}`}
+        className={`pl-10 pr-4 py-2.5 flex items-center justify-between ${className || 'w-full bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800'} ${
+          error ? 'border-red-500' : ''
+        } ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}`}
       >
-        <span className={`flex items-center ${value ? 'text-gray-900' : 'text-gray-500'}`}>
-          <Clock className="w-4 h-4 mr-2 text-gray-400" />
+        <span className={`block truncate ${value ? 'text-gray-900' : 'text-gray-500'}`}>
           {value || placeholder}
         </span>
-        <ChevronDown className="w-4 h-4 text-gray-400" />
+        <ChevronDown className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
       </button>
 
       {open && (
