@@ -43,7 +43,7 @@ const AppointmentsList = ({ onClose }) => {
   // Estados de paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-
+  
   // Cargar citas al montar
   useEffect(() => {
     loadAppointments();
@@ -169,35 +169,29 @@ const AppointmentsList = ({ onClose }) => {
   const paginatedAppointments = filteredAppointments.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="flex flex-col h-full max-h-[90vh]">
-      {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Consultar Citas</h2>
-          <p className="text-gray-600 mt-1">
-            Gestiona y visualiza todas las citas programadas
-          </p>
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl mx-auto flex flex-col h-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+      {/* Header del modal */}
+      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+            <CalendarIcon className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Gestión de Citas</h2>
+            <p className="text-gray-500 text-sm">Administre las citas médicas programadas</p>
+          </div>
         </div>
-        <div className="flex items-center">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-full transition-colors mr-2 ${showFilters ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100 text-gray-400'}`}
-            title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
-          >
-            <Filter className="w-5 h-5" />
-          </button>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-400" />
-          </button>
-        </div>
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-all duration-200"
+        >
+          <X className="w-6 h-6" />
+        </button>
       </div>
 
       {/* Filtros y controles */}
       {showFilters && (
-      <div className="p-6 border-b border-gray-200 bg-gray-50">
+      <div className="p-6 border-b border-gray-200 bg-gray-50/50">
         <div className="flex flex-col lg:flex-row gap-4 mb-4">
           {/* Barra de búsqueda */}
           <div className="flex-1 relative">

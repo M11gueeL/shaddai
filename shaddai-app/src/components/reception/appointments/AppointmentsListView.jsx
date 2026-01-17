@@ -80,8 +80,16 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                   <div className="space-y-2">
                     <div className="text-sm text-gray-500">Estado</div>
                     <div>{getStatusBadge(appointment.status)}</div>
-                    <div className="text-sm text-gray-600">
-                      Consultorio {appointment.office_number}
+                    <div className="mt-2">
+                    {appointment.consulting_room_name ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border" style={{ backgroundColor: appointment.consulting_room_color + '20', color: appointment.consulting_room_color, borderColor: appointment.consulting_room_color + '40' }}>
+                            {appointment.consulting_room_name}
+                        </span>
+                    ) : (
+                        <span className="text-sm text-gray-600">
+                            Consultorio {appointment.office_number || 'N/A'}
+                        </span>
+                    )}
                     </div>
                   </div>
 

@@ -187,7 +187,7 @@ class AppointmentsModel {
         $query = "SELECT 
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
-            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone,
+            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
             ms.name as specialty_name,
             cr.name as consulting_room_name,
@@ -211,16 +211,31 @@ class AppointmentsModel {
             ami.chief_complaint, ami.symptoms, ami.notes,
             p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula, u.email as doctor_email,
-            ms.name as specialty_name
+            ms.name as specialty_name,
+            cr.name as consulting_room_name,
+            cr.color as consulting_room_color
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
+        LEFT JOIN consulting_rooms cr ON a.consulting_room_id = cr.id
         WHERE a.id = :id";
         $params = [':id' => $id];
         $result = $this->db->query($query, $params);
         return !empty($result) ? $result[0] : null;
+    }
+
+    public function getAppointmentHistory($id) {
+        $query = "SELECT 
+            h.*,
+            CONCAT(u.first_name, ' ', u.last_name) as changed_by_name
+        FROM appointment_status_history h
+        LEFT JOIN users u ON h.changed_by = u.id
+        WHERE h.appointment_id = :id
+        ORDER BY h.changed_at DESC";
+        
+        return $this->db->query($query, [':id' => $id]);
     }
 
 

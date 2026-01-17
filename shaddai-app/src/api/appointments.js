@@ -16,6 +16,9 @@ export default {
   
   // Obtener cita por ID
   getById: (id, token) => axios.get(`${API_URL}/appointments/${id}`, getAuthHeaders(token)),
+
+  // Obtener historial de la cita
+  getHistory: (id, token) => axios.get(`${API_URL}/appointments/${id}/history`, getAuthHeaders(token)),
   
   // Crear cita
   create: (appointmentData, token) => axios.post(`${API_URL}/appointments`, appointmentData, getAuthHeaders(token)),

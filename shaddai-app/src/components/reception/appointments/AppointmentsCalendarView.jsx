@@ -147,18 +147,30 @@ const AppointmentsCalendarView = ({ appointments, onViewAppointment, getStatusBa
                           onClick={() => onViewAppointment(appointment)}
                           className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity truncate border-l-4 shadow-sm"
                           style={{
-                            backgroundColor: appointment.consulting_room_color || 'white',
-                            borderLeftColor: getAppointmentColor(appointment.status),
-                            color: appointment.consulting_room_color ? 'white' : 'black',
-                            textShadow: appointment.consulting_room_color ? '0 1px 2px rgba(0,0,0,0.4)' : 'none'
+                            backgroundColor: appointment.consulting_room_color ? `${appointment.consulting_room_color}20` : 'white',
+                            borderLeftColor: appointment.consulting_room_color || getAppointmentColor(appointment.status),
+                            color: 'black'
                           }}
                           title={`${appointment.appointment_time} - ${appointment.patient_name} - ${appointment.consulting_room_name || 'Sin consultorio'}`}
                         >
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            <span className="truncate font-semibold">
-                              {appointment.appointment_time?.substring(0, 5)} {appointment.patient_name}
-                            </span>
+                          <div className="flex flex-col space-y-0.5">
+                            <div className="flex items-center space-x-1 font-semibold">
+                                <Clock className="w-3 h-3 flex-shrink-0 text-gray-500" />
+                                <span className="truncate">
+                                {appointment.appointment_time?.substring(0, 5)} {appointment.patient_name}
+                                </span>
+                            </div>
+                            {appointment.consulting_room_name && (
+                                <span 
+                                    className="inline-block px-1 rounded text-[10px] font-medium truncate w-full"
+                                    style={{ 
+                                        color: appointment.consulting_room_color,
+                                        backgroundColor: 'white'
+                                    }}
+                                >
+                                    {appointment.consulting_room_name}
+                                </span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -260,6 +272,19 @@ const DayDetailPanel = ({ selectedDate, appointments, onViewAppointment, getStat
                 <div className="text-sm text-gray-600">
                   Dr. {appointment.doctor_name}
                 </div>
+                
+                {appointment.consulting_room_name && (
+                    <div className="mt-1">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium border"
+                        style={{
+                            backgroundColor: `${appointment.consulting_room_color}20`,
+                            color: appointment.consulting_room_color,
+                            borderColor: `${appointment.consulting_room_color}40`
+                        }}>
+                             {appointment.consulting_room_name}
+                        </span>
+                    </div>
+                )}
                 
                 {appointment.chief_complaint && (
                   <div className="text-xs text-gray-500 italic truncate">

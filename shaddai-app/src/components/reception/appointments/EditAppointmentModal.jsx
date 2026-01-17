@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import { 
   X, 
   Save, 
@@ -22,9 +23,22 @@ import appointmentsAPI from '../../../api/appointments';
 import { useToast } from '../../../context/ToastContext';
 import { useConfirm } from '../../../context/ConfirmContext';
 
+const formatStatus = (status) => {
+  const statusMap = {
+    'programada': 'Programada',
+    'confirmada': 'Confirmada',
+    'en_progreso': 'En Progreso',
+    'completada': 'Completada',
+    'cancelada': 'Cancelada',
+    'no_se_presento': 'No se Presentó'
+  };
+  return statusMap[status] || status;
+};
+
 const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => {
   const toast = useToast();
   const { confirm } = useConfirm();
+  const { token } = useAuth(); // Get Token
   const [formData, setFormData] = useState({
     patient_id: '',
     doctor_id: '',
@@ -49,6 +63,27 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'medical', 'status'
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Cargar historial si la tab es status
+  useEffect(() => {
+    if (activeTab === 'status' && appointment?.id) {
+       fetchHistory();
+    }
+  }, [activeTab, appointment]);
+
+  const fetchHistory = async () => {
+    try {
+        setLoadingHistory(true);
+        const res = await appointmentsAPI.getHistory(appointment.id, token);
+        setHistory(res.data);
+    } catch (error) {
+        console.error("Error fetching history:", error);
+    } finally {
+        setLoadingHistory(false);
+    }
+  };
 
   // Cargar datos de la cita al abrir el modal
   useEffect(() => {
@@ -618,15 +653,16 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
                             </div>
                         </div>
 
-                        {/* Audit Info and Changes - keeping as is but wrapped in white bg */}
+                        {/* Audit Info with Full History */}
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">
-                                Auditoría
+                                Auditoría e Historial
                              </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500 mb-6 font-mono bg-gray-50 p-3 rounded">
                                 <div>
-                                    <span className="font-semibold text-gray-700 block">Creada por:</span>
-                                    Usuario ID: {appointment.created_by}
+                                    <span className="font-semibold text-gray-700 block">Creada por ID:</span>
+                                    {appointment.created_by || 'N/A'}
                                 </div>
                                  <div>
                                     <span className="font-semibold text-gray-700 block">Fecha de creación:</span>
@@ -636,6 +672,45 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
                                     <span className="font-semibold text-gray-700 block">Última actualización:</span>
                                     {new Date(appointment.updated_at).toLocaleString('es-ES')}
                                 </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-3">Historial de Cambios</h4>
+                                {loadingHistory ? (
+                                    <div className="text-center py-4 text-gray-500 text-sm">Cargando historial...</div>
+                                ) : history.length === 0 ? (
+                                    <div className="text-center py-4 text-gray-400 text-sm italic border rounded-lg border-dashed">
+                                        No hay cambios registrados
+                                    </div>
+                                ) : (
+                                    <div className="max-h-60 overflow-y-auto pr-2 space-y-3">
+                                        {history.map((log, index) => (
+                                            <div key={index} className="flex gap-3 text-sm p-3 bg-gray-50 rounded-lg border border-gray-100">
+                                                <div className="mt-0.5">
+                                                     <Activity className="w-4 h-4 text-blue-500" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start">
+                                                        <span className="font-medium text-gray-900">
+                                                            {formatStatus(log.previous_status) || 'N/A'} → <span className="text-blue-600">{formatStatus(log.new_status)}</span>
+                                                        </span>
+                                                        <span className="text-xs text-gray-400 ml-2">
+                                                            {new Date(log.changed_at).toLocaleString('es-ES')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        Por: <span className="font-medium text-gray-700">{log.changed_by_name || 'Sistema'}</span>
+                                                    </div>
+                                                    {log.change_reason && (
+                                                        <div className="mt-1.5 text-xs text-gray-600 italic bg-white p-1.5 rounded border border-gray-200">
+                                                            "{log.change_reason}"
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                      </div>

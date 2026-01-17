@@ -276,7 +276,7 @@ const AppointmentForm = ({ onClose }) => {
   }, [formData.doctor_id, formData.appointment_date, formData.appointment_time, formData.duration]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto flex flex-col h-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl mx-auto flex flex-col h-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
       {/* Header del modal */}
       <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white shrink-0">
         <div className="flex items-center gap-3">

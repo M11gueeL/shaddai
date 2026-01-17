@@ -153,6 +153,16 @@ class AppointmentsController {
         }
     }
 
+    public function getHistory($id) {
+        try {
+            $history = $this->model->getAppointmentHistory($id);
+            echo json_encode($history);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function getAppointmentsByDate($date) {
         try {
             $appointments = $this->model->getAppointmentsByDate($date);

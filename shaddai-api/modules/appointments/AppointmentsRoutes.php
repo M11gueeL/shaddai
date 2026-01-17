@@ -26,6 +26,7 @@ class AppointmentsRoutes {
 
         $router->add('GET', 'appointments', [$controller, 'getAllAppointments'], ['auth', 'role:admin,recepcionista']);
         $router->add('GET', 'appointments/{id}', [$controller, 'getAppointment'], ['auth', 'role:admin,recepcionista']);
+        $router->add('GET', 'appointments/{id}/history', [$controller, 'getHistory'], ['auth', 'role:admin,recepcionista']);
         $router->add('POST', 'appointments', [$controller, 'createAppointment'], ['auth', 'role:admin,recepcionista']);
         $router->add('PUT', 'appointments/{id}', [$controller, 'updateAppointment'], ['auth', 'role:admin,recepcionista']);
         $router->add('DELETE', 'appointments/{id}', [$controller, 'deleteAppointment'], ['auth', 'role:admin']);
