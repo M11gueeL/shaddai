@@ -1,103 +1,106 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Activity, DownloadCloud, DoorOpen } from 'lucide-react';
+import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid } from 'lucide-react';
+import ElegantHeader from '../common/ElegantHeader';
+import ControlPanelHome from './ControlPanelHome';
 
 export default function ControlPanel() {
   const location = useLocation();
   
+  // Detectar en qué sección estamos
   const isUsersSection = location.pathname.includes('/controlpanel/users');
   const isRoomsSection = location.pathname.includes('/controlpanel/rooms');
   const isSessionsSection = location.pathname.includes('/controlpanel/sessions');
   const isBackupSection = location.pathname.includes('/controlpanel/backup');
   
+  // Detectar si estamos en la raíz del panel (para mostrar la vista por defecto)
+  const isRootPath = location.pathname === '/controlpanel' || location.pathname === '/controlpanel/';
+
+  // Clase base para los tabs
+  const tabClass = (isActive) => `
+    group flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm border
+    ${isActive 
+      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 border-indigo-600' 
+      : 'bg-white text-slate-600 border-transparent hover:bg-indigo-50 hover:text-indigo-700'
+    }
+  `;
+
   return (
-    <div className="container mx-auto p-6">
-      {/* Header informativo */}
-      <div className="mb-6">
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-6 shadow-md">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Panel de Control</h1>
-              <p className="mt-1 text-sm md:text-base text-indigo-100">
-                Administra usuarios, roles y monitorea la actividad de inicio de sesión en la plataforma.
-              </p>
-            </div>
-            <div className="hidden sm:block opacity-90">
-              <Shield className="w-8 h-8" />
-            </div>
-          </div>
+    <div className="min-h-screen p-4 md:p-8 bg-slate-50/50">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* Header Consistente (Estilo Recepción) */}
+        <ElegantHeader 
+          icon={Shield}
+          sectionName="Administrador"
+          title="Panel de"
+          highlightText="Control"
+          description="Centro de mando para la gestión de usuarios, seguridad, consultorios y configuración global del sistema."
+        />
+
+        {/* Tabs de navegación Mejorados */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/60 p-2 mb-8 sticky top-4 z-30">
+          <nav className="flex flex-wrap gap-2" aria-label="Panel de Control - Secciones">
+            
+            {/* Tab de Inicio/General */}
+            <Link
+              to="/controlpanel"
+              className={tabClass(isRootPath)}
+            >
+              <LayoutGrid size={18} />
+              <span>General</span>
+            </Link>
+
+            <div className="w-px bg-slate-200 mx-1 hidden sm:block"></div>
+
+            <Link
+              to="/controlpanel/users"
+              aria-selected={isUsersSection}
+              className={tabClass(isUsersSection)}
+            >
+              <Users size={18} />
+              <span>Usuarios</span>
+            </Link>
+
+            <Link
+              to="/controlpanel/rooms"
+              aria-selected={isRoomsSection}
+              className={tabClass(isRoomsSection)}
+            >
+              <DoorOpen size={18} />
+              <span>Consultorios</span>
+            </Link>
+
+            <Link
+              to="/controlpanel/sessions"
+              aria-selected={isSessionsSection}
+              className={tabClass(isSessionsSection)}
+            >
+              <Activity size={18} />
+              <span>Sesiones</span>
+            </Link>
+
+            <Link
+              to="/controlpanel/backup"
+              aria-selected={isBackupSection}
+              className={tabClass(isBackupSection)}
+            >
+              <DownloadCloud size={18} />
+              <span>Respaldos</span>
+            </Link>
+          </nav>
         </div>
-      </div>
 
-      {/* Tabs de navegación */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2 mb-6">
-        <nav className="flex gap-2" aria-label="Panel de Control - Secciones">
-          <Link
-            to="/controlpanel/users"
-            aria-selected={isUsersSection}
-            className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
-              isUsersSection
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 border-transparent'
-            }`}
-          >
-            <Users className={`w-4 h-4 ${isUsersSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
-            <span className="text-sm font-medium">Gestión de Usuarios</span>
-          </Link>
-
-          <Link
-            to="/controlpanel/rooms"
-            aria-selected={isRoomsSection}
-            className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
-              isRoomsSection
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 border-transparent'
-            }`}
-          >
-            <DoorOpen className={`w-4 h-4 ${isRoomsSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
-            <span className="text-sm font-medium">Gestión de Consultorios</span>
-          </Link>
-
-          <Link
-            to="/controlpanel/sessions"
-
-            aria-selected={isSessionsSection}
-            className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
-              isSessionsSection
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 border-transparent'
-            }`}
-          >
-            <Activity className={`w-4 h-4 ${isSessionsSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
-            <span className="text-sm font-medium">Sesiones</span>
-          </Link>
-
-          <Link
-            to="/controlpanel/backup"
-            aria-selected={isBackupSection}
-            className={`group flex items-center gap-2 px-4 py-2 rounded-lg transition border ${
-              isBackupSection
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm'
-                : 'text-gray-600 hover:bg-gray-50 border-transparent'
-            }`}
-          >
-            <DownloadCloud className={`w-4 h-4 ${isBackupSection ? 'text-indigo-700' : 'text-gray-400 group-hover:text-gray-500'}`} />
-            <span className="text-sm font-medium">Respaldos</span>
-          </Link>
-
-          <button
-            className="ml-auto px-4 py-2 text-gray-400 cursor-not-allowed"
-            disabled
-            title="Próximamente"
-          >
-            Configuración del Sistema
-          </button>
-        </nav>
-      </div>
-
-      {/* Contenido */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-        <Outlet />
+        {/* Contenido Dinámico */}
+        <div className="transition-all duration-300">
+          {isRootPath ? (
+            <ControlPanelHome />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 animate-in fade-in zoom-in-95 duration-300">
+              <Outlet />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
