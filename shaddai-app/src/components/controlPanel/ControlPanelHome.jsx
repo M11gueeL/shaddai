@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, DoorOpen, Activity, DownloadCloud, ShieldCheck, Award } from 'lucide-react';
+import { Users, DoorOpen, Activity, DownloadCloud, ShieldCheck, Award, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ControlPanelHome() {
@@ -43,6 +43,14 @@ export default function ControlPanelHome() {
         color: 'text-pink-600',
         bg: 'bg-pink-50',
         link: '/controlpanel/specialties'
+    },
+    {
+        title: 'Colegios Médicos',
+        desc: 'Administra las instituciones y colegios médicos registrados.',
+        icon: Building2,
+        color: 'text-cyan-600',
+        bg: 'bg-cyan-50',
+        link: '/controlpanel/medical-colleges'
     }
   ];
 

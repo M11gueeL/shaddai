@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid, Award } from 'lucide-react';
+import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid, Award, Building2 } from 'lucide-react';
 import ElegantHeader from '../common/ElegantHeader';
 import ControlPanelHome from './ControlPanelHome';
 
@@ -13,6 +13,7 @@ export default function ControlPanel() {
   const isSessionsSection = location.pathname.includes('/controlpanel/sessions');
   const isBackupSection = location.pathname.includes('/controlpanel/backup');
   const isSpecialtiesSection = location.pathname.includes('/controlpanel/specialties');
+  const isMedicalCollegesSection = location.pathname.includes('/controlpanel/medicalcolleges');
   
   // Detectar si estamos en la raíz del panel (para mostrar la vista por defecto)
   const isRootPath = location.pathname === '/controlpanel' || location.pathname === '/controlpanel/';
@@ -97,6 +98,15 @@ export default function ControlPanel() {
             >
               <Award size={18} />
               <span>Especialidades</span>
+            </Link>
+
+            <Link
+              to="/controlpanel/medical-colleges"
+              aria-selected={isMedicalCollegesSection}
+              className={tabClass(isMedicalCollegesSection)}
+            >
+              <Building2 size={18} />
+              <span>Colegios Médicos</span>
             </Link>
           </nav>
         </div>

@@ -32,6 +32,7 @@ import ScrollToTop  from "./utils/ScrollToTop";
 import AppPrivacy from "./components/legal/AppPrivacy";
 import AppTerms from "./components/legal/AppTerms";
 import SpecialtiesPanel from "./components/controlPanel/specialties/SpecialtiesPanel";
+import MedicalCollegesPanel from "./components/controlPanel/medicalColleges/MedicalCollegesPanel";
 
 export default function App() {
   return (
@@ -69,6 +70,7 @@ export default function App() {
                     <Route path="sessions" element={<AllSessionsPanel />} />
                     <Route path="backup" element={<DatabaseBackupPanel />} />
                     <Route path="specialties" element={<SpecialtiesPanel />} />
+                    <Route path="medical-colleges" element={<MedicalCollegesPanel />} />
                   </Route>
                   
                   {/* Recepción - Admin + Recepcionista */}
