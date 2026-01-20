@@ -19,7 +19,7 @@ export default function ReceiptsAdmin() {
   const load = async () => {
     try { 
       setLoading(true); 
-      const res = await receiptsApi.listAllReceipts({ page, limit: LIMIT, search, status: statusFilter }, token);
+      const res = await receiptsApi.listAllReceipts({ page, limit: LIMIT, search, status: statusFilter });
       setItems(res.data || []); 
     } catch (e) { 
       toast.error('No se pudo cargar la lista de recibos'); 
@@ -38,7 +38,7 @@ export default function ReceiptsAdmin() {
 
   const download = async (id, number) => {
     try {
-      const res = await receiptsApi.downloadReceipt(id, token);
+      const res = await receiptsApi.downloadReceipt(id);
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.href = url;

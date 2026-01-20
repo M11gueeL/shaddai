@@ -18,7 +18,7 @@ export default function ServicesManager() {
   const load = async () => {
     try {
       setLoading(true);
-      const res = await servicesApi.listServices(token);
+      const res = await servicesApi.listServices();
       setItems(res.data || []);
     } catch (e) { toast.error('No se pudo cargar servicios'); }
     finally { setLoading(false); }
@@ -28,8 +28,8 @@ export default function ServicesManager() {
   const submit = async () => {
     try {
       setSaving(true);
-      if (editing) await servicesApi.updateService(editing.id, form, token);
-      else await servicesApi.createService(form, token);
+      if (editing) await servicesApi.updateService(editing.id, form);
+      else await servicesApi.createService(form);
       toast.success(editing ? 'Servicio actualizado' : 'Servicio creado');
       setForm({ name: '', price_usd: '', is_active: 1 }); setEditing(null);
       await load();
@@ -39,7 +39,7 @@ export default function ServicesManager() {
 
   const askDelete = async (id) => {
     if (!await confirm({ title: 'Eliminar servicio', tone: 'danger', message: '¿Deseas eliminar este servicio?' })) return;
-    try { await servicesApi.deleteService(id, token); toast.success('Eliminado'); load(); } catch (e) { toast.error(e?.response?.data?.error || 'No se pudo eliminar'); }
+    try { await servicesApi.deleteService(id); toast.success('Eliminado'); load(); } catch (e) { toast.error(e?.response?.data?.error || 'No se pudo eliminar'); }
   };
 
   return (

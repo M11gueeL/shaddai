@@ -34,14 +34,14 @@ export default function AuditDashboard({ navigateTo }) {
   
   useEffect(() => {
     (async () => {
-      try { const p = await paymentsApi.listPendingPayments(token); setPending(p.data || []); } catch {}
+      try { const p = await paymentsApi.listPendingPayments(); setPending(p.data || []); } catch {}
       try { 
-          const s = await cashApi.adminListSessions(token); 
+          const s = await cashApi.adminListSessions(); 
           // Handle object response with data/pagination
           setSessions(s.data.data ? s.data.data : (Array.isArray(s.data) ? s.data : [])); 
       } catch {}
     })();
-  }, [token]);
+  }, []);
 
   const todayLocal = new Date().toLocaleDateString('sv'); // YYYY-MM-DD in local time
   const sessionsToday = sessions.filter(s => (s.start_time || s.opened_at || '').startsWith(todayLocal)).length;

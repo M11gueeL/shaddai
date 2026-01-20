@@ -23,7 +23,7 @@ export default function SessionDetailModal({ sessionId, onClose }) {
   const handleDownloadReport = async () => {
     try {
         setDownloading(true);
-        const response = await cashApi.downloadSessionReport(sessionId, token);
+        const response = await cashApi.downloadSessionReport(sessionId);
         const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
         const link = document.createElement('a');
         link.href = url;
@@ -43,11 +43,11 @@ export default function SessionDetailModal({ sessionId, onClose }) {
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
-    cashApi.getSessionDetails(sessionId, token)
+    cashApi.getSessionDetails(sessionId)
       .then(res => setData(res.data))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  }, [sessionId, token]);
+  }, [sessionId]);
 
   if (!sessionId) return null;
 

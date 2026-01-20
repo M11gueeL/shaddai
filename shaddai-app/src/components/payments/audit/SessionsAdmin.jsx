@@ -15,7 +15,7 @@ export default function SessionsAdmin() {
   const load = async () => {
     try { 
         setLoading(true); 
-        const res = await cashApi.adminListSessions(token); 
+        const res = await cashApi.adminListSessions(); 
         // Handle paginated response { data, total, ... } vs old array response
         setItems(res.data.data ? res.data.data : (Array.isArray(res.data) ? res.data : [])); 
     } catch (e) { 
