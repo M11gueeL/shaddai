@@ -1,5 +1,6 @@
 import React from 'react';
-import { Edit2, Trash2, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, Award, ChevronLeft, ChevronRight, Stethoscope } from 'lucide-react';
+
 
 export default function SpecialtiesTable({ 
     data, 
@@ -18,7 +19,7 @@ export default function SpecialtiesTable({
     if (!data || data.length === 0) {
         return (
             <div className="p-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                <Award className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                <Stethoscope className="mx-auto h-12 w-12 text-gray-400 mb-3" />
                 <h3 className="text-lg font-medium text-gray-900">No hay especialidades</h3>
                 <p className="text-gray-500">Intenta ajustar tu búsqueda o crea una nueva.</p>
             </div>
@@ -41,7 +42,7 @@ export default function SpecialtiesTable({
                                 <td className="p-4">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                                            <Award size={18} />
+                                            <Stethoscope size={18} />
                                         </div>
                                         <span className="font-medium text-gray-900 text-lg">{item.name}</span>
                                     </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid, Award, Building2 } from 'lucide-react';
+import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid, Award, Building2, Stethoscope } from 'lucide-react';
 import ElegantHeader from '../common/ElegantHeader';
 import ControlPanelHome from './ControlPanelHome';
 
@@ -96,7 +96,7 @@ export default function ControlPanel() {
               aria-selected={isSpecialtiesSection}
               className={tabClass(isSpecialtiesSection)}
             >
-              <Award size={18} />
+              <Stethoscope size={18} />
               <span>Especialidades</span>
             </Link>
 
