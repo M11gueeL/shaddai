@@ -96,7 +96,7 @@ class SpecialtiesController {
 
     public function delete($id) {
         try {
-            // Verificar si el colegio médico existe
+            // Verificar si existe
             $existing = $this->model->getById($id);
             if (!$existing) {
                 http_response_code(404);

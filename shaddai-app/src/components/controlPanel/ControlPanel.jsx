@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid } from 'lucide-react';
+import { Shield, Users, Activity, DownloadCloud, DoorOpen, LayoutGrid, Award } from 'lucide-react';
 import ElegantHeader from '../common/ElegantHeader';
 import ControlPanelHome from './ControlPanelHome';
 
@@ -12,6 +12,7 @@ export default function ControlPanel() {
   const isRoomsSection = location.pathname.includes('/controlpanel/rooms');
   const isSessionsSection = location.pathname.includes('/controlpanel/sessions');
   const isBackupSection = location.pathname.includes('/controlpanel/backup');
+  const isSpecialtiesSection = location.pathname.includes('/controlpanel/specialties');
   
   // Detectar si estamos en la raíz del panel (para mostrar la vista por defecto)
   const isRootPath = location.pathname === '/controlpanel' || location.pathname === '/controlpanel/';
@@ -87,6 +88,15 @@ export default function ControlPanel() {
             >
               <DownloadCloud size={18} />
               <span>Respaldos</span>
+            </Link>
+
+            <Link
+              to="/controlpanel/specialties"
+              aria-selected={isSpecialtiesSection}
+              className={tabClass(isSpecialtiesSection)}
+            >
+              <Award size={18} />
+              <span>Especialidades</span>
             </Link>
           </nav>
         </div>

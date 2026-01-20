@@ -31,6 +31,7 @@ import SetPassword from './components/auth/SetPassword';
 import ScrollToTop  from "./utils/ScrollToTop";
 import AppPrivacy from "./components/legal/AppPrivacy";
 import AppTerms from "./components/legal/AppTerms";
+import SpecialtiesPanel from "./components/controlPanel/specialties/SpecialtiesPanel";
 
 export default function App() {
   return (
@@ -67,6 +68,7 @@ export default function App() {
                     <Route path="rooms" element={<RoomsPanel />} />
                     <Route path="sessions" element={<AllSessionsPanel />} />
                     <Route path="backup" element={<DatabaseBackupPanel />} />
+                    <Route path="specialties" element={<SpecialtiesPanel />} />
                   </Route>
                   
                   {/* Recepción - Admin + Recepcionista */}

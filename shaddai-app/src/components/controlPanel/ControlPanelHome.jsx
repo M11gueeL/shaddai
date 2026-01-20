@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, DoorOpen, Activity, DownloadCloud, ShieldCheck } from 'lucide-react';
+import { Users, DoorOpen, Activity, DownloadCloud, ShieldCheck, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ControlPanelHome() {
@@ -35,6 +35,14 @@ export default function ControlPanelHome() {
       color: 'text-amber-600',
       bg: 'bg-amber-50',
       link: '/controlpanel/backup'
+    },
+    {
+        title: 'Especialidades',
+        desc: 'Gestiona el catálogo de especialidades médicas disponibles.',
+        icon: Award,
+        color: 'text-pink-600',
+        bg: 'bg-pink-50',
+        link: '/controlpanel/specialties'
     }
   ];
 
