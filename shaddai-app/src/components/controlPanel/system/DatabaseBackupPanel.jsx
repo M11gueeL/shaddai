@@ -116,11 +116,11 @@ export default function DatabaseBackupPanel() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div className="md:w-3/5">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs uppercase tracking-wider text-indigo-100">
-                <ShieldCheck className="h-3.5 w-3.5" /> Seguridad avanzada
+                <ShieldCheck className="h-3.5 w-3.5" /> Respaldo
               </span>
-              <h2 className="mt-4 text-3xl font-bold md:text-4xl">Respaldo Instantáneo de tu Base de Datos</h2>
+              <h2 className="mt-4 text-3xl font-bold md:text-4xl">Respaldo Instantáneo de la Base de Datos</h2>
               <p className="mt-3 text-indigo-100/90 text-sm md:text-base">
-                Genera copias de seguridad SQL impecables bajo demanda. Controla la integridad de tu información crítica y descarga tus respaldos con un solo clic.
+                Genera copias de seguridad y controla la integridad de la información con un solo clic.
               </p>
             </div>
             <div className="md:w-2/5">
@@ -153,7 +153,7 @@ export default function DatabaseBackupPanel() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-800">Respaldo inmediato</h3>
-              <p className="text-sm text-gray-500">Genera y descarga el dump SQL al instante, sin procesos manuales.</p>
+              <p className="text-sm text-gray-500">Genera y descarga el respaldo al instante, sin procesos manuales.</p>
             </div>
           </div>
         </div>
@@ -188,7 +188,7 @@ export default function DatabaseBackupPanel() {
           <div>
             <h3 className="text-2xl font-semibold text-gray-900">Generar copia de seguridad</h3>
             <p className="mt-2 max-w-xl text-sm text-gray-500">
-              El sistema compila la estructura completa de la base de datos junto con todos los registros actuales. Descarga el archivo SQL y almacénalo en un lugar seguro.
+              El sistema compila la estructura completa de la base de datos junto con todos los registros actuales. Descarga el respaldo y almacénalo en un lugar seguro.
             </p>
           </div>
           <div className="flex flex-col items-start gap-3 md:items-end">
@@ -210,7 +210,7 @@ export default function DatabaseBackupPanel() {
               ) : (
                 <>
                   <DownloadCloud className="h-4 w-4 transition group-hover:translate-y-0.5" />
-                  Descargar SQL
+                  Descargar respaldo
                 </>
               )}
             </button>

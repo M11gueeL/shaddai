@@ -180,7 +180,7 @@ export default function UserPanel() {
         <h1 className="text-2xl font-bold text-gray-800">Gestión de Usuarios</h1>
         <button
           onClick={handleCreate}
-          className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg shadow-md transition-all"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow-sm font-medium transition-all duration-200 flex items-center gap-2 hover:-translate-y-0.5"
         >
           + Nuevo Usuario
         </button>
