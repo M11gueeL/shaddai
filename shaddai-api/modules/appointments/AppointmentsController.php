@@ -269,10 +269,14 @@ class AppointmentsController {
             }
             
             $this->validateAppointmentData($data, true);
+
+            // Obtener usuario autenticado desde JWT
+            $jwtPayload = $_REQUEST['jwt_payload'] ?? null;
+            $changedBy = ($jwtPayload && isset($jwtPayload->sub)) ? $jwtPayload->sub : null;
             
-            $result = $this->model->updateAppointment($id, $data);
+            $result = $this->model->updateAppointment($id, $data, $changedBy);
             if ($result) {
-                echo json_encode(['message' => 'Cita actualizada exitosamente']);
+                echo json_encode(['message' => 'Cita actualizada exitosamente', 'data' => $data]);
             } else {
                 throw new Exception('Error al actualizar la cita');
             }

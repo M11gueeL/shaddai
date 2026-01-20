@@ -39,17 +39,24 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const { token } = useAuth();
+  
+  // Estado local para manejar las actualizaciones sin recargar
+  const [currentAppointment, setCurrentAppointment] = useState(appointment);
 
   useEffect(() => {
-    if (activeTab === 'history' && appointment?.id) {
+    setCurrentAppointment(appointment);
+  }, [appointment]);
+
+  useEffect(() => {
+    if (activeTab === 'history' && currentAppointment?.id) {
        fetchHistory();
     }
-  }, [activeTab, appointment]);
+  }, [activeTab, currentAppointment]);
 
   const fetchHistory = async () => {
     try {
         setLoadingHistory(true);
-        const res = await appointmentsApi.getHistory(appointment.id, token);
+        const res = await appointmentsApi.getHistory(currentAppointment.id);
         setHistory(res.data);
     } catch (error) {
         console.error("Error fetching history:", error);
@@ -57,8 +64,19 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
         setLoadingHistory(false);
     }
   };
+
+  const fetchDetails = async () => {
+      try {
+          const res = await appointmentsApi.getById(currentAppointment.id);
+          if (res.data) {
+              setCurrentAppointment(res.data);
+          }
+      } catch (error) {
+          console.error("Error fetching details:", error);
+      }
+  };
   
-  if (!appointment) return null;
+  if (!currentAppointment) return null;
 
   const formatDate = (dateString) => {
     return formatDateLocal(dateString);
@@ -108,9 +126,9 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                     <div>
                         <h2 className="text-xl font-bold text-gray-900">Detalles de la Cita</h2>
                         <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
-                            <span>#{appointment.id}</span>
+                            <span>#{currentAppointment.id}</span>
                             <span>•</span>
-                            <span>Creada el {new Date(appointment.created_at).toLocaleDateString('es-ES')}</span>
+                            <span>Creada el {new Date(currentAppointment.created_at).toLocaleDateString('es-ES')}</span>
                         </div>
                     </div>
                </div>
@@ -153,16 +171,16 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                 {/* Top Summary Card */}
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
-                        {getStatusBadge(appointment.status)}
+                        {getStatusBadge(currentAppointment.status)}
                     </div>
                     <div className="flex items-center gap-6 text-sm">
                         <div className="flex items-center gap-2 text-gray-700 font-medium">
                             <Calendar className="w-4 h-4 text-blue-500" />
-                            {formatDate(appointment.appointment_date)}
+                            {formatDate(currentAppointment.appointment_date)}
                         </div>
                         <div className="flex items-center gap-2 text-gray-700 font-medium">
                             <Clock className="w-4 h-4 text-orange-500" />
-                            {formatTime(appointment.appointment_time)} - {appointment.duration} min
+                            {formatTime(currentAppointment.appointment_time)} - {currentAppointment.duration} min
                         </div>
                     </div>
                 </div>
@@ -181,18 +199,18 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                     <div className="p-5 space-y-4">
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nombre Completo</p>
-                                <p className="text-gray-900 font-medium">{appointment.patient_name || 'N/A'}</p>
+                                <p className="text-gray-900 font-medium">{currentAppointment.patient_name || 'N/A'}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cédula</p>
-                                    <p className="text-gray-700">{appointment.patient_cedula || 'N/A'}</p>
+                                    <p className="text-gray-700">{currentAppointment.patient_cedula || 'N/A'}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Teléfono</p>
                                     <p className="text-gray-700 flex items-center gap-1.5">
                                         <Phone className="w-3.5 h-3.5 text-gray-400" />
-                                        {appointment.patient_phone || 'N/A'}
+                                        {currentAppointment.patient_phone || 'N/A'}
                                     </p>
                                 </div>
                             </div>
@@ -200,7 +218,7 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email</p>
                                 <p className="text-gray-700 flex items-center gap-1.5 truncate">
                                     <Mail className="w-3.5 h-3.5 text-gray-400" />
-                                    {appointment.patient_email || 'N/A'}
+                                    {currentAppointment.patient_email || 'N/A'}
                                 </p>
                             </div>
                     </div>
@@ -217,35 +235,35 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                     <div className="p-5 space-y-4">
                             <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nombre</p>
-                                <p className="text-gray-900 font-medium">Dr. {appointment.doctor_name || 'N/A'}</p>
+                                <p className="text-gray-900 font-medium">Dr. {currentAppointment.doctor_name || 'N/A'}</p>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Especialidad</p>
                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                        {appointment.specialty_name || 'N/A'}
+                                        {currentAppointment.specialty_name || 'N/A'}
                                     </span>
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Consultorio</p>
-                                    {appointment.consulting_room_name ? (
+                                    {currentAppointment.consulting_room_name ? (
                                         <div className="flex items-center gap-1.5">
                                             <span 
                                                 className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border" 
                                                 style={{ 
-                                                    backgroundColor: `${appointment.consulting_room_color}20`, 
-                                                    color: appointment.consulting_room_color, 
-                                                    borderColor: `${appointment.consulting_room_color}40`
+                                                    backgroundColor: `${currentAppointment.consulting_room_color}20`, 
+                                                    color: currentAppointment.consulting_room_color, 
+                                                    borderColor: `${currentAppointment.consulting_room_color}40`
                                                 }}
                                             >
                                                 <MapPin className="w-3 h-3 mr-1" />
-                                                {appointment.consulting_room_name}
+                                                {currentAppointment.consulting_room_name}
                                             </span>
                                         </div>
                                     ) : (
                                         <p className="text-gray-700 flex items-center gap-1.5">
                                             <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                                            {appointment.office_number ? `Consultorio ${appointment.office_number}` : 'N/A'}
+                                            {currentAppointment.office_number ? `Consultorio ${currentAppointment.office_number}` : 'N/A'}
                                         </p>
                                     )}
                                 </div>
@@ -267,34 +285,34 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                                 <div className="flex-1">
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tipo de Cita</p>
                                     <p className="text-gray-900 capitalize font-medium">
-                                        {appointment.appointment_type?.replace('_', ' ') || 'N/A'}
+                                        {currentAppointment.appointment_type?.replace('_', ' ') || 'N/A'}
                                     </p>
                                 </div>
                             </div>
 
-                            {appointment.chief_complaint && (
+                            {currentAppointment.chief_complaint && (
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Motivo de Consulta</p>
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm text-gray-700 leading-relaxed">
-                                        {appointment.chief_complaint}
+                                        {currentAppointment.chief_complaint}
                                     </div>
                                 </div>
                             )}
 
-                            {appointment.symptoms && (
+                            {currentAppointment.symptoms && (
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Síntomas Reportados</p>
                                     <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm text-gray-700 leading-relaxed">
-                                        {appointment.symptoms}
+                                        {currentAppointment.symptoms}
                                     </div>
                                 </div>
                             )}
 
-                            {appointment.notes && (
+                            {currentAppointment.notes && (
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Notas Administrativas</p>
                                     <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 text-sm text-gray-700 leading-relaxed">
-                                        {appointment.notes}
+                                        {currentAppointment.notes}
                                     </div>
                                 </div>
                             )}
@@ -377,12 +395,12 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
       {/* MODAL DE EDICIÓN FUERA DEL MODAL PRINCIPAL */}
       {showEditModal && (
         <EditAppointmentModal
-          appointment={appointment}
+          appointment={currentAppointment}
           onClose={() => setShowEditModal(false)}
           onUpdate={(updatedAppointment) => {
             setShowEditModal(false);
-            onClose(); // Cerrar también el modal de detalles
-            window.location.reload(); // Por ahora, recargar la página
+            fetchDetails();
+            fetchHistory();
           }}
           onDeleted={(id) => {
             // Cerrar ambos modales y notificar al padre

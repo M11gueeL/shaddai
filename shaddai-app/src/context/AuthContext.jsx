@@ -40,6 +40,14 @@ export const AuthProvider = ({ children }) => {
       const res = await authApi.login(credentials);
 
       const tokenFromLogin = res.data.token;
+
+      localStorage.setItem("token", tokenFromLogin); 
+      localStorage.setItem("session_id", res.data.session_id);
+      localStorage.setItem("user", JSON.stringify({
+        ...res.data.user,
+        roles: Array.isArray(res.data.user.roles) ? res.data.user.roles : [res.data.user.roles]
+      }));
+
       const baseUser = {
         ...res.data.user,
         roles: Array.isArray(res.data.user.roles)
@@ -54,13 +62,14 @@ export const AuthProvider = ({ children }) => {
 
       // Intentar enriquecer con el perfil completo (nombre, apellido, género, etc.)
       try {
-        const profileRes = await authApi.getProfile(tokenFromLogin);
+        const profileRes = await authApi.getProfile();
         const profile = profileRes.data || {};
         const merged = {
           ...baseUser,
           ...profile,
           roles: Array.isArray(profile.roles) ? profile.roles : baseUser.roles,
         };
+        localStorage.setItem("user", JSON.stringify(merged));
         setUser(merged);
         
         // Notificación de bienvenida

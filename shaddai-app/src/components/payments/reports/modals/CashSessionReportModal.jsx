@@ -54,7 +54,7 @@ export default function CashSessionReportModal({ token, startDate: defaultStartD
             sessionId
         };
 
-        cashApi.adminListSessions(token, params)
+        cashApi.adminListSessions(params)
             .then(res => {
                 if(res.data) {
                    setSessions(res.data.data || []);
@@ -69,7 +69,7 @@ export default function CashSessionReportModal({ token, startDate: defaultStartD
     const handleDownload = async (sid) => {
         try {
             setDownloading(sid);
-            const response = await cashApi.downloadSessionReport(sid, token);
+            const response = await cashApi.downloadSessionReport(sid);
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;

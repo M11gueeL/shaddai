@@ -1,17 +1,15 @@
-import axios from 'axios';
+import api from './axiosConfig'; 
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
+export default {
+    getAll: () => api.get('/specialties'),
 
-const getAuthHeader = () => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
+    getById: (id) => api.get(`/specialties/${id}`),
 
-export const getSpecialties = async () => {
-    try {
-        const response = await axios.get(`${API_URL}/specialties`, { headers: getAuthHeader() });
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+    getByDoctorId: (doctorId) => api.get(`/specialties/doctor/${doctorId}`),
+
+    create: (data) => api.post('/specialties', data),
+
+    update: (id, data) => api.put(`/specialties/${id}`, data),
+
+    delete: (id) => api.delete(`/specialties/${id}`)
 };

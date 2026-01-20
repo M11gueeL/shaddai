@@ -25,8 +25,7 @@ export default function PatientList({ onClose }) {
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await PatientsApi.getAll(token);
+      const response = await PatientsApi.getAll();
       const data = response?.data;
       const list = Array.isArray(data)
         ? data
@@ -45,8 +44,7 @@ export default function PatientList({ onClose }) {
 
   const handleViewPatient = async (patientId) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await PatientsApi.getById(patientId, token);
+      const response = await PatientsApi.getById(patientId);
       setSelectedPatient(response.data);
       setShowDetail(true);
     } catch (err) {

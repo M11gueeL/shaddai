@@ -44,7 +44,7 @@ export default function RecentActivityCard() {
     if (!token) return;
     try {
       if (!isRefresh) setLoading(true);
-      const res = await activityApi.getRecent(token, 5);
+      const res = await activityApi.getRecent(5);
       const data = res?.data?.data || [];
       setItems(Array.isArray(data) ? data : []);
       setError(null);

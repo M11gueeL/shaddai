@@ -1,11 +1,5 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
-
-const auth = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-export const getTodayRate = (token) => axios.get(`${API_URL}/rates/today`, auth(token));
-export const listRates = (token) => axios.get(`${API_URL}/rates`, auth(token));
-export const createRate = (data, token) => axios.post(`${API_URL}/rates`, data, auth(token));
+export const getTodayRate = () => api.get('/rates/today');
+export const listRates = () => api.get('/rates');
+export const createRate = (data) => api.post('/rates', data);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DoorOpen, Plus, Search, Filter } from 'lucide-react';
 import { getConsultingRooms, createConsultingRoom, updateConsultingRoom, deleteConsultingRoom } from '../../../api/consultingRooms';
-import { getSpecialties } from '../../../api/specialties';
+import SpecialtiesApi from '../../../api/specialties';
 import { useToast } from '../../../context/ToastContext';
 import RoomsTable from './RoomsTable';
 import RoomForm from './RoomForm';
@@ -42,7 +42,7 @@ export default function RoomsPanel() {
         try {
             const [roomsRes, specialtiesRes] = await Promise.all([
                 getConsultingRooms(),
-                getSpecialties()
+                SpecialtiesApi.getAll()
             ]);
 
             if (roomsRes) {

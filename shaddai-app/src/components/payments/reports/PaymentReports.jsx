@@ -76,7 +76,7 @@ export default function PaymentReports() {
   const fetchStats = async () => {
     try {
       setLoadingStats(true);
-      const res = await paymentApi.getPaymentStats(startDate, endDate, token);
+      const res = await paymentApi.getPaymentStats(startDate, endDate);
       if (res.data) {
         setStatsData(res.data);
       }
@@ -133,7 +133,7 @@ export default function PaymentReports() {
           setShowGeneralReportModal(true);
       } else if (id === 'debtors') {
           try {
-              const response = await paymentApi.downloadDebtorsReportPdf(token);
+              const response = await paymentApi.downloadDebtorsReportPdf();
               const url = window.URL.createObjectURL(new Blob([response.data]));
               const link = document.createElement('a');
               link.href = url;

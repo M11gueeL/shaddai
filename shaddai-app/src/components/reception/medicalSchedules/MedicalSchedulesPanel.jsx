@@ -47,7 +47,7 @@ export default function MedicalSchedulesPanel({ onClose }) {
     if (!token) return;
     try {
       setLoading(true);
-      const res = await api.list(token, { doctorId: selectedDoctor?.id });
+      const res = await api.list({ doctorId: selectedDoctor?.id });
       const data = Array.isArray(res.data) ? res.data : (res.data?.data || []);
       setItems(data);
       setError(null);
@@ -96,7 +96,7 @@ export default function MedicalSchedulesPanel({ onClose }) {
     });
     if (!ok) return;
     try {
-      await api.remove(row.id, token);
+      await api.remove(row.id);
       toast.success('Horario eliminado');
       load();
     } catch (e) {

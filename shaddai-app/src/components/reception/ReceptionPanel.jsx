@@ -51,7 +51,7 @@ export default function ReceptionPanel() {
       if (!token) return; // requiere autenticación
       try {
         if (isMounted && !isRefresh) setLoadingToday(true);
-        const res = await appointmentsApi.getToday(token);
+        const res = await appointmentsApi.getToday();
         if (isMounted) {
           const data = res?.data;
           // Normalizar para asegurar siempre un arreglo
@@ -88,7 +88,7 @@ export default function ReceptionPanel() {
       let full = appt;
       if (!appt.patient_name || !appt.doctor_name || !appt.appointment_date) {
         // Cargar detalles si la respuesta es mínima
-        const res = await appointmentsApi.getById(appt.id || appt.appointment_id, token);
+        const res = await appointmentsApi.getById(appt.id || appt.appointment_id);
         full = res.data?.data || res.data;
       }
       setSelectedAppointment(full);

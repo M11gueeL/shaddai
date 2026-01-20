@@ -1,35 +1,27 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
-
-const getAuthHeaders = (token) => ({
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
+import api from './axiosConfig';
 
 export default {
 
     // Obtener todos los pacientes
-    getAll: (token) => axios.get(`${API_URL}/patients/`, getAuthHeaders(token)),
+    getAll: () => api.get('/patients/'),
 
     // Obtener paciente por ID
-  getById: (id, token) => axios.get(`${API_URL}/patients/${id}`, getAuthHeaders(token)),
+  getById: (id) => api.get(`/patients/${id}`),
 
   // Obtener paciente por cédula
-  getByCedula: (cedula, token) => axios.get(`${API_URL}/patients/cedula/${cedula}`, getAuthHeaders(token)),
+  getByCedula: (cedula) => api.get(`/patients/cedula/${cedula}`),
   
   // Crear paciente
-  create: (patientData, token) => axios.post(`${API_URL}/patients`, patientData, getAuthHeaders(token)),
+  create: (patientData) => api.post('/patients', patientData),
   
   // Actualizar paciente
-  update: (id, patientData, token) => axios.put(`${API_URL}/patients/${id}`, patientData, getAuthHeaders(token)),
+  update: (id, patientData) => api.put(`/patients/${id}`, patientData),
   
   // Eliminar paciente
-  delete: (id, token) => axios.delete(`${API_URL}/patients/${id}`, getAuthHeaders(token)),
+  delete: (id) => api.delete(`/patients/${id}`),
 
   // Búsqueda rápida con filtros (typeahead)
-  search: ({ q, by = ['cedula', 'full_name'], dob = null, limit = 10 }, token) => {
+  search: ({ q, by = ['cedula', 'full_name'], dob = null, limit = 10 }) => {
     const params = new URLSearchParams();
     if (q) params.append('q', q);
     if (Array.isArray(by)) {
@@ -39,6 +31,6 @@ export default {
     }
     if (dob) params.append('dob', dob);
     if (limit) params.append('limit', limit);
-    return axios.get(`${API_URL}/patients/search?${params.toString()}`, getAuthHeaders(token));
+    return api.get(`/patients/search?${params.toString()}`);
   }
 };

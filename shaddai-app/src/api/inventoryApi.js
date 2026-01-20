@@ -1,66 +1,42 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
+export const listInventory = (params = {}) => api.get('/inventory', { params });
 
-const auth = (token) => ({ headers: { Authorization: `Bearer ${token}` } });
+export const getInventoryStats = () => api.get('/inventory/stats');
 
-export const listInventory = (params = {}, token) =>
-  axios.get(`${API_URL}/inventory`, { ...auth(token), params });
+export const getInventoryItem = (id) => api.get(`/inventory/${id}`);
 
-export const getInventoryStats = (token) =>
-  axios.get(`${API_URL}/inventory/stats`, auth(token));
+export const createInventoryItem = (data) => api.post('/inventory', data);
 
-export const getInventoryItem = (id, token) =>
-  axios.get(`${API_URL}/inventory/${id}`, auth(token));
+export const updateInventoryItem = (id, data) => api.put(`/inventory/${id}`, data);
 
-export const createInventoryItem = (data, token) =>
-  axios.post(`${API_URL}/inventory`, data, auth(token));
+export const deleteInventoryItem = (id) => api.delete(`/inventory/${id}`);
 
-export const updateInventoryItem = (id, data, token) =>
-  axios.put(`${API_URL}/inventory/${id}`, data, auth(token));
+export const restockInventoryItem = (id, data) => api.post(`/inventory/${id}/restock`, data);
 
-export const deleteInventoryItem = (id, token) =>
-  axios.delete(`${API_URL}/inventory/${id}`, auth(token));
+export const registerInternalConsumption = (data) => api.post('/inventory/internal-consumption', data);
 
-export const restockInventoryItem = (id, data, token) =>
-  axios.post(`${API_URL}/inventory/${id}/restock`, data, auth(token));
+export const listInventoryMovements = (id, params = {}) => api.get(`/inventory/${id}/movements`, { params });
 
-export const registerInternalConsumption = (data, token) =>
-  axios.post(`${API_URL}/inventory/internal-consumption`, data, auth(token));
+export const getExpiringItems = () => api.get('/inventory/expiring');
 
-export const listInventoryMovements = (id, params = {}, token) =>
-  axios.get(`${API_URL}/inventory/${id}/movements`, { ...auth(token), params });
+export const generateInventoryReport = (params) => api.get('/inventory/reports', { params, responseType: 'blob' });
 
-export const getExpiringItems = (token) =>
-  axios.get(`${API_URL}/inventory/expiring`, auth(token));
+export const getBatches = (id) => api.get(`/inventory/${id}/batches`);
 
-export const generateInventoryReport = (params, token) =>
-  axios.get(`${API_URL}/inventory/reports`, { ...auth(token), params, responseType: 'blob' });
+export const discardBatch = (data) => api.post('/inventory/batches/discard', data);
 
-export const getBatches = (id, token) =>
-  axios.get(`${API_URL}/inventory/${id}/batches`, auth(token));
+export const adjustBatch = (data) => api.post('/inventory/batches/adjust', data);
 
-export const discardBatch = (data, token) =>
-  axios.post(`${API_URL}/inventory/batches/discard`, data, auth(token));
+export const toggleBatchStatus = (data) => api.post('/inventory/batches/status', data);
 
-export const adjustBatch = (data, token) =>
-  axios.post(`${API_URL}/inventory/batches/adjust`, data, auth(token));
-
-export const toggleBatchStatus = (data, token) =>
-  axios.post(`${API_URL}/inventory/batches/status`, data, auth(token));
-
-export const updateBatchExpiration = (data, token) =>
-  axios.post(`${API_URL}/inventory/batches/update-expiration`, data, auth(token));
+export const updateBatchExpiration = (data) => api.post('/inventory/batches/update-expiration', data);
 
 // --- BRANDS ---
-export const getBrands = (params = {}, token) =>
-  axios.get(`${API_URL}/brands`, { ...auth(token), params });
+export const getBrands = (params = {}) => api.get('/brands', { params });
 
-export const createBrand = (data, token) =>
-  axios.post(`${API_URL}/brands`, data, auth(token));
+export const createBrand = (data) => api.post('/brands', data);
 
-export const updateBrand = (id, data, token) =>
-  axios.put(`${API_URL}/brands/${id}`, data, auth(token));
+export const updateBrand = (id, data) => api.put(`/brands/${id}`, data);
 
-export const deleteBrand = (id, token) =>
-  axios.delete(`${API_URL}/brands/${id}`, auth(token));
+export const deleteBrand = (id) => api.delete(`/brands/${id}`);

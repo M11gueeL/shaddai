@@ -1,19 +1,13 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost/shaddai/shaddai-api/public';
-
-const auth = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-export const createPayment = (accountId, data, token) => axios.post(`${API_URL}/accounts/${accountId}/payments`, data, auth(token));
-export const listPaymentsByAccount = (accountId, token) => axios.get(`${API_URL}/accounts/${accountId}/payments`, auth(token));
-export const verifyPayment = (paymentId, token) => axios.put(`${API_URL}/payments/${paymentId}/verify`, {}, auth(token));
-export const deletePayment = (paymentId, token) => axios.delete(`${API_URL}/payments/${paymentId}`, auth(token));
-export const listPendingPayments = (token) => axios.get(`${API_URL}/payments/admin/pending`, auth(token));
-export const downloadPayment = (paymentId, token) => axios.get(`${API_URL}/payments/${paymentId}/download`, { ...auth(token), responseType: 'blob' });
-export const getPaymentStats = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/stats?startDate=${startDate}&endDate=${endDate}`, auth(token));
-export const getGeneralReport = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/general?startDate=${startDate}&endDate=${endDate}`, auth(token));
-export const downloadGeneralReportPdf = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/general/pdf?startDate=${startDate}&endDate=${endDate}`, { ...auth(token), responseType: 'blob' });
-export const downloadDebtorsReportPdf = (token) => axios.get(`${API_URL}/payments/reports/debtors/pdf`, { ...auth(token), responseType: 'blob' });
-export const downloadServicesPerformanceReportPdf = (startDate, endDate, token) => axios.get(`${API_URL}/payments/reports/services/pdf?startDate=${startDate}&endDate=${endDate}`, { ...auth(token), responseType: 'blob' });
+export const createPayment = (accountId, data) => api.post(`/accounts/${accountId}/payments`, data);
+export const listPaymentsByAccount = (accountId) => api.get(`/accounts/${accountId}/payments`);
+export const verifyPayment = (paymentId) => api.put(`/payments/${paymentId}/verify`, {});
+export const deletePayment = (paymentId) => api.delete(`/payments/${paymentId}`);
+export const listPendingPayments = () => api.get('/payments/admin/pending');
+export const downloadPayment = (paymentId) => api.get(`/payments/${paymentId}/download`, { responseType: 'blob' });
+export const getPaymentStats = (startDate, endDate) => api.get(`/payments/reports/stats?startDate=${startDate}&endDate=${endDate}`);
+export const getGeneralReport = (startDate, endDate) => api.get(`/payments/reports/general?startDate=${startDate}&endDate=${endDate}`);
+export const downloadGeneralReportPdf = (startDate, endDate) => api.get(`/payments/reports/general/pdf?startDate=${startDate}&endDate=${endDate}`, { responseType: 'blob' });
+export const downloadDebtorsReportPdf = () => api.get('/payments/reports/debtors/pdf', { responseType: 'blob' });
+export const downloadServicesPerformanceReportPdf = (startDate, endDate) => api.get(`/payments/reports/services/pdf?startDate=${startDate}&endDate=${endDate}`, { responseType: 'blob' });

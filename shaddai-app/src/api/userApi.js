@@ -1,50 +1,40 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
-
-// Función para obtener headers con token
-const getAuthHeaders = (token) => ({
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-
-// Exportamos un objeto con todas las funciones
 export default {
   // Obtener todos los usuarios
-  getAll: (token) => axios.get(`${API_URL}/users`, getAuthHeaders(token)),
+  getAll: () => api.get('/users'),
   
   // Obtener usuario por ID
-  getById: (id, token) => axios.get(`${API_URL}/users/${id}`, getAuthHeaders(token)),
+  getById: (id) => api.get(`/users/${id}`),
 
   // Obtener usuarios que son médicos
-  getDoctors: (token) => axios.get(`${API_URL}/users/doctors`, getAuthHeaders(token)),
+  getDoctors: () => api.get('/users/doctors'),
 
   // Obtener todas las especialidades de un usuario (médico)
-  getSpecialtiesByDoctorId: (doctorId, token) => axios.get(`${API_URL}/specialties/doctor/${doctorId}`, getAuthHeaders(token)), 
+  getSpecialtiesByDoctorId: (doctorId) => api.get(`/specialties/doctor/${doctorId}`), 
   
   // Crear usuario
-  create: (userData, token) => axios.post(`${API_URL}/users`, userData, getAuthHeaders(token)),
+  create: (userData) => api.post('/users', userData),
   
   // Actualizar usuario
-  update: (id, userData, token) => axios.put(`${API_URL}/users/${id}`, userData, getAuthHeaders(token))
+  update: (id, userData) => api.put(`/users/${id}`, userData)
     .then(response => response.data),
   
   // Eliminar usuario
-  delete: (id, token) => axios.delete(`${API_URL}/users/${id}`, getAuthHeaders(token)),
+  delete: (id) => api.delete(`/users/${id}`),
   
   // Cambiar estado (activar/desactivar)
-  toggleStatus: (id, token) => axios.patch(`${API_URL}/users/${id}/status`, {}, getAuthHeaders(token)),
+  toggleStatus: (id) => api.patch(`/users/${id}/status`, {}),
 
   // Reenviar invitación
-  resendInvitation: (id, token) => axios.post(`${API_URL}/users/${id}/resend-invitation`, {}, getAuthHeaders(token)),
+  resendInvitation: (id) => api.post(`/users/${id}/resend-invitation`, {}),
   
   // Obtener especialidades
-  getSpecialties: (token) => axios.get(`${API_URL}/specialties`, getAuthHeaders(token)),
+  getSpecialties: () => api.get('/specialties'),
   
   // Obtener colegios médicos
-  getMedicalColleges: (token) => axios.get(`${API_URL}/medicalcolleges`, getAuthHeaders(token)),
+  getMedicalColleges: () => api.get('/medicalcolleges'),
 
   // Obtener estadísticas del usuario actual
-  getMyStats: (token) => axios.get(`${API_URL}/users/my-stats`, getAuthHeaders(token)).then(response => response.data)
+  getMyStats: () => api.get('/users/my-stats').then(response => response.data)
 };

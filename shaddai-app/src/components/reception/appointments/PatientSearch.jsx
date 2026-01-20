@@ -84,6 +84,19 @@ const PatientSearch = ({ onSelect, error, selectedPatient }) => {
     inputRef.current?.focus();
   };
 
+  useEffect(() => {
+    if (selectedPatient) {
+      // Formato visual: Cédula - Nombre 
+      const displayText = selectedPatient.cedula 
+        ? `${selectedPatient.cedula} - ${selectedPatient.full_name}`
+        : selectedPatient.full_name;
+        
+      setSearchTerm(displayText);
+    } else {
+      setSearchTerm('');
+    }
+  }, [selectedPatient]);
+
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {

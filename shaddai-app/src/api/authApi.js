@@ -1,35 +1,17 @@
-import axios from "axios";
+import api from './axiosConfig';
 
-const API = "http://localhost/shaddai/shaddai-api/public/auth";
+export const login = (data) => api.post('/auth/login', data);
 
-export const login = (data) => axios.post(`${API}/login`, data);
+export const getRecaptchaSiteKey = () => api.get('/auth/recaptcha-site-key');
 
-export const getRecaptchaSiteKey = () => axios.get(`${API}/recaptcha-site-key`);
+export const logout = () =>
+  api.post('/auth/logout', {});
 
-export const logout = (token) =>
-  axios.post(
-    `${API}/logout`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+export const getProfile = () =>
+  api.get('/auth/profile');
 
-export const getProfile = (token) =>
-  axios.get(`${API}/profile`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-export const getSessions = (token) =>
-  axios.get(`${API}/sessions`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getSessions = () =>
+  api.get('/auth/sessions');
 
 /**
  * Llama a la API para solicitar un correo de restablecimiento.
@@ -38,7 +20,7 @@ export const getSessions = (token) =>
  * @returns {Promise<axios.Response>}
  */
 export const requestPasswordReset = (email) =>
-  axios.post(`${API}/request-reset`, { email });
+  api.post('/auth/request-reset', { email });
 
 /**
  * Llama a la API para enviar el token y la nueva contraseña.
@@ -47,7 +29,7 @@ export const requestPasswordReset = (email) =>
  * @returns {Promise<axios.Response>}
  */
 export const resetPassword = (token, new_password) =>
-  axios.post(`${API}/reset-password`, { token, new_password });
+  api.post('/auth/reset-password', { token, new_password });
 
 export const acceptInvitation = (token, password) =>
-  axios.post(`${API}/accept-invitation`, { token, password });
+  api.post('/auth/accept-invitation', { token, password });

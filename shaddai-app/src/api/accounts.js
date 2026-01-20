@@ -1,17 +1,11 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
-
-const auth = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-export const createAccount = (data, token) => axios.post(`${API_URL}/accounts`, data, auth(token));
-export const listAccounts = (params, token) => axios.get(`${API_URL}/accounts`, { ...auth(token), params });
-export const getAccount = (id, token) => axios.get(`${API_URL}/accounts/${id}`, auth(token));
-export const addDetail = (id, data, token) => axios.post(`${API_URL}/accounts/${id}/details`, data, auth(token));
-export const removeDetail = (detailId, token) => axios.delete(`${API_URL}/accounts/details/${detailId}`, auth(token));
-export const cancelAccount = (id, token) => axios.post(`${API_URL}/accounts/${id}/cancel`, {}, auth(token));
+export const createAccount = (data) => api.post('/accounts', data);
+export const listAccounts = (params) => api.get('/accounts', { params });
+export const getAccount = (id) => api.get(`/accounts/${id}`);
+export const addDetail = (id, data) => api.post(`/accounts/${id}/details`, data);
+export const removeDetail = (detailId) => api.delete(`/accounts/details/${detailId}`);
+export const cancelAccount = (id) => api.post(`/accounts/${id}/cancel`, {});
 // Supplies
-export const addSupply = (id, data, token) => axios.post(`${API_URL}/accounts/${id}/supplies`, data, auth(token));
-export const removeSupply = (supplyId, token) => axios.delete(`${API_URL}/accounts/supplies/${supplyId}`, auth(token));
+export const addSupply = (id, data) => api.post(`/accounts/${id}/supplies`, data);
+export const removeSupply = (supplyId) => api.delete(`/accounts/supplies/${supplyId}`);

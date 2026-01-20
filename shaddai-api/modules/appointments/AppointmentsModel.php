@@ -298,13 +298,17 @@ class AppointmentsModel {
         return $this->db->query($query, $params);
     }
 
-    public function updateAppointment($id, $data) {
+    public function updateAppointment($id, $data, $changedBy = null) {
 
         // Validar disponibilidad excluyendo la cita actual
         $errors = $this->validateAppointmentAvailability($data, $id);
         if (!empty($errors)) {
             throw new Exception(implode('. ', $errors));
         }
+
+        // Obtener estado actual antes de actualizar
+        $current = $this->db->query("SELECT status FROM appointments WHERE id = :id", [':id' => $id]);
+        $currentStatus = $current ? $current[0]['status'] : null;
 
         // Map office_number to consulting_room_id
         if (isset($data['office_number']) && !isset($data['consulting_room_id'])) {
@@ -325,6 +329,22 @@ class AppointmentsModel {
 
         $sql = "UPDATE appointments SET " . implode(', ', $set) . " WHERE id = :id";
         $this->db->execute($sql, $params);
+
+        // Registrar historial si hubo cambio de estado
+        if ($changedBy && isset($data['status']) && $currentStatus !== $data['status']) {
+             $this->db->execute(
+                "INSERT INTO appointment_status_history 
+                (appointment_id, previous_status, new_status, changed_by, change_reason)
+                VALUES (:appointment_id, :prev_status, :new_status, :changed_by, :change_reason)",
+                [
+                    ':appointment_id' => $id,
+                    ':prev_status' => $currentStatus,
+                    ':new_status' => $data['status'],
+                    ':changed_by' => $changedBy,
+                    ':change_reason' => 'Actualización de cita'
+                ]
+            );
+        }
 
         // Actualizar o crear registro en medical info
         $hasMedical = $this->db->query("SELECT 1 FROM appointment_medical_info WHERE appointment_id = :id", [':id'=>$id]);

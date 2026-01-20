@@ -10,13 +10,13 @@ class Database {
     // Constructor privado para Singleton
     private function __construct() {
         $dotenv = Dotenv::createImmutable(__DIR__);
-        $dotenv->load();
+        $dotenv->safeLoad();
 
-        $host = $_ENV['DB_HOST'];
-        $db   = $_ENV['DB_NAME'];
-        $user = $_ENV['DB_USER'];
-        $password = $_ENV['DB_PASSWORD'];
-        $port = $_ENV['DB_PORT'];
+        $host = $_ENV['DB_HOST'] ?? getenv('DB_HOST');
+        $db   = $_ENV['DB_NAME'] ?? getenv('DB_NAME');
+        $user = $_ENV['DB_USER'] ?? getenv('DB_USER');
+        $password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD');
+        $port = $_ENV['DB_PORT'] ?? getenv('DB_PORT');
         $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
 
         $dsn = "mysql:host=$host;dbname=$db;port=$port;charset=$charset";

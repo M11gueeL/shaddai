@@ -75,10 +75,10 @@ export default function ScheduleForm({ initial = null, onCancel, onSaved }) {
         try {
             setSaving(true);
             if (isEdit) {
-                await api.update(initial.id, payload, token);
+                await api.update(initial.id, payload);
                 toast.success('Horario actualizado exitosamente');
             } else {
-                await api.create(payload, token);
+                await api.create(payload);
                 toast.success('Horario creado exitosamente');
             }
             onSaved?.();

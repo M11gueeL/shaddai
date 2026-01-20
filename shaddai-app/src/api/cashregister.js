@@ -1,21 +1,12 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
-
-const auth = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-export const openSession = (data, token) => axios.post(`${API_URL}/cash-sessions/open`, data, auth(token));
-export const getStatus = (token) => axios.get(`${API_URL}/cash-sessions/status`, auth(token));
-export const listMyMovements = (token) => axios.get(`${API_URL}/cash-sessions/movements`, auth(token));
-export const closeSession = (data, token) => axios.post(`${API_URL}/cash-sessions/close`, data, auth(token));
-export const adminListSessions = (token, params = {}) => {
-    let url = `${API_URL}/cash-sessions/admin/all`;
-    const query = new URLSearchParams(params).toString();
-    if (query) url += `?${query}`;
-    return axios.get(url, auth(token));
+export const openSession = (data) => api.post('/cash-sessions/open', data);
+export const getStatus = () => api.get('/cash-sessions/status');
+export const listMyMovements = () => api.get('/cash-sessions/movements');
+export const closeSession = (data) => api.post('/cash-sessions/close', data);
+export const adminListSessions = (params = {}) => {
+    return api.get('/cash-sessions/admin/all', { params });
 };
-export const getSessionDetails = (id, token) => axios.get(`${API_URL}/cash-sessions/details?id=${id}`, auth(token));
-export const downloadSessionReport = (id, token) => axios.get(`${API_URL}/cash-sessions/report?id=${id}`, { ...auth(token), responseType: 'blob' });
+export const getSessionDetails = (id) => api.get(`/cash-sessions/details?id=${id}`);
+export const downloadSessionReport = (id) => api.get(`/cash-sessions/report?id=${id}`, { responseType: 'blob' });
 

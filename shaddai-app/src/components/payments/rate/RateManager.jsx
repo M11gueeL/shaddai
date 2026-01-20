@@ -19,7 +19,7 @@ export default function RateManager(){
   const [focused, setFocused] = useState(false);
 
   const load = async()=>{
-    try{ setLoading(true); const r = await ratesApi.getTodayRate(token); setRate(r.data); }
+    try{ setLoading(true); const r = await ratesApi.getTodayRate(); setRate(r.data); }
     catch(e){ setRate(null); }
     finally{ setLoading(false); }
   };
@@ -31,7 +31,7 @@ export default function RateManager(){
     const v = parseFloat(value);
     if(!v || v<=0) return toast.warning('Monto inválido');
     try{
-      await ratesApi.createRate({ rate_bcv: v }, token);
+      await ratesApi.createRate({ rate_bcv: v });
       toast.success('Tasa registrada exitosamente');
       setValue('');
       load();

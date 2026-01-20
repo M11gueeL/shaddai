@@ -39,7 +39,7 @@ export default function PatientReportModal({ isOpen, onClose, patientId, patient
         patient_id: patientId 
       };
       
-      const response = await appointmentsApi.exportPatientReport(filtersWithFormat, token);
+      const response = await appointmentsApi.exportPatientReport(filtersWithFormat);
       
       const blob = new Blob([response.data], { 
         type: format === 'pdf' ? 'application/pdf' : 

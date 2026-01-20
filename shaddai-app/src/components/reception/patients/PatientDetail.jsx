@@ -67,7 +67,6 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
       
       const payload = {
         ...formData,
@@ -79,7 +78,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
       delete payload.phone_code;
       delete payload.phone_number;
 
-      await PatientsApi.update(patient.id, payload, token);
+      await PatientsApi.update(patient.id, payload);
       toast.success('Paciente actualizado con éxito');
       setIsEditing(false);
       onPatientUpdated();
@@ -102,8 +101,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
 
     if (isConfirmed) {
       try {
-        const token = localStorage.getItem('token');
-        await PatientsApi.delete(patient.id, token);
+        await PatientsApi.delete(patient.id);
         toast.success('Paciente eliminado correctamente');
         onPatientUpdated(); // Refresh list
         onClose(); // Close modal

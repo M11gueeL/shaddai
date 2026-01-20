@@ -33,8 +33,6 @@ export default function PatientRegistration({ onClose }) {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
-      
       // Combinar campos
       const payload = {
         ...formData,
@@ -48,7 +46,7 @@ export default function PatientRegistration({ onClose }) {
       delete payload.phone_code;
       delete payload.phone_number;
 
-      await PatientsApi.create(payload, token);
+      await PatientsApi.create(payload);
       toast.success('Paciente registrado con éxito');
       onClose(); // Cerrar modal inmediatamente tras éxito
       

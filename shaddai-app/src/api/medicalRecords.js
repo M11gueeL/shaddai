@@ -1,81 +1,71 @@
-import axios from 'axios';
-
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
-
-const getAuthHeaders = (token, extraHeaders = {}) => ({
-  headers: {
-    Authorization: `Bearer ${token}`,
-    ...extraHeaders,
-  },
-});
+import api from './axiosConfig';
 
 const medicalRecordsApi = {
   // --- Medical Record (root) ---
-  getByPatientId: (patientId, token) => axios.get(`${API_URL}/medicalrecords/patient/${patientId}`, getAuthHeaders(token)),
-  getByPatientCedula: (cedula, token) => axios.get(`${API_URL}/medicalrecords/patient/cedula/${cedula}`, getAuthHeaders(token)),
-  getById: (id, token) => axios.get(`${API_URL}/medicalrecords/${id}`, getAuthHeaders(token)),
-  createRecordForPatient: (patientId, token) => axios.post(`${API_URL}/medicalrecords/patient/${patientId}`, {}, getAuthHeaders(token)),
+  getByPatientId: (patientId) => api.get(`/medicalrecords/patient/${patientId}`),
+  getByPatientCedula: (cedula) => api.get(`/medicalrecords/patient/cedula/${cedula}`),
+  getById: (id) => api.get(`/medicalrecords/${id}`),
+  createRecordForPatient: (patientId) => api.post(`/medicalrecords/patient/${patientId}`, {}),
 
   // --- Encounters ---
-  createEncounter: (data, token) => axios.post(`${API_URL}/medicalrecords/encounters`, data, getAuthHeaders(token)),
-  getEncounterById: (id, token) => axios.get(`${API_URL}/medicalrecords/encounters/${id}`, getAuthHeaders(token)),
-  getEncountersForRecord: (recordId, token) => axios.get(`${API_URL}/medicalrecords/${recordId}/encounters`, getAuthHeaders(token)),
+  createEncounter: (data) => api.post('/medicalrecords/encounters', data),
+  getEncounterById: (id) => api.get(`/medicalrecords/encounters/${id}`),
+  getEncountersForRecord: (recordId) => api.get(`/medicalrecords/${recordId}/encounters`),
 
   // --- Medical History ---
-  addHistory: (recordId, data, token) => axios.post(`${API_URL}/medicalrecords/${recordId}/history`, data, getAuthHeaders(token)),
-  getHistory: (recordId, token, type) => {
-    const url = type ? `${API_URL}/medicalrecords/${recordId}/history?type=${encodeURIComponent(type)}` : `${API_URL}/medicalrecords/${recordId}/history`;
-    return axios.get(url, getAuthHeaders(token));
+  addHistory: (recordId, data) => api.post(`/medicalrecords/${recordId}/history`, data),
+  getHistory: (recordId, type) => {
+    const url = type ? `/medicalrecords/${recordId}/history?type=${encodeURIComponent(type)}` : `/medicalrecords/${recordId}/history`;
+    return api.get(url);
   },
-  updateHistory: (historyId, data, token) => axios.put(`${API_URL}/medicalrecords/history/${historyId}`, data, getAuthHeaders(token)),
-  deleteHistory: (historyId, token) => axios.delete(`${API_URL}/medicalrecords/history/${historyId}`, getAuthHeaders(token)),
+  updateHistory: (historyId, data) => api.put(`/medicalrecords/history/${historyId}`, data),
+  deleteHistory: (historyId) => api.delete(`/medicalrecords/history/${historyId}`),
 
   // --- Physical Exam ---
-  savePhysicalExam: (encounterId, data, token) => axios.put(`${API_URL}/medicalrecords/encounters/${encounterId}/physicalexam`, data, getAuthHeaders(token)),
+  savePhysicalExam: (encounterId, data) => api.put(`/medicalrecords/encounters/${encounterId}/physicalexam`, data),
 
   // --- Vital Signs ---
-  addVitalSignsForEncounter: (encounterId, data, token) => axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/vitalsigns`, data, getAuthHeaders(token)),
-  addVitalSignsForRecord: (recordId, data, token) => axios.post(`${API_URL}/medicalrecords/${recordId}/vitalsigns`, data, getAuthHeaders(token)),
-  listVitalSignsForRecord: (recordId, token) => axios.get(`${API_URL}/medicalrecords/${recordId}/vitalsigns`, getAuthHeaders(token)),
+  addVitalSignsForEncounter: (encounterId, data) => api.post(`/medicalrecords/encounters/${encounterId}/vitalsigns`, data),
+  addVitalSignsForRecord: (recordId, data) => api.post(`/medicalrecords/${recordId}/vitalsigns`, data),
+  listVitalSignsForRecord: (recordId) => api.get(`/medicalrecords/${recordId}/vitalsigns`),
 
   // --- Diagnoses ---
-  addDiagnosis: (encounterId, data, token) => axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/diagnoses`, data, getAuthHeaders(token)),
-  deleteDiagnosis: (diagnosisId, token) => axios.delete(`${API_URL}/medicalrecords/diagnoses/${diagnosisId}`, getAuthHeaders(token)),
+  addDiagnosis: (encounterId, data) => api.post(`/medicalrecords/encounters/${encounterId}/diagnoses`, data),
+  deleteDiagnosis: (diagnosisId) => api.delete(`/medicalrecords/diagnoses/${diagnosisId}`),
 
   // --- Treatment Plans ---
-  addTreatmentPlan: (encounterId, data, token) => axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/treatmentplans`, data, getAuthHeaders(token)),
-  deleteTreatmentPlan: (planId, token) => axios.delete(`${API_URL}/medicalrecords/treatmentplans/${planId}`, getAuthHeaders(token)),
+  addTreatmentPlan: (encounterId, data) => api.post(`/medicalrecords/encounters/${encounterId}/treatmentplans`, data),
+  deleteTreatmentPlan: (planId) => api.delete(`/medicalrecords/treatmentplans/${planId}`),
 
   // --- Progress Notes ---
-  addProgressNote: (encounterId, data, token) => axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/progressnotes`, data, getAuthHeaders(token)),
+  addProgressNote: (encounterId, data) => api.post(`/medicalrecords/encounters/${encounterId}/progressnotes`, data),
 
   // --- Attachments ---
-  listAttachments: (recordId, token) => axios.get(`${API_URL}/medicalrecords/${recordId}/attachments`, getAuthHeaders(token)),
-  registerAttachmentForRecord: (recordId, file, description, token) => {
+  listAttachments: (recordId) => api.get(`/medicalrecords/${recordId}/attachments`),
+  registerAttachmentForRecord: (recordId, file, description) => {
     const form = new FormData();
     form.append('attachmentFile', file);
     if (description) form.append('description', description);
-    return axios.post(`${API_URL}/medicalrecords/${recordId}/attachments`, form, getAuthHeaders(token, { 'Content-Type': 'multipart/form-data' }));
+    return api.post(`/medicalrecords/${recordId}/attachments`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
-  registerAttachmentForEncounter: (encounterId, file, description, token) => {
+  registerAttachmentForEncounter: (encounterId, file, description) => {
     const form = new FormData();
     form.append('attachmentFile', file);
     if (description) form.append('description', description);
-    return axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/attachments`, form, getAuthHeaders(token, { 'Content-Type': 'multipart/form-data' }));
+    return api.post(`/medicalrecords/encounters/${encounterId}/attachments`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
-  deleteAttachment: (attachmentId, token) => axios.delete(`${API_URL}/medicalrecords/attachments/${attachmentId}`, getAuthHeaders(token)),
-  downloadAttachment: (attachmentId, token) => axios.get(`${API_URL}/medicalrecords/attachments/${attachmentId}/download`, {
-    ...getAuthHeaders(token).headers ? { headers: getAuthHeaders(token).headers } : getAuthHeaders(token), // Handle structure of getAuthHeaders
+  deleteAttachment: (attachmentId) => api.delete(`/medicalrecords/attachments/${attachmentId}`),
+  downloadAttachment: (attachmentId) => api.get(`/medicalrecords/attachments/${attachmentId}/download`, {
     responseType: 'blob',
   }),
 
   // --- Reports ---
-  listReports: (recordId, token) => axios.get(`${API_URL}/medicalrecords/${recordId}/reports`, getAuthHeaders(token)),
-  getReport: (reportId, token) => axios.get(`${API_URL}/medicalrecords/reports/${reportId}`, getAuthHeaders(token)),
-  createReportForRecord: (recordId, data, token) => axios.post(`${API_URL}/medicalrecords/${recordId}/reports`, data, getAuthHeaders(token)),
-  createReportForEncounter: (encounterId, data, token) => axios.post(`${API_URL}/medicalrecords/encounters/${encounterId}/reports`, data, getAuthHeaders(token)),
-  updateReport: (reportId, data, token) => axios.put(`${API_URL}/medicalrecords/reports/${reportId}`, data, getAuthHeaders(token)),
-  deleteReport: (reportId, token) => axios.delete(`${API_URL}/medicalrecords/reports/${reportId}`, getAuthHeaders(token)),
+  listReports: (recordId) => api.get(`/medicalrecords/${recordId}/reports`),
+  getReport: (reportId) => api.get(`/medicalrecords/reports/${reportId}`),
+  createReportForRecord: (recordId, data) => api.post(`/medicalrecords/${recordId}/reports`, data),
+  createReportForEncounter: (encounterId, data) => api.post(`/medicalrecords/encounters/${encounterId}/reports`, data),
+  updateReport: (reportId, data) => api.put(`/medicalrecords/reports/${reportId}`, data),
+  deleteReport: (reportId) => api.delete(`/medicalrecords/reports/${reportId}`),
 };
 
 export default medicalRecordsApi;

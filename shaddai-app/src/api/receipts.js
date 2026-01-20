@@ -1,18 +1,14 @@
-import axios from 'axios';
+import api from './axiosConfig';
 
-const API_URL = 'http://localhost/shaddai/shaddai-api/public';
+export const generateReceipt = (accountId) => api.get(`/receipts/generate/${accountId}`); // legacy manual trigger
+export const listReceiptsByPatient = (patientId) => api.get(`/receipts/patient/${patientId}`);
+export const getReceiptByAccount = (accountId) => api.get(`/receipts/account/${accountId}`);
 
-const auth = (token) => ({
-  headers: { Authorization: `Bearer ${token}` },
-});
+export const downloadReceiptUrl = (receiptId) => `${import.meta.env.VITE_API_URL}/receipts/${receiptId}/download`;
 
-export const generateReceipt = (accountId, token) => axios.get(`${API_URL}/receipts/generate/${accountId}`, auth(token)); // legacy manual trigger (will be auto, but kept for compatibility)
-export const listReceiptsByPatient = (patientId, token) => axios.get(`${API_URL}/receipts/patient/${patientId}`, auth(token));
-export const getReceiptByAccount = (accountId, token) => axios.get(`${API_URL}/receipts/account/${accountId}`, auth(token));
-export const downloadReceiptUrl = (receiptId) => `${API_URL}/receipts/${receiptId}/download`;
-export const downloadReceipt = (receiptId, token) => axios.get(`${API_URL}/receipts/${receiptId}/download`, { ...auth(token), responseType: 'blob' });
+export const downloadReceipt = (receiptId) => api.get(`/receipts/${receiptId}/download`, { responseType: 'blob' });
 
-export const annulReceipt = (receiptId, reason, paymentsToRemove = [], token) => axios.post(`${API_URL}/receipts/${receiptId}/annul`, { reason, payments_to_remove: paymentsToRemove }, auth(token));
+export const annulReceipt = (receiptId, reason, paymentsToRemove = []) => api.post(`/receipts/${receiptId}/annul`, { reason, payments_to_remove: paymentsToRemove });
 
-export const listAllReceipts = (params, token) => axios.get(`${API_URL}/receipts/list`, { ...auth(token), params });
+export const listAllReceipts = (params) => api.get('/receipts/list', { params });
 
