@@ -12,9 +12,11 @@ export default function HistorySection({ recordId, token }) {
 
   const load = async () => {
     try {
-      const res = await medicalRecordsApi.getHistory(recordId, token);
+      // CORRECCIÓN 1: Usar el nombre correcto del método de la API
+      const res = await medicalRecordsApi.getHistory(recordId, null);
       setItems(res.data || []);
     } catch (e) {
+      console.error('Error cargando antecedentes:', e);
       setItems([]);
     }
   };
@@ -24,6 +26,7 @@ export default function HistorySection({ recordId, token }) {
     e.preventDefault();
     if (!form.description) return;
     try {
+      // CORRECCIÓN 2: Usar el nombre correcto del método de la API
       await medicalRecordsApi.addHistory(recordId, form, token);
       toast.success('Antecedente añadido');
       setForm({ history_type: form.history_type, description: '', recorded_at: '' });
@@ -33,6 +36,7 @@ export default function HistorySection({ recordId, token }) {
 
   const update = async (id, description, recorded_at, history_type) => {
     try {
+      // CORRECCIÓN 3: Usar el nombre correcto del método de la API
       await medicalRecordsApi.updateHistory(id, { description, recorded_at, history_type }, token);
       toast.success('Actualizado');
       load();
@@ -48,6 +52,7 @@ export default function HistorySection({ recordId, token }) {
         cancelText: 'Cancelar'
     })) {
         try {
+            // CORRECCIÓN 4: Usar el nombre correcto del método de la API
             await medicalRecordsApi.deleteHistory(id, token);
             toast.success('Eliminado');
             load();
@@ -143,7 +148,7 @@ export default function HistorySection({ recordId, token }) {
                   background: #94a3b8;
                 }
             `}</style>
-            <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar p-2">
             {items?.length ? items.map(h => (
                 <HistoryItem key={h.id} item={h} onSave={update} onDelete={remove} />
             )) : (
@@ -172,7 +177,6 @@ const getHistoryTypeLabel = (type) => {
         'other': 'Antecedente',
         'habits': 'Hábitos',
         'vaccinations': 'Vacunación',
-        // Fallback for legacy or direct spanish values if any
         'Patológico': 'Patológico',
         'No patológico': 'No patológico',
         'Quirúrgico': 'Quirúrgico',
@@ -183,6 +187,16 @@ const getHistoryTypeLabel = (type) => {
         'Antecedente': 'Antecedente'
     };
     return map[type] || type || 'Antecedente';
+};
+
+// Función auxiliar para formatear la fecha con seguridad
+const formatHistoryDate = (dateString) => {
+    if (!dateString) return 'Sin fecha registrada';
+    const date = new Date(dateString);
+    // Verificar si la fecha es inválida (getTime devuelve NaN)
+    if (isNaN(date.getTime())) return 'Sin fecha registrada';
+    
+    return date.toLocaleDateString();
 };
 
 function HistoryItem({ item, onSave, onDelete }) {
@@ -312,12 +326,11 @@ function HistoryItem({ item, onSave, onDelete }) {
                 </div>
             </div>
             <p className="text-slate-600 text-sm leading-relaxed">{item.description}</p>
-            {item.recorded_at && (
-                <div className="flex items-center gap-1.5 mt-3 text-xs text-slate-400 font-medium">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {new Date(item.recorded_at).toLocaleDateString()}
-                </div>
-            )}
+            {/* CORRECCIÓN DE FECHA: Validamos antes de mostrar */}
+            <div className="flex items-center gap-1.5 mt-3 text-xs text-slate-400 font-medium">
+                <Calendar className="w-3.5 h-3.5" />
+                {formatHistoryDate(item.recorded_at)}
+            </div>
         </div>
       </div>
     </div>
