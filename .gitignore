@@ -13,3 +13,5 @@ shaddai-api/public/uploads/receipts/
 shaddai-api/public/uploads/
 
 shaddai-app/dist/
+
+shaddai-app/.env
