@@ -1,14 +1,17 @@
 <?php
 require_once __DIR__ . '/CashRegisterSessionModel.php';
 require_once __DIR__ . '/CashRegisterMovementModel.php';
+require_once __DIR__ . '/../payments/PaymentModel.php';
 
 class CashRegisterController {
     private $sessionModel;
     private $movementModel;
+    private $paymentModel;
 
     public function __construct() {
         $this->sessionModel = new CashRegisterSessionModel();
         $this->movementModel = new CashRegisterMovementModel();
+        $this->paymentModel = new PaymentModel();
     }
 
     public function openSession() {
@@ -57,12 +60,66 @@ class CashRegisterController {
         echo json_encode(['status'=>'open','session'=>$open]);
     }
 
+    private function getDigitalPayments($userId, $startTime) {
+        $sql = "SELECT id, payment_method, amount, currency, reference_number, payment_date, registered_by 
+                FROM payments 
+                WHERE registered_by = :uid 
+                AND payment_method IN ('transfer_bs', 'mobile_payment_bs') 
+                AND payment_date >= :start 
+                AND status != 'rejected'
+                AND deleted_at IS NULL";
+        
+        return $this->paymentModel->db()->query($sql, [
+            ':uid' => $userId,
+            ':start' => $startTime
+        ]);
+    }
+
     public function listMyMovements() {
         $payload = $_REQUEST['jwt_payload'] ?? null;
         if (!$payload) { http_response_code(401); echo json_encode(['error'=>'No autorizado']); return; }
         $open = $this->sessionModel->findOpenByUser($payload->sub);
         if (!$open) { echo json_encode([]); return; }
-        echo json_encode($this->movementModel->listBySession($open['id']));
+
+        $movements = $this->movementModel->listBySession($open['id']);
+        // Tag standard movements as 'cash'
+        foreach ($movements as &$m) {
+            $m['method'] = 'cash';
+        }
+
+        // Merge digital payments (transfers/mobile) from the current session timeframe
+        try {
+            $digitals = $this->getDigitalPayments($payload->sub, $open['start_time']);
+
+            foreach ($digitals as $p) {
+                $lbl = ($p['payment_method'] === 'transfer_bs') ? 'Transferencia' : 'Pago Móvil';
+                if (!empty($p['reference_number'])) $lbl .= ' Ref: ' . $p['reference_number'];
+
+                $movements[] = [
+                    'id' => 'dig_' . $p['id'], // Virtual ID
+                    'session_id' => $open['id'],
+                    'payment_id' => $p['id'],
+                    'movement_type' => 'payment_in',
+                    'amount' => $p['amount'],
+                    'currency' => $p['currency'],
+                    'description' => $lbl,
+                    'created_at' => $p['payment_date'],
+                    'created_by' => $p['registered_by'],
+                    'is_virtual' => true,
+                    'method' => $p['payment_method'] // 'transfer_bs' or 'mobile_payment_bs'
+                ];
+            }
+
+            // Sort by date desc
+            usort($movements, function($a, $b) {
+                return strtotime($b['created_at']) - strtotime($a['created_at']);
+            });
+
+        } catch (Exception $e) {
+            // Log error
+        }
+
+        echo json_encode($movements);
     }
 
     public function closeSession() {
@@ -72,9 +129,18 @@ class CashRegisterController {
             $userId = $payload->sub;
             $open = $this->sessionModel->findOpenByUser($userId);
             if (!$open) { http_response_code(400); echo json_encode(['error'=>'No hay sesión abierta']); return; }
-            // compute calculated balances from movements
+            
+            // compute calculated balances from movements (Physical)
             $calcUsd = $this->movementModel->sumBySessionAndCurrency($open['id'], 'USD');
             $calcBs = $this->movementModel->sumBySessionAndCurrency($open['id'], 'BS');
+
+            // Add Digital Payments to Calculated Balance
+            $digitals = $this->getDigitalPayments($userId, $open['start_time']);
+            foreach ($digitals as $d) {
+                if ($d['currency'] === 'USD') $calcUsd += (float)$d['amount'];
+                else $calcBs += (float)$d['amount'];
+            }
+
             $realUsd = isset($_POST['real_end_balance_usd']) ? (float)$_POST['real_end_balance_usd'] : null;
             $realBs = isset($_POST['real_end_balance_bs']) ? (float)$_POST['real_end_balance_bs'] : null;
             $notes = $_POST['notes'] ?? null;

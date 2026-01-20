@@ -37,18 +37,42 @@ export function deriveSessionMetrics(session, movs){
     const isExpense = (m?.movement_type === 'expense_out' || m?.movement_type === 'adjustment_out');
     const sign = isIncome ? 1 : isExpense ? -1 : 0;
     
-    if(m?.currency === 'BS') acc.bs += sign * Number(m.amount || 0);
-    if(m?.currency === 'USD') acc.usd += sign * Number(m.amount || 0);
+    // Check method: if not set, assume cash (legacy/standard movements). 
+    // Digital movements explicitly have 'transfer_bs' or 'mobile_payment_bs'.
+    const method = m?.method || 'cash';
+    const isDigital = ['transfer_bs', 'mobile_payment_bs'].includes(method);
+    const amt = Number(m.amount || 0);
+
+    if(m?.currency === 'BS') {
+       acc.bs += sign * amt;
+       if(isDigital) acc.digitalBs += sign * amt;
+       else acc.cashBs += sign * amt;
+    }
+    if(m?.currency === 'USD') {
+       acc.usd += sign * amt;
+       // USD usually physical, but if we add Zelle later, logic is ready
+       if(isDigital) acc.digitalUsd += sign * amt; 
+       else acc.cashUsd += sign * amt;
+    }
     return acc;
-  },{ bs:0, usd:0 });
+  },{ bs:0, usd:0, cashBs:0, cashUsd:0, digitalBs:0, digitalUsd:0 });
 
   return { 
     openingBs, 
     openingUsd, 
     sumBs: sums.bs, 
     sumUsd: sums.usd, 
+    
+    // Totals
     balanceBs: openingBs + sums.bs, 
-    balanceUsd: openingUsd + sums.usd 
+    balanceUsd: openingUsd + sums.usd,
+
+    // Breakdowns
+    balanceCashBs: openingBs + sums.cashBs,
+    balanceCashUsd: openingUsd + sums.cashUsd,
+    
+    sumDigitalBs: sums.digitalBs,
+    sumDigitalUsd: sums.digitalUsd
   };
 }
 
