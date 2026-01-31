@@ -13,7 +13,7 @@ export default function ControlPanel() {
   const isSessionsSection = location.pathname.includes('/controlpanel/sessions');
   const isBackupSection = location.pathname.includes('/controlpanel/backup');
   const isSpecialtiesSection = location.pathname.includes('/controlpanel/specialties');
-  const isMedicalCollegesSection = location.pathname.includes('/controlpanel/medicalcolleges');
+  const isMedicalCollegesSection = location.pathname.includes('/controlpanel/medical-colleges');
   
   // Detectar si estamos en la raíz del panel (para mostrar la vista por defecto)
   const isRootPath = location.pathname === '/controlpanel' || location.pathname === '/controlpanel/';
