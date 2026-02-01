@@ -60,6 +60,11 @@
                 <span class="summary-sub">En Caja Física</span>
             </td>
             <td>
+                <span class="summary-label">Efectivo Bs</span>
+                <span class="summary-value">Bs <?= number_format($data['summary']['bs_cash'], 2) ?></span>
+                <span class="summary-sub">En Caja Física</span>
+            </td>
+            <td>
                 <span class="summary-label">Bancos Nacionales (BS)</span>
                 <span class="summary-value">Bs <?= number_format($data['summary']['bs_mobile'] + $data['summary']['bs_transfer'], 2) ?></span>
                 <span class="summary-sub">Pago Móvil + Transf.</span>
