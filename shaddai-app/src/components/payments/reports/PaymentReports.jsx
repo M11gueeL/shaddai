@@ -15,7 +15,6 @@ import * as paymentApi from '../../../api/payments';
 import { useAuth } from '../../../context/AuthContext';
 import toast from 'react-hot-toast';
 
-// Import Refactored Components
 import CashSessionReportModal from './modals/CashSessionReportModal';
 import GeneralIncomeReportModal from './modals/GeneralIncomeReportModal';
 import ServicesPerformanceModal from './modals/ServicesPerformanceModal';
@@ -25,7 +24,7 @@ export default function PaymentReports() {
 
   // Helper to get dates
   const getInitialDates = () => {
-    // 1. Get current date in Caracas Timezone to establish "Today"
+    // 1. Obtiene la fecha actual en la zona horaria de Caracas
     const formatter = new Intl.DateTimeFormat('en-CA', { 
         timeZone: 'America/Caracas',
         year: 'numeric',
@@ -33,20 +32,15 @@ export default function PaymentReports() {
         day: '2-digit'
     });
     
-    // Format returns YYYY-MM-DD
+    // caracasDateStr ya devuelve el formato YYYY-MM-DD (ej: "2026-02-01")
     const caracasDateStr = formatter.format(new Date());
-    const [year, month, day] = caracasDateStr.split('-').map(Number);
+    const year = caracasDateStr.split('-')[0];
 
-    // 2. Start Date: Jan 1st of that year
+    // 2. Fecha de inicio: 1 de enero del año actual
     const startString = `${year}-01-01`;
 
-    // 3. End Date: Tomorrow relative to Caracas "Today"
-    // Construct local date object to safely add days without timezone shifts
-    const d = new Date(year, month - 1, day);
-    d.setDate(d.getDate() + 1);
-    
-    // Format manually to YYYY-MM-DD to avoid toISOString UTC conversion issues
-    const endString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // 3. Fecha de fin: Hoy (usamos directamente el string de Caracas)
+    const endString = caracasDateStr;
 
     return {
       start: startString,
