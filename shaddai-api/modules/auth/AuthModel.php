@@ -35,6 +35,13 @@ class AuthModel {
         $loginTime = date('Y-m-d H:i:s');
         $sql = "INSERT INTO user_sessions (id, user_id, ip_address, device_info, login_time, session_status, token)
                 VALUES (:id, :user_id, :ip, :device, :login_time, 'active', :token)";
+       
+       // Cerrar sesiones activas previas del usuario
+        $this->db->execute(
+        "UPDATE user_sessions SET session_status = 'closed', logout_time = NOW() 
+         WHERE user_id = :user_id AND session_status = 'active'", 
+        [':user_id' => $userId]
+        );
         $this->db->execute($sql, [
             ':id' => $sessionId,
             ':user_id' => $userId,
