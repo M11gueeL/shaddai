@@ -32,9 +32,9 @@ const generateSlots = (start = '08:00', end = '19:00', step = 15) => {
 export default function TimePicker({
   value,
   onChange,
-  min = '08:00',
-  start = '08:00',
-  end = '19:00',
+  min = '06:00',
+  start = '06:00',
+  end = '22:00',
   step = 15,
   placeholder = 'Seleccionar hora',
   error,

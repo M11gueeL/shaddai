@@ -40,21 +40,29 @@ const AppointmentForm = ({ onClose }) => {
   // Obtener token del localStorage
   const getToken = () => localStorage.getItem('token');
 
-  // Obtener fecha mínima (hoy)
+  // Obtener fecha mínima (hoy) en local
   const getMinDate = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Obtener hora mínima si es hoy
   const getMinTime = () => {
-    if (formData.appointment_date === getMinDate()) {
-      const now = new Date();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    if (formData.appointment_date === todayStr) {
+      const hours = today.getHours().toString().padStart(2, '0');
+      const minutes = today.getMinutes().toString().padStart(2, '0');
       return `${hours}:${minutes}`;
     }
-    return '08:00';
+    return '06:00';
   };
 
   // Validaciones
@@ -410,6 +418,7 @@ const AppointmentForm = ({ onClose }) => {
                             Hora <span className="text-red-500">*</span>
                         </label>
                         <TimePicker
+                            key={formData.appointment_date}
                             value={formData.appointment_time}
                             onChange={(t) => {
                                 setFormData((prev) => ({ ...prev, appointment_time: t }));

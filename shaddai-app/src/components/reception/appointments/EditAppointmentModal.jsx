@@ -148,21 +148,29 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
     }
   };
 
-  // Obtener fecha mínima (hoy)
+  // Obtener fecha mínima (hoy) en local
   const getMinDate = () => {
     const today = new Date();
-    return today.toISOString().split('T')[0];
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Obtener hora mínima si es hoy
   const getMinTime = () => {
-    if (formData.appointment_date === getMinDate()) {
-      const now = new Date();
-      const hours = now.getHours().toString().padStart(2, '0');
-      const minutes = now.getMinutes().toString().padStart(2, '0');
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${year}-${month}-${day}`;
+
+    if (formData.appointment_date === todayStr) {
+      const hours = today.getHours().toString().padStart(2, '0');
+      const minutes = today.getMinutes().toString().padStart(2, '0');
       return `${hours}:${minutes}`;
     }
-    return '08:00';
+    return '06:00';
   };
 
   // Validaciones
@@ -457,13 +465,16 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
                                 </div>
                             </div>
 
-                            <div className="group">
+                            <div clakey={formData.appointment_date}
+                                    ssName="group">
                                 <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
                                     Hora <span className="text-red-500">*</span>
                                 </label>
                                 <TimePicker
                                     value={formData.appointment_time}
                                     onChange={(t) => handleInputChange({ target: { name: 'appointment_time', value: t } })}
+                                    start="06:00"
+                                    end="22:00"
                                     className={`pl-10 pr-4 py-2.5 flex items-center justify-between rounded-lg border transition-all text-sm text-gray-800 ${
                                          formData.appointment_time !== originalData.appointment_time
                                          ? 'bg-yellow-50 border-yellow-300'
