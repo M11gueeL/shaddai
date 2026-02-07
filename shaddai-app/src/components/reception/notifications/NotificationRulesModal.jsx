@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import notificationRulesApi from '../../../api/notificationRules';
+import { ToggleLeft, ToggleRight, Info, AlertTriangle, CheckCircle, BellOff } from 'lucide-react';
 
 const NotificationRulesModal = ({ isOpen, onClose, userRole }) => {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [newRule, setNewRule] = useState({ name: '', minutes_before: '' });
     const [error, setError] = useState('');
+    
+    // Estado para "Apagado General"
+    // Si ninguna regla tiene is_active=1, entonces isGlobalOff es true.
+    const isGlobalOff = rules.length > 0 && rules.every(r => r.is_active == 0);
 
     useEffect(() => {
         if (isOpen && userRole === 'admin') {
@@ -17,152 +21,187 @@ const NotificationRulesModal = ({ isOpen, onClose, userRole }) => {
         setLoading(true);
         try {
             const response = await notificationRulesApi.getAll();
-            setRules(response.data);
+            // Aseguramos que rules siempre sea un array
+            const data = Array.isArray(response.data) ? response.data : [];
+            setRules(data);
         } catch (err) {
             console.error(err);
             setError('Error al cargar las reglas');
+            setRules([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCreate = async (e) => {
-        e.preventDefault();
-        setError('');
-        if (!newRule.name || !newRule.minutes_before) {
-            setError('Todos los campos son obligatorios');
-            return;
+    const handleSelectRule = async (selectedRule) => {
+        // Si ya está activa y la clickeo, la desactivo (y queda todo apagado)
+        if (selectedRule.is_active == 1) {
+             handleDisableAll();
+             return;
         }
 
         try {
-            await notificationRulesApi.create(newRule);
-            setNewRule({ name: '', minutes_before: '' });
-            fetchRules();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Error al crear la regla');
-        }
-    };
+            // Optimistic update local
+            // Desmarcamos todas, marcamos la seleccionada
+            const updatedRules = rules.map(r => ({
+                ...r,
+                is_active: r.id === selectedRule.id ? 1 : 0
+            }));
+            setRules(updatedRules);
 
-    const handleToggle = async (rule) => {
-        try {
-            const newStatus = rule.is_active ? 0 : 1;
-            await notificationRulesApi.update(rule.id, { is_active: newStatus });
-            // Optimistic update or refresh
-             setRules(rules.map(r => r.id === rule.id ? { ...r, is_active: newStatus } : r));
+            // API Call: Al enviar is_active=1, el backend se encarga de desactivar las demás por seguridad
+            // Pero como la UI es quien manda, enviamos la actualización de la Regla seleccionada.
+            await notificationRulesApi.update(selectedRule.id, { is_active: 1 });
         } catch (err) {
             console.error(err);
-            setError('Error al actualizar el estado');
+            setError('Error al activar la regla');
+            fetchRules(); // Revertir en caso de error
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm('¿Estás seguro de eliminar esta regla?')) return;
-        try {
-            await notificationRulesApi.delete(id);
-            fetchRules();
-        } catch (err) {
-            setError('Error al eliminar la regla');
-        }
+    const handleDisableAll = async () => {
+         // Encuentra la que está activa (si hay) para desactivarla
+         const activeRule = rules.find(r => r.is_active == 1);
+         // Si no hay ninguna activa, no hacemos nada (ya está off)
+         if (!activeRule) return;
+
+         try {
+             // Optimistic Update
+             const updatedRules = rules.map(r => ({ ...r, is_active: 0 }));
+             setRules(updatedRules);
+             
+             // API Call para desactivar la que estaba activa
+             await notificationRulesApi.update(activeRule.id, { is_active: 0 });
+         } catch (err) {
+             console.error(err);
+             setError('Error al desactivar notificaciones');
+             fetchRules();
+         }
     };
 
     if (!isOpen || userRole !== 'admin') return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-                <div className="flex justify-between items-center p-6 border-b">
-                    <h3 className="text-xl font-semibold text-gray-800">
-                        Configuración de Recordatorios
-                    </h3>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+                
+                {/* Header */}
+                <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-800">
+                            Configuración de Recordatorios
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                           Control del envío automático de correos 
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-                            {error}
+                        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center gap-2">
+                             <AlertTriangle className="w-4 h-4"/> {error}
                         </div>
                     )}
 
-                    {/* Lista de reglas existentes */}
-                    <div className="mb-6 space-y-3">
-                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Reglas Actuales</h4>
-                        {loading && <p className="text-gray-500 text-center py-2">Cargando...</p>}
-                        
-                        {!loading && rules.length === 0 && (
-                             <p className="text-gray-400 text-center py-2 italic">No hay reglas configuradas</p>
-                        )}
-
-                        <ul className="space-y-2 max-h-60 overflow-y-auto">
-                            {rules.map(rule => (
-                                <li key={rule.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                    <div>
-                                        <p className="font-medium text-gray-800">{rule.name}</p>
-                                        <p className="text-xs text-gray-500">{rule.minutes_before} min antes</p>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-3">
-                                        {/* Switch Toggle */}
-                                        <button 
-                                            onClick={() => handleToggle(rule)}
-                                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 ${rule.is_active ? 'bg-indigo-600' : 'bg-gray-200'}`}
-                                        >
-                                            <span className="sr-only">Use setting</span>
-                                            <span 
-                                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${rule.is_active ? 'translate-x-5' : 'translate-x-0'}`}
-                                            />
-                                        </button>
-
-                                        {/* Delete Button */}
-                                        <button 
-                                            onClick={() => handleDelete(rule.id)}
-                                            className="text-red-400 hover:text-red-600 p-1"
-                                            title="Eliminar regla"
-                                        >
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                    {/* Estado Actual / Interruptor Global */}
+                    <div className="mb-6 bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
+                         <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                         <div>
+                             <p className="text-sm text-blue-800 font-medium">Nota Importante</p>
+                             <p className="text-xs text-blue-600 mt-1 leading-relaxed">
+                                Solo puede existir <strong>una regla activa</strong> a la vez. Al activar una opción (ej. 1 Hora antes), automáticamente se desactivará cualquier otra regla previa.
+                             </p>
+                         </div>
                     </div>
 
-                    {/* Agregar nueva regla */}
-                    <form onSubmit={handleCreate} className="border-t pt-4">
-                        <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-3">Nueva Regla</h4>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            <div className="sm:col-span-2">
-                                <input
-                                    type="text"
-                                    placeholder="Nombre (ej. 1 Hora antes)"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    value={newRule.name}
-                                    onChange={(e) => setNewRule({ ...newRule, name: e.target.value })}
-                                />
+                    <div className="mb-6">
+                        <div 
+                            onClick={isGlobalOff ? undefined : handleDisableAll}
+                            className={`flex items-center p-4 rounded-xl border-2 transition-all duration-200 group ${
+                                isGlobalOff 
+                                ? 'border-red-500 bg-red-50 ring-1 ring-red-500/20 cursor-default shadow-sm' 
+                                : 'border-gray-200 hover:border-red-200 hover:bg-red-50/50 cursor-pointer'
+                            }`}
+                        >
+                            <div className={`p-3 rounded-full mr-4 transition-colors ${
+                                isGlobalOff 
+                                ? 'bg-white text-red-500 shadow-sm border border-red-100' 
+                                : 'bg-gray-100 text-gray-400 group-hover:bg-red-100 group-hover:text-red-500'
+                            }`}>
+                                <BellOff className="w-6 h-6" />
                             </div>
-                            <div>
-                                <input
-                                    type="number"
-                                    placeholder="Minutos"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                    value={newRule.minutes_before}
-                                    onChange={(e) => setNewRule({ ...newRule, minutes_before: e.target.value })}
-                                />
+                            <div className="flex-1">
+                                <h4 className={`font-bold text-lg ${isGlobalOff ? 'text-red-700' : 'text-gray-700'}`}>
+                                    Apagar envío de recordatorios
+                                </h4>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    {isGlobalOff 
+                                        ? "El envío automático está completamente detenido." 
+                                        : "Actualmente se están enviando correos. Click para detener."}
+                                </p>
+                            </div>
+                            <div className="ml-2">
+                                {isGlobalOff && <CheckCircle className="w-8 h-8 text-red-500" />}
                             </div>
                         </div>
-                        <button
-                            type="submit"
-                            className="mt-3 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                            Agregar Regla
-                        </button>
-                    </form>
+                    </div>
+
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1 pb-2">
+                        Reglas Disponibles (Selecciona una)
+                    </h4>
+
+                    {loading ? (
+                         <div className="space-y-3">
+                             {[1,2,3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-lg animate-pulse" />)}
+                         </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {rules.map(rule => (
+                                <div 
+                                    key={rule.id} 
+                                    onClick={() => handleSelectRule(rule)}
+                                    className={`relative flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200 select-none ${
+                                        rule.is_active == 1
+                                        ? 'border-indigo-500 bg-indigo-50 shadow-md ring-1 ring-indigo-500/20 z-10' 
+                                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm opacity-90 hover:opacity-100'
+                                    }`}
+                                >
+                                    {/* Indicador visual tipo radio */}
+                                    <div className={`w-5 h-5 rounded-full border flex flex-shrink-0 items-center justify-center mr-3 transition-colors ${
+                                        rule.is_active == 1
+                                        ? 'border-indigo-600 bg-indigo-600' 
+                                        : 'border-gray-300 bg-white'
+                                    }`}>
+                                        {rule.is_active == 1 && <div className="w-2 h-2 rounded-full bg-white shadow-sm" />}
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-center">
+                                            <span className={`block font-semibold ${rule.is_active == 1 ? 'text-indigo-900' : 'text-gray-700'}`}>
+                                                {rule.name}
+                                            </span>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="bg-gray-50 px-6 py-4 flex justify-end border-t border-gray-100">
+                    <button 
+                        onClick={onClose}
+                        className="px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-all shadow-sm"
+                    >
+                        Cerrar Panel
+                    </button>
                 </div>
             </div>
         </div>

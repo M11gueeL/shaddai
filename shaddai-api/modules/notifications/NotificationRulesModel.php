@@ -18,42 +18,55 @@ class NotificationRulesModel {
     }
 
     public function create($data) {
-        $sql = "INSERT INTO notification_rules (name, minutes_before, is_active) VALUES (:name, :minutes_before, :is_active)";
-        $params = [
-            ':name' => $data['name'], 
-            ':minutes_before' => $data['minutes_before'],
-            ':is_active' => isset($data['is_active']) ? (int)$data['is_active'] : 1
-        ];
-        $this->db->execute($sql, $params);
-        return $this->db->lastInsertId();
+        // Método deshabilitado por requerimiento de negocio
+        return false;
+    }
+
+    // Método especializado para activar solo una regla y desactivar las demás
+    public function activateRule($id) {
+        try {
+            $this->db->beginTransaction();
+            
+            // 1. Desactivar todas
+            $this->db->execute("UPDATE notification_rules SET is_active = 0");
+            
+            // 2. Activar la seleccionada
+            $this->db->execute("UPDATE notification_rules SET is_active = 1 WHERE id = :id", [':id' => $id]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
+    }
+
+    // Método para desactivar todo (apagado general)
+    public function deactivateAll() {
+         return $this->db->execute("UPDATE notification_rules SET is_active = 0");
     }
 
     public function update($id, $data) {
-        $fields = [];
-        $params = [':id' => $id];
-
-        if (isset($data['name'])) {
-            $fields[] = "name = :name";
-            $params[':name'] = $data['name'];
+        // Solo permitimos actualizar is_active a través de los métodos especializados
+        // Pero mantenemos este método genérico para compatibilidad básica si se necesita,
+        // aunque ahora la lógica de negocio dicta exclusividad.
+        
+        // Si intentan activar, usamos activateRule para garantizar exclusividad
+        if (isset($data['is_active']) && $data['is_active'] == 1) {
+            return $this->activateRule($id);
         }
-        if (isset($data['minutes_before'])) {
-            $fields[] = "minutes_before = :minutes_before";
-            $params[':minutes_before'] = $data['minutes_before'];
-        }
-        if (isset($data['is_active'])) {
-             $fields[] = "is_active = :is_active";
-             $params[':is_active'] = (int)$data['is_active'];
-        }
-
-        if (empty($fields)) {
-            return false;
+        
+        // Si intentan desactivar (is_active = 0), simplemente desactivamos esa regla
+        // (lo cual es seguro, puede quedar ninguna activa)
+        if (isset($data['is_active']) && $data['is_active'] == 0) {
+            return $this->db->execute("UPDATE notification_rules SET is_active = 0 WHERE id = :id", [':id' => $id]);
         }
 
-        $sql = "UPDATE notification_rules SET " . implode(', ', $fields) . " WHERE id = :id";
-        return $this->db->execute($sql, $params);
+        return false; 
     }
 
     public function delete($id) {
-        return $this->db->execute("DELETE FROM notification_rules WHERE id = :id", [':id' => $id]);
+        // Método deshabilitado: No se pueden borrar las reglas predefinidas
+        return false;
     }
 }

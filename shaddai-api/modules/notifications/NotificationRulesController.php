@@ -19,39 +19,22 @@ class NotificationRulesController {
     }
 
     public function create() {
-        try {
-            $data = json_decode(file_get_contents('php://input'), true);
-
-            if (empty($data['name']) || !isset($data['minutes_before'])) {
-                throw new Exception("Nombre y minutos de antelación son obligatorios");
-            }
-
-            if (!is_numeric($data['minutes_before']) || $data['minutes_before'] <= 0) {
-                throw new Exception("Los minutos de antelación deben ser un número positivo");
-            }
-
-            $id = $this->model->create($data);
-            
-            http_response_code(201);
-            echo json_encode(['id' => $id, 'message' => 'Regla de notificación creada']);
-        } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
-        }
+        http_response_code(403); // Forbidden
+        echo json_encode(['error' => 'No se permite crear nuevas reglas. Utilice las predefinidas.']);
     }
 
     public function update($id) {
         try {
             $data = json_decode(file_get_contents('php://input'), true);
             
-            if (isset($data['minutes_before']) && (!is_numeric($data['minutes_before']) || $data['minutes_before'] <= 0)) {
-                throw new Exception("Los minutos de antelación deben ser un número positivo");
-            }
-
-            $success = $this->model->update($id, $data);
+            // Solo procesamos is_active de manera segura
+            $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 0;
+            
+            $updateData = ['is_active' => $isActive];
+            $success = $this->model->update($id, $updateData);
 
             if ($success) {
-                echo json_encode(['message' => 'Regla actualizada correctamente']);
+                echo json_encode(['message' => 'Estado actualizado correctamente']);
             } else {
                 echo json_encode(['message' => 'No hubo cambios']);
             }
@@ -62,12 +45,7 @@ class NotificationRulesController {
     }
 
     public function delete($id) {
-        try {
-            $this->model->delete($id);
-            echo json_encode(['message' => 'Regla eliminada']);
-        } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
-        }
+        http_response_code(403);
+        echo json_encode(['error' => 'No se permite eliminar reglas predefinidas.']);
     }
 }
