@@ -41,7 +41,7 @@ const Footer = () => {
           <div className="md:col-span-3 lg:col-span-3 md:col-start-7">
             <h4 className="text-white font-semibold mb-4 text-sm">Plataforma</h4>
             <ul className="space-y-3">
-              <FooterLink text="Documentación" />
+              <FooterLink to="/documentation" text="Documentación" badge="Pronto" />
             </ul>
           </div>
 
