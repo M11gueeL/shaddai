@@ -31,6 +31,7 @@ import SetPassword from './components/auth/SetPassword';
 import ScrollToTop  from "./utils/ScrollToTop";
 import AppPrivacy from "./components/legal/AppPrivacy";
 import AppTerms from "./components/legal/AppTerms";
+import DocumentationPage from "./components/common/DocumentationPage";
 import SpecialtiesPanel from "./components/controlPanel/specialties/SpecialtiesPanel";
 import MedicalCollegesPanel from "./components/controlPanel/medicalColleges/MedicalCollegesPanel";
 
@@ -58,6 +59,7 @@ export default function App() {
                   <Route path="/profile" element={<ProfilePanel />} />
                   <Route path="/privacy" element={<AppPrivacy />} />
                   <Route path="/terms" element={<AppTerms />} />
+                  <Route path="/documentation" element={<DocumentationPage />} />
                   
                   {/* Panel de Control - Solo Admin */}
                   <Route path="/controlpanel" element={
