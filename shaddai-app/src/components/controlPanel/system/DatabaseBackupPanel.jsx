@@ -16,6 +16,7 @@ import {
   HardDrive
 } from 'lucide-react';
 import { getBackupHistory, createBackup, restoreFromHistory, restoreFromFile } from '../../../api/system';
+import { useToast } from '../../../context/ToastContext';
 
 // --- Componentes UI Reutilizables ---
 
@@ -53,37 +54,7 @@ const Modal = ({ isOpen, onClose, title, icon: Icon, type = 'info', children }) 
   );
 };
 
-const Toast = ({ message, type, onClose }) => {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 5000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
 
-  const styles = {
-    success: 'bg-white border-l-4 border-green-500 shadow-lg shadow-green-500/10',
-    error: 'bg-white border-l-4 border-red-500 shadow-lg shadow-red-500/10',
-  };
-
-  const icons = {
-    success: <CheckCircle2 className="w-6 h-6 text-green-500" />,
-    error: <AlertCircle className="w-6 h-6 text-red-500" />,
-  };
-
-  return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-start gap-4 p-4 rounded-lg border border-gray-100 min-w-[320px] max-w-md animate-in slide-in-from-right-8 duration-300 ${styles[type]}`}>
-      <div className="flex-shrink-0 pt-0.5">{icons[type]}</div>
-      <div className="flex-1">
-        <h4 className={`text-sm font-bold mb-1 ${type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-          {type === 'success' ? 'Operación Exitosa' : 'Ha ocurrido un error'}
-        </h4>
-        <p className="text-sm text-gray-600 leading-relaxed">{message}</p>
-      </div>
-      <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  );
-};
 
 // --- Utilidades ---
 
@@ -107,10 +78,10 @@ const formatDate = (dateString) => {
 // --- Componente Principal ---
 
 export default function DatabaseBackupPanel() {
+  const toast = useToast();
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
-  const [notification, setNotification] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   
   const [modalOpen, setModalOpen] = useState(false);
@@ -124,7 +95,7 @@ export default function DatabaseBackupPanel() {
       setBackups(Array.isArray(response.data) ? response.data : (response.data?.data || []));
     } catch (err) {
       console.error('Error fetching backup history:', err);
-      showNotification('error', 'No se pudo cargar el historial.');
+      toast.error('No se pudo cargar el historial.');
     } finally {
       setLoading(false);
     }
@@ -134,23 +105,19 @@ export default function DatabaseBackupPanel() {
     fetchHistory();
   }, [fetchHistory]);
 
-  const showNotification = (type, message) => {
-    setNotification({ type, message });
-  };
-
   const handleCreateBackup = async () => {
     try {
       setLoading(true);
       const response = await createBackup();
       if (response.data.success) {
-        showNotification('success', 'Copia de seguridad creada correctamente.');
+        toast.success('Copia de seguridad creada correctamente.');
         await fetchHistory();
       } else {
-        showNotification('error', 'Error al crear la copia de seguridad.');
+        toast.error('Error al crear la copia de seguridad.');
       }
     } catch (err) {
       console.error('Error:', err);
-      showNotification('error', err.response?.data?.message || 'Error de conexión.');
+      toast.error(err.response?.data?.message || 'Error de conexión.');
     } finally {
       setLoading(false);
     }
@@ -164,7 +131,7 @@ export default function DatabaseBackupPanel() {
 
   const promptRestoreFile = () => {
     if (!selectedFile) {
-      showNotification('error', 'Selecciona un archivo SQL primero.');
+      toast.error('Selecciona un archivo SQL primero.');
       return;
     }
     setModalType('file');
@@ -186,14 +153,14 @@ export default function DatabaseBackupPanel() {
       }
 
       if (response.data.success) {
-        showNotification('success', 'Base de datos restaurada correctamente.');
+        toast.success('Base de datos restaurada correctamente.');
         if (modalType === 'file') setSelectedFile(null);
       } else {
-        showNotification('error', response.data.message || 'Error en la restauración.');
+        toast.error(response.data.message || 'Error en la restauración.');
       }
     } catch (err) {
       console.error('Restore error:', err);
-      showNotification('error', err.response?.data?.message || 'Error crítico al restaurar.');
+      toast.error(err.response?.data?.message || 'Error crítico al restaurar.');
     } finally {
       setRestoring(false);
       setTargetBackupId(null);
@@ -209,14 +176,6 @@ export default function DatabaseBackupPanel() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      
-      {notification && (
-        <Toast 
-          message={notification.message} 
-          type={notification.type} 
-          onClose={() => setNotification(null)} 
-        />
-      )}
 
       {/* Header Panel */}
       <div className="bg-white p-8 rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
