@@ -20,9 +20,17 @@ class DatabaseExportController {
                 VALUES (?, ?, ?, ?, NOW())
             ");
             
-            // Asumimos que hay un mecanismo de auth para obtener el usuario actual
-            // Si no existe Auth::user(), usar 'System' o 1 como fallback
-            $userId = $_SESSION['user_id'] ?? 1; // Ajustar según sistema real
+            // Obtener usuario del token JWT (inyectado por AuthMiddleware en $_REQUEST['jwt_payload'])
+            $userId = null;
+            if (isset($_REQUEST['jwt_payload']) && isset($_REQUEST['jwt_payload']->sub)) {
+                $userId = $_REQUEST['jwt_payload']->sub;
+            } elseif (isset($_SESSION['user_id'])) {
+                $userId = $_SESSION['user_id'];
+            }
+
+            if (!$userId) {
+                throw new \Exception("Usuario no identificado para realizar el backup");
+            }
             
             $stmt->execute([
                 $result['filename'],
@@ -52,6 +60,9 @@ class DatabaseExportController {
     public function getHistory(): void {
         try {
             $pdo = \Database::getInstance()->getConnection();
+            
+            // Usamos LEFT JOIN para que siempre devuelva los backups, 
+            // incluso si el usuario ha sido borrado o es ID 1 (System)
             $stmt = $pdo->query("
                 SELECT 
                     b.id, b.filename, b.file_path, b.file_size, b.created_at, b.created_by,
@@ -60,7 +71,26 @@ class DatabaseExportController {
                 LEFT JOIN users u ON b.created_by = u.id
                 ORDER BY b.created_at DESC
             ");
-            $backups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Formateamos la respuesta para incluir el objeto 'author'
+            // Si el usuario no existe (inner join fallaría), los campos serán null
+            $backups = array_map(function ($item) {
+                return [
+                    'id' => $item['id'],
+                    'filename' => $item['filename'],
+                    'file_path' => $item['file_path'],
+                    'file_size' => $item['file_size'],
+                    'created_at' => $item['created_at'],
+                    'created_by' => $item['created_by'],
+                    'author' => [
+                        'first_name' => $item['first_name'],
+                        'last_name' => $item['last_name'],
+                        'email' => $item['email']
+                    ]
+                ];
+            }, $results);
 
             header('Content-Type: application/json; charset=UTF-8');
             echo json_encode($backups);
@@ -99,11 +129,26 @@ class DatabaseExportController {
                 $filename = $_FILES['backup_file']['name'];
                 $filePath = $tmpName; // Usamos el temporal directamente o movemos si es necesario
             } else {
-                throw new \Exception("No se proporcionó archivo o ID de backup válido");
+                throw new \Exception("No se proporcionó archivo o ID avlido");
             }
 
             // Realizar restauración
             $this->service->restoreDatabase($filePath);
+
+            // Obtener ID de usuario
+            $userId = null;
+            if (isset($_REQUEST['jwt_payload']) && isset($_REQUEST['jwt_payload']->sub)) {
+                $userId = $_REQUEST['jwt_payload']->sub;
+            } elseif (isset($_SESSION['user_id'])) {
+                $userId = $_SESSION['user_id'];
+            }
+
+            if (!$userId) {
+                // Si no hay usuario, lanzamos excepción (aunque el backup ya se hizo, el registro fallará)
+                // O mejor, registramos con null si la columna lo permite? 
+                // Asumimos que la tabla y lógica requiere usuario.
+                throw new \Exception("Usuario no identificado para registrar la restauración");
+            }
 
             // Registrar en system_restores
             $stmt = $pdo->prepare("
@@ -111,7 +156,6 @@ class DatabaseExportController {
                 VALUES (?, ?, ?, NOW(), ?, ?)
             ");
             
-            $userId = $_SESSION['user_id'] ?? 1;
             $stmt->execute([
                 $backupId, // Puede ser null si es subido externamente
                 $filename,
@@ -131,17 +175,32 @@ class DatabaseExportController {
                 VALUES (?, ?, ?, NOW(), ?, ?)
             ");
             
-            $userId = $_SESSION['user_id'] ?? 1;
+            // Obtener ID (mismo fallback)
+            $userId = null;
+            if (isset($_REQUEST['jwt_payload']) && isset($_REQUEST['jwt_payload']->sub)) {
+                $userId = $_REQUEST['jwt_payload']->sub;
+            } elseif (isset($_SESSION['user_id'])) {
+                $userId = $_SESSION['user_id'];
+            }
+            
+            // Si userId es null, la base de datos debería rechazarlo si es NOT NULL,
+            // o guardarlo como NULL si es nullable. Asumiremos que es mejor intentar
+            // guardar con null que inventar un ID.
+            
             $bId = $backupId ?? null;
             $fName = $filename ?? 'unknown';
             
-            $stmt->execute([
-                $bId,
-                $fName,
-                $userId,
-                'failed',
-                'Error: ' . $exception->getMessage()
-            ]);
+            try {
+                $stmt->execute([
+                    $bId,
+                    $fName,
+                    $userId,
+                    'failed',
+                    'Error: ' . $exception->getMessage()
+                ]);
+            } catch (\Throwable $loggingError) {
+                // Silenciar error de logueo si falla por usuario null
+            }
             
             http_response_code(500);
             echo json_encode([

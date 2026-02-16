@@ -326,14 +326,14 @@ export default function DatabaseBackupPanel() {
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-700 text-sm font-bold shadow-sm border border-indigo-200/50">
-                          {backup.first_name ? backup.first_name[0].toUpperCase() : <User className="w-4 h-4" />}
+                          {backup.author?.first_name ? backup.author.first_name[0].toUpperCase() : <User className="w-4 h-4" />}
                         </div>
                         <div className="flex flex-col">
                           <span className="text-sm font-bold text-gray-800">
-                            {backup.first_name ? `${backup.first_name} ${backup.last_name || ''}` : `Usuario #${backup.created_by}`}
+                            {backup.author?.first_name ? `${backup.author.first_name} ${backup.author.last_name || ''}` : `Usuario #${backup.created_by}`}
                           </span>
                           <span className="text-xs text-gray-400 font-medium">
-                            {backup.email || (backup.first_name ? 'Administrador' : 'Sistema')}
+                            {backup.author?.email || (backup.author?.first_name ? 'Administrador' : 'Sistema')}
                           </span>
                         </div>
                       </div>
