@@ -52,7 +52,14 @@ class DatabaseExportController {
     public function getHistory(): void {
         try {
             $pdo = \Database::getInstance()->getConnection();
-            $stmt = $pdo->query("SELECT * FROM system_backups ORDER BY created_at DESC");
+            $stmt = $pdo->query("
+                SELECT 
+                    b.id, b.filename, b.file_path, b.file_size, b.created_at, b.created_by,
+                    u.first_name, u.last_name, u.email
+                FROM system_backups b
+                LEFT JOIN users u ON b.created_by = u.id
+                ORDER BY b.created_at DESC
+            ");
             $backups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             header('Content-Type: application/json; charset=UTF-8');
