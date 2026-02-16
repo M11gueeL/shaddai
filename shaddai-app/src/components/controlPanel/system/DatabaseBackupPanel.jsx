@@ -1,6 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { DownloadCloud, HardDrive, History, ShieldCheck } from 'lucide-react';
-import { exportDatabaseDump } from '../../../api/system';
+import React, { useEffect, useState, useCallback } from 'react';
+import { 
+  Database, 
+  RotateCcw, 
+  Upload, 
+  Trash2,
+  AlertTriangle,
+  FileDown,
+  Clock,
+  User,
+  HardDrive,
+  History,
+  ShieldCheck
+} from 'lucide-react';
+import { getBackupHistory, createBackup, restoreFromHistory, restoreFromFile } from '../../../api/system';
 import { useAuth } from '../../../context/AuthContext';
 
 const formatBytes = (bytes) => {
@@ -18,219 +30,277 @@ const formatBytes = (bytes) => {
   return `${value.toFixed(precision)} ${units[idx]}`;
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleString();
+};
+
 export default function DatabaseBackupPanel() {
-  const { token, user } = useAuth();
+  const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [lastExport, setLastExport] = useState(null);
-  const storageKey = user?.id ? `shaddai:last-backup:${user.id}` : 'shaddai:last-backup';
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getBackupHistory();
+      // Ajuste: si el backend devuelve array directo o { data: [...] }
+      setBackups(Array.isArray(response.data) ? response.data : (response.data?.data || []));
+      setError('');
+    } catch (err) {
+      console.error('Error fetching backup history:', err);
+      setError('No se pudo cargar el historial de copias de seguridad.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const handleCreateBackup = async () => {
     try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (!raw) {
-        setLastExport(null);
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.date) {
-        setLastExport({
-          ...parsed,
-          date: new Date(parsed.date)
-        });
+      setLoading(true);
+      setError('');
+      setSuccess('');
+      
+      const response = await createBackup();
+      
+      if (response.data.success) {
+        setSuccess('Copia de seguridad creada exitosamente.');
+        await fetchHistory(); // Recargar lista
       } else {
-        setLastExport(null);
+        setError('Error al crear la copia de seguridad.');
       }
-    } catch (readError) {
-      console.warn('No se pudo restaurar el último respaldo almacenado:', readError);
-      setLastExport(null);
-    }
-  }, [storageKey]);
-
-  const handleExport = async () => {
-    if (!token || loading) {
-      return;
-    }
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      const response = await exportDatabaseDump(token);
-      const blob = response.data;
-      const contentDisposition = response.headers['content-disposition'];
-      let filename = `shaddai_backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
-
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="?([^";]+)"?/i);
-        if (match && match[1]) {
-          filename = match[1];
-        }
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.setAttribute('download', filename);
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
-
-      const timestamp = new Date();
-      const exportMeta = {
-        date: timestamp,
-        size: blob.size,
-        filename
-      };
-
-      setLastExport(exportMeta);
-      try {
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(storageKey, JSON.stringify({
-            ...exportMeta,
-            date: timestamp.toISOString()
-          }));
-        }
-      } catch (writeError) {
-        console.warn('No se pudo guardar la información del respaldo:', writeError);
-      }
-      setSuccess('Copia de seguridad generada correctamente.');
-    } catch (requestError) {
-      const apiMessage = requestError.response?.data?.message;
-      setError(apiMessage || 'No se pudo generar la copia de seguridad en este momento.');
+    } catch (err) {
+      console.error('Error creating backup:', err);
+      setError(err.response?.data?.message || 'Error al conectar con el servidor.');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleRestoreFromHistory = async (backupId) => {
+    if (!window.confirm('⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nEstás a punto de RESTAURAR la base de datos a un estado anterior.\n\nTODOS los datos creados después de esta copia de seguridad SE PERDERÁN permanentemente.\n\n¿Estás absolutamente seguro de continuar?')) {
+      return;
+    }
+
+    try {
+      setRestoring(true);
+      setError('');
+      setSuccess('');
+
+      const response = await restoreFromHistory(backupId);
+      
+      if (response.data.success) {
+        setSuccess('Base de datos restaurada correctamente. El sistema puede requerir volver a iniciar sesión.');
+        // Opcional: forzar logout o recarga
+      } else {
+        setError(response.data.message || 'Error al restaurar la base de datos.');
+      }
+    } catch (err) {
+      console.error('Error restoring database:', err);
+      setError(err.response?.data?.message || 'Error crítico durante la restauración.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const handleFileChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      setSelectedFile(event.target.files[0]);
+      setError('');
+    }
+  };
+
+  const handleRestoreFromFile = async () => {
+    if (!selectedFile) {
+      setError('Por favor selecciona un archivo SQL primero.');
+      return;
+    }
+
+    if (!window.confirm(`⚠️ ADVERTENCIA CRÍTICA ⚠️\n\nVas a restaurar la base de datos usando un archivo EXTERNO:\n"${selectedFile.name}"\n\nTODOS los datos actuales serán REEMPLAZADOS.\n\n¿Confirmar restauración?`)) {
+      return;
+    }
+
+    try {
+      setRestoring(true);
+      setError('');
+      setSuccess('');
+
+      const response = await restoreFromFile(selectedFile);
+      
+      if (response.data.success) {
+        setSuccess('Base de datos restaurada correctamente desde el archivo. El sistema se ha actualizado.');
+        setSelectedFile(null); // Reset file input
+        // Limpiar input file visual si fuera necesario con ref
+      } else {
+        setError(response.data.message || 'Error al restaurar desde el archivo.');
+      }
+    } catch (err) {
+      console.error('Error restoring from file:', err);
+      setError(err.response?.data?.message || 'Error crítico durante la restauración.');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-800 to-purple-700 text-white shadow-xl">
-        <div className="absolute inset-y-0 right-0 w-1/3 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_60%)]" />
-        <div className="relative p-8 md:p-10">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="md:w-3/5">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs uppercase tracking-wider text-indigo-100">
-                <ShieldCheck className="h-3.5 w-3.5" /> Respaldo
-              </span>
-              <h2 className="mt-4 text-3xl font-bold md:text-4xl">Respaldo Instantáneo de la Base de Datos</h2>
-              <p className="mt-3 text-indigo-100/90 text-sm md:text-base">
-                Genera copias de seguridad y controla la integridad de la información con un solo clic.
-              </p>
-            </div>
-            <div className="md:w-2/5">
-              <div className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-sm p-6 text-indigo-50 shadow-lg">
-                <h3 className="text-sm font-semibold uppercase tracking-widest text-indigo-200">Último respaldo</h3>
-                {lastExport ? (
-                  <div className="mt-4 space-y-2 text-sm">
-                    <p className="font-semibold text-white">{lastExport.filename}</p>
-                    <p>{lastExport.date.toLocaleString()}</p>
-                    <p className="flex items-center gap-2 text-indigo-200">
-                      <HardDrive className="h-4 w-4" /> {formatBytes(lastExport.size)}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="mt-4 text-indigo-200">
-                    Aún no se ha generado un respaldo durante esta sesión.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-indigo-100 p-3 text-indigo-600">
-              <DownloadCloud className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Respaldo inmediato</h3>
-              <p className="text-sm text-gray-500">Genera y descarga el respaldo al instante, sin procesos manuales.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-purple-100 p-3 text-purple-600">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Seguro y consistente</h3>
-              <p className="text-sm text-gray-500">Respetamos estructuras, índices y datos para restauraciones confiables.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-slate-100 p-3 text-slate-600">
-              <History className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Historial rápido</h3>
-              <p className="text-sm text-gray-500">Consulta el último respaldo generado para mantener control total.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-3xl border border-dashed border-indigo-200 bg-white p-8 shadow-inner">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      
+      {/* Header y Acciones Principales */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div>
-            <h3 className="text-2xl font-semibold text-gray-900">Generar copia de seguridad</h3>
-            <p className="mt-2 max-w-xl text-sm text-gray-500">
-              El sistema compila la estructura completa de la base de datos junto con todos los registros actuales. Descarga el respaldo y almacénalo en un lugar seguro.
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Database className="w-6 h-6 text-blue-600" />
+              Copias de Seguridad
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Gestiona los puntos de restauración del sistema.
             </p>
           </div>
-          <div className="flex flex-col items-start gap-3 md:items-end">
-            <button
-              type="button"
-              onClick={handleExport}
-              disabled={loading || !token}
-              className={`group inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                loading || !token
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-500 focus:ring-indigo-400'
-              }`}
-            >
-              {loading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                  Preparando respaldo...
-                </>
-              ) : (
-                <>
-                  <DownloadCloud className="h-4 w-4 transition group-hover:translate-y-0.5" />
-                  Descargar respaldo
-                </>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={handleCreateBackup}
+            disabled={loading || restoring}
+            className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {loading ? (
+              <RotateCcw className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            Generar Nueva Copia
+          </button>
         </div>
 
-        {(error || success) && (
-          <div className="mt-6 w-full md:w-3/4">
-            {error ? (
-              <p className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-                {error}
-              </p>
-            ) : (
-              <p className="rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-600">
-                {success}
-              </p>
-            )}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-md flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-4 bg-green-50 text-green-700 rounded-md flex items-start gap-2">
+            <ShieldCheck className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{success}</span>
           </div>
         )}
       </div>
+
+      {/* Tabla de Historial */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+          <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+            <History className="w-4 h-4" />
+            Historial de Respaldos
+          </h3>
+          <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
+            {backups.length} disponibles
+          </span>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-600">
+            <thead className="bg-gray-50 text-gray-700 uppercase font-medium">
+              <tr>
+                <th className="px-6 py-3">Fecha</th>
+                <th className="px-6 py-3">Archivo</th>
+                <th className="px-6 py-3">Tamaño</th>
+                <th className="px-6 py-3">Creado Por</th>
+                <th className="px-6 py-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {loading && backups.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-400">
+                    Cargando historial...
+                  </td>
+                </tr>
+              ) : backups.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-400">
+                    No hay copias de seguridad registradas.
+                  </td>
+                </tr>
+              ) : (
+                backups.map((backup) => (
+                  <tr key={backup.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-gray-400" />
+                      {formatDate(backup.created_at)}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-xs text-gray-500">
+                      {backup.filename}
+                    </td>
+                    <td className="px-6 py-4">
+                      {formatBytes(backup.file_size)}
+                    </td>
+                    <td className="px-6 py-4 flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      ID: {backup.created_by}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => handleRestoreFromHistory(backup.id)}
+                        disabled={restoring}
+                        className="inline-flex items-center gap-1 text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded transition-colors text-xs font-semibold uppercase tracking-wide border border-transparent hover:border-red-200"
+                        title="Restaurar este punto"
+                      >
+                        {restoring ? '...' : 'Restaurar'}
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Restauración Manual */}
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-orange-400">
+        <h3 className="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+          <Upload className="w-5 h-5 text-orange-500" />
+          Restauración Manual desde Archivo
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Si tienes un archivo <code>.sql</code> descargado previamente, puedes subirlo aquí para restaurar la base de datos.
+          <br />
+          <span className="text-red-600 font-semibold">Nota: Esta acción es irreversible.</span>
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <input
+            type="file"
+            accept=".sql"
+            onChange={handleFileChange}
+            className="block w-full text-sm text-gray-500
+              file:mr-4 file:py-2 file:px-4
+              file:rounded-md file:border-0
+              file:text-sm file:font-semibold
+              file:bg-orange-50 file:text-orange-700
+              hover:file:bg-orange-100
+              cursor-pointer border border-gray-300 rounded-md"
+          />
+          <button
+            onClick={handleRestoreFromFile}
+            disabled={!selectedFile || restoring}
+            className={`px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors whitespace-nowrap flex items-center gap-2 ${(!selectedFile || restoring) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {restoring ? <RotateCcw className="w-4 h-4 animate-spin" /> : <HardDrive className="w-4 h-4" />}
+            Subir y Restaurar
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
