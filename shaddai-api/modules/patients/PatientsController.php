@@ -149,7 +149,23 @@ class PatientsController {
             }
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            
+            $errorMessage = $e->getMessage();
+            
+            // Handle duplicate entries gracefully
+            if (strpos($errorMessage, '1062 Duplicate entry') !== false) {
+                if (strpos($errorMessage, "'cedula'") !== false) {
+                    $errorMessage = 'Esta cédula ya está registrada para otro paciente.';
+                } elseif (strpos($errorMessage, "'email'") !== false) {
+                    $errorMessage = 'Este correo electrónico ya está en uso.';
+                } elseif (strpos($errorMessage, "'phone'") !== false) {
+                    $errorMessage = 'Este número de teléfono ya está en uso.';
+                } else {
+                    $errorMessage = 'Un dato registrado ya existe (cédula, correo o teléfono duplicados).';
+                }
+            }
+            
+            echo json_encode(['error' => $errorMessage]);
         }
     }
 
@@ -187,7 +203,23 @@ class PatientsController {
             }
         } catch (Exception $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            
+            $errorMessage = $e->getMessage();
+            
+            // Handle duplicate entries gracefully
+            if (strpos($errorMessage, '1062 Duplicate entry') !== false) {
+                if (strpos($errorMessage, "'cedula'") !== false) {
+                    $errorMessage = 'Esta cédula ya está registrada para otro paciente.';
+                } elseif (strpos($errorMessage, "'email'") !== false) {
+                    $errorMessage = 'Este correo electrónico ya está en uso.';
+                } elseif (strpos($errorMessage, "'phone'") !== false) {
+                    $errorMessage = 'Este número de teléfono ya está en uso.';
+                } else {
+                    $errorMessage = 'Un dato registrado ya existe (cédula, correo o teléfono duplicados).';
+                }
+            }
+            
+            echo json_encode(['error' => $errorMessage]);
         }
     }
 

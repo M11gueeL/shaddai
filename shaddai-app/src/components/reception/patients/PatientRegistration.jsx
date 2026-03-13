@@ -51,8 +51,8 @@ export default function PatientRegistration({ onClose }) {
       onClose(); // Cerrar modal inmediatamente tras éxito
       
     } catch (error) {
-      const errMsg = 'Error al registrar el paciente: ' + (error.response?.data?.message || error.message);
-      toast.error(errMsg);
+      const errMsg = error.response?.data?.error || error.response?.data?.message || error.message;
+      toast.error('Error al registrar: ' + errMsg);
     } finally {
       setLoading(false);
     }
@@ -164,6 +164,7 @@ export default function PatientRegistration({ onClose }) {
                         name="birth_date"
                         value={formData.birth_date}
                         onChange={handleChange}
+                        required
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800"
                     />
                 </div>

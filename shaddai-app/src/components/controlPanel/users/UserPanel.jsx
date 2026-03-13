@@ -128,7 +128,8 @@ export default function UserPanel() {
 
     } catch (err) {
       console.error('Error al crear usuario:', err);
-      toast.error('Error al crear: ' + (err.response?.data?.message || err.message));
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      toast.error('Error al crear: ' + errMsg);
     } finally {
       setCreating(false);
     }
@@ -150,6 +151,8 @@ export default function UserPanel() {
       if (err.response) {
         if (err.response.data && err.response.data.error) {
           errorMessage += `: ${err.response.data.error}`;
+        } else if (err.response.data && err.response.data.message) {
+          errorMessage += `: ${err.response.data.message}`;
         } else {
           errorMessage += `: ${err.response.status} ${err.response.statusText}`;
         }
