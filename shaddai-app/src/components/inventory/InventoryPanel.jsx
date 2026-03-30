@@ -219,7 +219,7 @@ export default function InventoryPanel() {
                 <ElegantHeader 
                     icon={Package}
                     sectionName="Gestión de Inventario"
-                    title="Invenatario de "
+                    title="Inventario de "
                     highlightText="Insumos Médicos"
                     description="Administra tu catálogo, monitorea existencias y gestiona el flujo de materiales con precisión."
                 >
