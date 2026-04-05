@@ -22,8 +22,8 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
       const token = localStorage.getItem('token');
       const response = await patientsAPI.getAll(token);
       const filtered = response.data.filter(patient => 
-        patient.full_name.toLowerCase().includes(term.toLowerCase()) ||
-        patient.cedula.includes(term)
+        (patient.full_name && patient.full_name.toLowerCase().includes(term.toLowerCase())) ||
+        (patient.cedula && patient.cedula.toLowerCase().includes(term.toLowerCase()))
       );
       setPatients(filtered);
     } catch (error) {
@@ -46,7 +46,9 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
         setPatients([response.data]);
       }
     } catch (error) {
-      console.error('Error searching by cedula:', error);
+      if (error.response?.status !== 404) {
+        console.error('Error searching by cedula:', error);
+      }
       setPatients([]); // Limpiar resultados en caso de error
     } finally {
       setIsLoading(false);
@@ -70,7 +72,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
   // Seleccionar paciente
   const handlePatientSelect = (patient) => {
     onSelect(patient);
-    setSearchTerm(`${patient.cedula} - ${patient.full_name}`);
+    setSearchTerm(patient.cedula ? `${patient.cedula} - ${patient.full_name}` : patient.full_name);
     setShowDropdown(false);
     setPatients([]);
   };
@@ -160,7 +162,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
                     {patient.full_name}
                   </div>
                   <div className="text-sm text-gray-500">
-                    Cédula: {patient.cedula} | Teléfono: {patient.phone}
+                    Cédula: {patient.cedula || 'No posee'} | Teléfono: {patient.phone || 'Delegado'}
                   </div>
                 </div>
               </div>
