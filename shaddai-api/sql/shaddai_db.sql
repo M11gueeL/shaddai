@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 05-04-2026 a las 21:49:56
+-- Tiempo de generación: 06-04-2026 a las 00:47:08
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -48,7 +48,8 @@ CREATE TABLE `appointments` (
 --
 
 INSERT INTO `appointments` (`id`, `patient_id`, `doctor_id`, `appointment_date`, `appointment_time`, `consulting_room_id`, `specialty_id`, `duration`, `status`, `appointment_type`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 32, 11, '2026-03-27', '12:00:00', 1, 1, 30, 'programada', 'primera_vez', 26, '2026-03-26 19:44:58', '2026-03-26 19:44:58');
+(1, 32, 11, '2026-03-27', '12:00:00', 1, 1, 30, 'programada', 'primera_vez', 26, '2026-03-26 19:44:58', '2026-03-26 19:44:58'),
+(2, 35, 11, '2026-04-06', '08:30:00', 2, 1, 30, 'programada', 'primera_vez', 8, '2026-04-05 22:37:18', '2026-04-05 22:37:18');
 
 -- --------------------------------------------------------
 
@@ -122,7 +123,8 @@ CREATE TABLE `billing_accounts` (
 INSERT INTO `billing_accounts` (`id`, `patient_id`, `payer_patient_id`, `appointment_id`, `status`, `total_usd`, `total_bs`, `exchange_rate_id`, `created_by`, `created_at`, `updated_at`) VALUES
 (1, 8, 8, NULL, 'paid', 2.00, 933.20, 1, 8, '2026-03-26 13:40:40', '2026-03-26 13:41:08'),
 (2, 8, 8, NULL, 'pending', 1.00, 466.60, 1, 8, '2026-03-26 19:15:08', '2026-03-26 19:15:22'),
-(3, 13, 13, NULL, 'paid', 3.00, 1399.80, 1, 26, '2026-03-26 19:55:19', '2026-03-26 19:56:16');
+(3, 13, 13, NULL, 'paid', 3.00, 1399.80, 1, 26, '2026-03-26 19:55:19', '2026-03-26 19:56:16'),
+(4, 35, 33, NULL, 'paid', 40.00, 19000.00, 2, 8, '2026-04-05 22:38:53', '2026-04-05 22:39:18');
 
 -- --------------------------------------------------------
 
@@ -139,6 +141,13 @@ CREATE TABLE `billing_account_details` (
   `price_usd` decimal(10,2) NOT NULL COMMENT 'Precio USD (copiado al momento de agregar)',
   `price_bs` decimal(12,2) NOT NULL COMMENT 'Precio Bs (calculado = price_usd * tasa de la cuenta)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Items de servicio cargados a una cuenta de cobro';
+
+--
+-- Volcado de datos para la tabla `billing_account_details`
+--
+
+INSERT INTO `billing_account_details` (`id`, `account_id`, `service_id`, `description`, `quantity`, `price_usd`, `price_bs`) VALUES
+(1, 4, 1, 'Consulta ORL', 1, 40.00, 19000.00);
 
 -- --------------------------------------------------------
 
@@ -214,7 +223,8 @@ CREATE TABLE `cash_register_movements` (
 
 INSERT INTO `cash_register_movements` (`id`, `session_id`, `payment_id`, `movement_type`, `amount`, `currency`, `description`, `created_by`, `created_at`) VALUES
 (1, 1, 1, 'payment_in', 2.00, 'USD', 'Pago cuenta #1', 8, '2026-03-26 13:41:02'),
-(2, 2, 2, 'payment_in', 3.00, 'USD', 'Pago cuenta #3', 26, '2026-03-26 19:56:10');
+(2, 2, 2, 'payment_in', 3.00, 'USD', 'Pago cuenta #3', 26, '2026-03-26 19:56:10'),
+(3, 1, 3, 'payment_in', 40.00, 'USD', 'Pago cuenta #4', 8, '2026-04-05 22:39:12');
 
 -- --------------------------------------------------------
 
@@ -317,7 +327,8 @@ CREATE TABLE `daily_exchange_rates` (
 --
 
 INSERT INTO `daily_exchange_rates` (`id`, `rate_date`, `rate_bcv`, `created_by`, `created_at`) VALUES
-(1, '2026-03-26', 466.6000, 8, '2026-03-26 13:39:30');
+(1, '2026-03-26', 466.6000, 8, '2026-03-26 13:39:30'),
+(2, '2026-04-05', 475.0000, 8, '2026-04-05 22:38:37');
 
 -- --------------------------------------------------------
 
@@ -549,7 +560,8 @@ CREATE TABLE `medical_records` (
 --
 
 INSERT INTO `medical_records` (`id`, `patient_id`, `record_number`, `created_at`, `updated_at`) VALUES
-(1, 13, NULL, '2026-03-26 20:00:07', '2026-03-26 20:00:07');
+(1, 13, NULL, '2026-03-26 20:00:07', '2026-03-26 20:00:07'),
+(2, 35, NULL, '2026-04-05 22:37:59', '2026-04-05 22:37:59');
 
 -- --------------------------------------------------------
 
@@ -727,7 +739,7 @@ CREATE TABLE `patients` (
   `gender` enum('M','F','O','Other') DEFAULT NULL,
   `marital_status` varchar(50) DEFAULT NULL,
   `address` text DEFAULT NULL,
-  `phone` varchar(32) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
@@ -756,7 +768,9 @@ INSERT INTO `patients` (`id`, `full_name`, `cedula`, `birth_date`, `gender`, `ma
 (22, 'Jules Kounde', 'E-56789123', '1998-11-12', '', 'Soltero', 'Barcelona, España', '04163451234', 'kounde@gmail.com', '2025-12-21 00:18:11', '2025-12-21 00:18:11', 8, NULL, NULL),
 (23, 'Fermin Lopez Hernandez', 'V-30987345', '2002-04-21', '', '', '', '04121230912', 'ferminlopez@gmail.com', '2026-01-19 23:17:50', '2026-01-19 23:18:09', 8, NULL, NULL),
 (24, 'eladio', 'V-12999123', '2003-07-29', '', '', '', '04121234567', 'monasterionacary@gmail.com', '2026-03-13 14:32:14', '2026-03-13 14:32:14', 8, NULL, NULL),
-(32, 'Laura Alves', 'V-23423152', '1998-08-23', '', 'Soltero', 'santa rita, estado aragua', '04121367278', 'lauraalves23@gmail.com', '2026-03-26 19:33:56', '2026-03-26 19:33:56', 26, NULL, NULL);
+(32, 'Laura Alves', 'V-23423152', '1998-08-23', '', 'Soltero', 'santa rita, estado aragua', '04121367278', 'lauraalves23@gmail.com', '2026-03-26 19:33:56', '2026-03-26 19:33:56', 26, NULL, NULL),
+(33, 'Pedro Lopez', 'V-17892123', NULL, NULL, NULL, NULL, '04123219034', NULL, '2026-04-05 20:17:18', '2026-04-05 20:17:18', 8, NULL, NULL),
+(35, 'Maria Lopez', NULL, '2020-07-01', '', '', 'Maracay', NULL, NULL, '2026-04-05 20:39:20', '2026-04-05 20:39:20', 8, 33, 'Padre');
 
 -- --------------------------------------------------------
 
@@ -792,7 +806,8 @@ CREATE TABLE `payments` (
 
 INSERT INTO `payments` (`id`, `account_id`, `payment_date`, `payment_method`, `amount`, `currency`, `exchange_rate_id`, `amount_usd_equivalent`, `reference_number`, `attachment_path`, `status`, `deleted_at`, `notes`, `registered_by`, `verified_by`, `created_at`, `attachment_name`, `attachment_mime`, `attachment_data`) VALUES
 (1, 1, '2026-03-26 09:41:02', 'cash_usd', 2.00, 'USD', 1, 2.00, NULL, NULL, 'verified', NULL, NULL, 8, NULL, '2026-03-26 13:41:02', NULL, NULL, NULL),
-(2, 3, '2026-03-26 15:56:10', 'cash_usd', 3.00, 'USD', 1, 3.00, NULL, NULL, 'verified', NULL, NULL, 26, NULL, '2026-03-26 19:56:10', NULL, NULL, NULL);
+(2, 3, '2026-03-26 15:56:10', 'cash_usd', 3.00, 'USD', 1, 3.00, NULL, NULL, 'verified', NULL, NULL, 26, NULL, '2026-03-26 19:56:10', NULL, NULL, NULL),
+(3, 4, '2026-04-05 18:39:12', 'cash_usd', 40.00, 'USD', 2, 40.00, NULL, NULL, 'verified', NULL, NULL, 8, NULL, '2026-04-05 22:39:12', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -820,7 +835,8 @@ CREATE TABLE `payment_receipts` (
 
 INSERT INTO `payment_receipts` (`id`, `receipt_number`, `account_id`, `payment_id`, `issued_by`, `issued_at`, `status`, `annulled_reason`, `annulled_at`, `annulled_by`, `pdf_path`) VALUES
 (1, '2026-03-0000001', 1, NULL, 8, '2026-03-26 13:41:08', 'active', NULL, NULL, NULL, '/uploads/receipts/202603/receipt_1_2026-03-0000001.pdf'),
-(2, '2026-03-0000002', 3, NULL, 26, '2026-03-26 19:56:16', 'active', NULL, NULL, NULL, '/uploads/receipts/202603/receipt_2_2026-03-0000002.pdf');
+(2, '2026-03-0000002', 3, NULL, 26, '2026-03-26 19:56:16', 'active', NULL, NULL, NULL, '/uploads/receipts/202603/receipt_2_2026-03-0000002.pdf'),
+(3, '2026-04-0000003', 4, NULL, 8, '2026-04-05 22:39:18', 'active', NULL, NULL, NULL, '/uploads/receipts/202604/receipt_3_2026-04-0000003.pdf');
 
 -- --------------------------------------------------------
 
@@ -1721,11 +1737,12 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('d3fdaaf92d74cae7e8551c267b1f205cbd8c3c9aa4a4531801bdc2ac16d64126', 11, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-27 09:35:58', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjExLCJlbWFpbCI6Implc3Npcm5hY2FyeWJyYXZvQGdtYWlsLmNvbSIsInJvbGVzIjpbIm1lZGljbyJdLCJpYXQiOjE3NjQyOTM3NTgsImV4cCI6MTc2NDM4MDE1OH0.kor3mGrObdKs3JspOCzodsoziurzH5ymbZyyWHS9VDw', '2025-11-27 09:36:31'),
 ('d4d587da193e48445b2130c92912b33d3da8d78b5f7d4b0c49989d8c381767b0', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-26 05:36:17', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNTE0NTc3LCJleHAiOjE3NjE2MDA5Nzd9.c1ma_k4tBmXmkjZRDv6YEZIavphsObpKdF7WvUvHPVA', '2025-10-26 07:35:42'),
 ('d56377e41efb34c912541492696219a6512c01bb8ddab6c3cedc80ff5c2dbd01', 8, '::1', 'PostmanRuntime/7.44.1', '2025-08-01 06:13:03', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MDY0NzgzLCJleHAiOjE3NTQwNjgzODN9.GCt7PH1zos2Vton2LD3QmUlTTeDEkOBKWrtxbc3Ym0g', '2025-08-01 00:13:51'),
+('d5b4155998ec1bffd85af9639ddc850d38da3696569f589579a18996e7c50183', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 19:54:05', 'active', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTQxODg0NSwiZXhwIjoxNzc1NTA1MjQ1fQ.Jzg9BHxD3vPwsv5-NW8fy9bG27VE40tMChI6WZKnY-I', NULL),
 ('d6ccd5a804acb23179b42f6820a0fdd903171122c01aae3751c34be0e7c68d92', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-07 08:08:30', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTkwMTEwLCJleHAiOjE3NTQ1OTM3MTB9.wg9Xb3Z8kOR6K21oKy3meZ5OEFZnk-CH0dzwkITNyUA', '2025-08-07 02:08:38'),
 ('d78f857ac3e81ffd06c3e74a5e4ab1ee9e9bf666fa391cdef553cde5cf2074d4', 24, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-21 09:09:40', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjI0LCJlbWFpbCI6InRoZW1pZ3VlbW9uYXN0ZXJpb0BnbWFpbC5jb20iLCJyb2xlcyI6WyJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc2Mzc3Mzc4MCwiZXhwIjoxNzYzODYwMTgwfQ.GJVDR5wy77t90X18TVVRE5NocC4j318XylEwQWzEl2g', '2025-11-21 09:18:16'),
-('d7b5d9532ffe19d3214c5a4eb714885e2d24af4691234aa766b1aa3499d0ce12', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-12-02 08:08:56', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY0NzIwNTM2LCJleHAiOjE3NjQ4MDY5MzZ9.Q9aj91f5Eob4XN7PBQqstbgQrEIrKseoBuVFGzQsjGY', '2025-12-02 08:09:06'),
-('d80f6d0f8972c8a71a3b304cebb99663f8716c6cc0080cb40a7b42b69d3dc29b', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-24 01:43:23', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2NTk4MjAzLCJleHAiOjE3NjY2ODQ2MDN9.Kd6uqNsBvfAhh13qq8fGf3Jfb4XU79bZpG4uUH_AaW4', '2025-12-24 01:44:39');
+('d7b5d9532ffe19d3214c5a4eb714885e2d24af4691234aa766b1aa3499d0ce12', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-12-02 08:08:56', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY0NzIwNTM2LCJleHAiOjE3NjQ4MDY5MzZ9.Q9aj91f5Eob4XN7PBQqstbgQrEIrKseoBuVFGzQsjGY', '2025-12-02 08:09:06');
 INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
+('d80f6d0f8972c8a71a3b304cebb99663f8716c6cc0080cb40a7b42b69d3dc29b', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-24 01:43:23', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2NTk4MjAzLCJleHAiOjE3NjY2ODQ2MDN9.Kd6uqNsBvfAhh13qq8fGf3Jfb4XU79bZpG4uUH_AaW4', '2025-12-24 01:44:39'),
 ('d8501019246c602466e7e2ecf1514bef0d311cdb038154697d7c59a9d980f58a', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-12-02 02:38:17', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY0NzAwNjk3LCJleHAiOjE3NjQ3ODcwOTd9.mzulKXHM8q36BMODC1j4GmaJ8QQQUVO8GwrDW42Kq3M', '2025-12-02 03:07:22'),
 ('d8c2a88fd2f1dc2905a12140d62839d5056c18930204f381f6c3294b0a115fb2', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-10 08:39:59', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyODIxNTk5LCJleHAiOjE3NjI5MDc5OTl9.FVbQnXmTj_emSOMSIWwTCRRnJ-VgbkzvZaSTt7ZFQRY', '2025-11-10 08:40:02'),
 ('d900fb1c53d17e69645c8bf51b269a4a52fc07113bcbdf57e4229301fee93df1', 8, '::1', 'PostmanRuntime/7.49.0', '2025-10-23 07:46:29', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMjQxNTg5LCJleHAiOjE3NjEyNDUxODl9.lWYIswjlClVcuNDFN5hCGoZ52Y9ULmg-q2A9Pr9e6b4', '2026-02-02 06:04:32'),
@@ -2207,7 +2224,7 @@ ALTER TABLE `vital_signs`
 -- AUTO_INCREMENT de la tabla `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `appointment_medical_info`
@@ -2231,13 +2248,13 @@ ALTER TABLE `appointment_status_history`
 -- AUTO_INCREMENT de la tabla `billing_accounts`
 --
 ALTER TABLE `billing_accounts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `billing_account_details`
 --
 ALTER TABLE `billing_account_details`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `billing_account_supplies`
@@ -2255,7 +2272,7 @@ ALTER TABLE `billing_account_supply_batches`
 -- AUTO_INCREMENT de la tabla `cash_register_movements`
 --
 ALTER TABLE `cash_register_movements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `cash_register_sessions`
@@ -2279,7 +2296,7 @@ ALTER TABLE `consulting_rooms`
 -- AUTO_INCREMENT de la tabla `daily_exchange_rates`
 --
 ALTER TABLE `daily_exchange_rates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `diagnoses`
@@ -2333,7 +2350,7 @@ ALTER TABLE `medical_preferred_schedules`
 -- AUTO_INCREMENT de la tabla `medical_records`
 --
 ALTER TABLE `medical_records`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `medical_reports`
@@ -2363,19 +2380,19 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT de la tabla `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT de la tabla `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `payment_receipts`
 --
 ALTER TABLE `payment_receipts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `physical_exams`
