@@ -50,7 +50,11 @@ class PatientsModel {
             ':representative_relationship' => !empty($data['representative_relationship']) ? $data['representative_relationship'] : null
         ];
 
-        return $this->db->execute($query, $params);
+        $success = $this->db->execute($query, $params);
+        if ($success) {
+            return $this->db->lastInsertId();
+        }
+        return false;
     }
 
     public function getAllPatients() {

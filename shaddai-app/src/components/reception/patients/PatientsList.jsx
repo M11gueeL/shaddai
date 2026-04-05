@@ -285,7 +285,18 @@ export default function PatientList({ onClose }) {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded-md inline-block">{patient.cedula}</div>
+                      {patient.cedula ? (
+                          <div className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-1 rounded-md inline-block">
+                            {patient.cedula}
+                          </div>
+                      ) : (
+                          <div className="flex flex-col gap-1">
+                              <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md inline-block w-fit">Sin Cédula (Menor)</span>
+                              {patient.representative_name && (
+                                  <span className="text-xs text-gray-500" title={patient.billing_cedula}>Rep: {patient.representative_name}</span>
+                              )}
+                          </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col gap-0.5">

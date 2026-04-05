@@ -123,6 +123,22 @@ class PatientsController {
                 $data['cedula'] = null;
             }
 
+            // Lógica de Fallback de Contacto (Solución 3: Delegación a Representante)
+            if ($hasRepresentative && !$hasCedula) {
+                // Es un menor sin cédula: el teléfono y correo son opcionales
+                if (empty($data['phone'])) {
+                    $data['phone'] = null;
+                }
+                if (empty($data['email'])) {
+                    $data['email'] = null;
+                }
+            } else {
+                // Es un adulto / principal: validamos que tenga teléfono obligatoriamente
+                if (empty($data['phone'])) {
+                    throw new Exception('El teléfono es obligatorio si el paciente no es un menor de edad con representante.');
+                }
+            }
+
             // Validación de Teléfono (0412-1234567)
             // Aceptamos formatos con guion o sin guion, pero validamos el código
             // Códigos válidos: 0412, 0414, 0424, 0416, 0426, 0212 (ejemplo fijo)
@@ -152,8 +168,10 @@ class PatientsController {
             
             $result = $this->model->createPatient($data);
             if ($result) {
+                // Fetch the newly created patient to map to frontend structure nicely
+                $newPatient = $this->model->getPatientById($result);
                 http_response_code(201);
-                echo json_encode(['message' => 'Patient created']);
+                echo json_encode(['message' => 'Patient created', 'patient' => $newPatient]);
             } else {
                 throw new Exception('Failed to create patient');
             }
@@ -210,8 +228,20 @@ class PatientsController {
                 $data['cedula'] = null;
             }
 
-            if (empty($data['phone'])) {
-                throw new Exception('El teléfono es requerido');
+            // Lógica de Fallback de Contacto (Solución 3: Delegación a Representante)
+            if ($hasRepresentative && !$hasCedula) {
+                // Es un menor sin cédula: el teléfono y correo son opcionales
+                if (empty($data['phone'])) {
+                    $data['phone'] = null;
+                }
+                if (empty($data['email'])) {
+                    $data['email'] = null;
+                }
+            } else {
+                // Es un adulto / principal: validamos que tenga teléfono obligatoriamente
+                if (empty($data['phone'])) {
+                    throw new Exception('El teléfono es obligatorio si el paciente no es un menor de edad con representante.');
+                }
             }
             
             $result = $this->model->updatePatient($id, $data);
