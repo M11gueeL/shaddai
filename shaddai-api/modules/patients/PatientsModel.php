@@ -19,7 +19,9 @@ class PatientsModel {
             address,
             phone,
             email,
-            created_by
+            created_by,
+            representative_id,
+            representative_relationship
             ) VALUES (
             :full_name,
             :cedula,    
@@ -29,7 +31,9 @@ class PatientsModel {
             :address,
             :phone,
             :email,
-            :created_by
+            :created_by,
+            :representative_id,
+            :representative_relationship
             )";
 
         $params = [
@@ -41,19 +45,33 @@ class PatientsModel {
             ':address' => $data['address'] ?? null,
             ':phone' => $data['phone'] ?? null,
             ':email' => $data['email'] ?? null,
-            ':created_by' => $data['created_by']
+            ':created_by' => $data['created_by'],
+            ':representative_id' => !empty($data['representative_id']) ? $data['representative_id'] : null,
+            ':representative_relationship' => !empty($data['representative_relationship']) ? $data['representative_relationship'] : null
         ];
 
         return $this->db->execute($query, $params);
     }
 
     public function getAllPatients() {
-        $query = "SELECT * FROM patients";
+        $query = "SELECT p.*, 
+                         COALESCE(p.cedula, rep.cedula) as billing_cedula,
+                         rep.full_name as representative_name,
+                         rep.cedula as representative_cedula
+                  FROM patients p
+                  LEFT JOIN patients rep ON p.representative_id = rep.id
+                  ORDER BY p.id DESC";
         return $this->db->query($query);
     }
     
     public function getPatientById($id) {
-        $query = "SELECT * FROM patients WHERE id = :id";
+        $query = "SELECT p.*, 
+                         COALESCE(p.cedula, rep.cedula) as billing_cedula,
+                         rep.full_name as representative_name,
+                         rep.cedula as representative_cedula
+                  FROM patients p
+                  LEFT JOIN patients rep ON p.representative_id = rep.id 
+                  WHERE p.id = :id";
         $params = [':id' => $id];
         $result = $this->db->query($query, $params);
         return !empty($result) ? $result[0] : null;
@@ -75,7 +93,9 @@ class PatientsModel {
                     marital_status = :marital_status,
                     address = :address,
                     phone = :phone,
-                    email = :email
+                    email = :email,
+                    representative_id = :representative_id,
+                    representative_relationship = :representative_relationship
                   WHERE id = :id";
 
         $params = [
@@ -87,6 +107,8 @@ class PatientsModel {
             ':address' => $data['address'] ?? null,
             ':phone' => $data['phone'] ?? null,
             ':email' => $data['email'] ?? null,
+            ':representative_id' => !empty($data['representative_id']) ? $data['representative_id'] : null,
+            ':representative_relationship' => !empty($data['representative_relationship']) ? $data['representative_relationship'] : null,
             ':id' => $id
         ];
 
@@ -125,24 +147,24 @@ class PatientsModel {
                 switch ($f) {
                     case 'id':
                         if (ctype_digit($q)) {
-                            $where[] = 'id = :id_exact';
+                            $where[] = 'p.id = :id_exact';
                             $params[':id_exact'] = (int)$q;
                         }
                         break;
                     case 'cedula':
-                        $where[] = 'cedula LIKE :cedula_like';
+                        $where[] = 'p.cedula LIKE :cedula_like';
                         $params[':cedula_like'] = $like;
                         break;
                     case 'full_name':
-                        $where[] = 'full_name LIKE :name_like';
+                        $where[] = 'p.full_name LIKE :name_like';
                         $params[':name_like'] = $likeAny;
                         break;
                     case 'phone':
-                        $where[] = 'phone LIKE :phone_like';
+                        $where[] = 'p.phone LIKE :phone_like';
                         $params[':phone_like'] = $like;
                         break;
                     case 'email':
-                        $where[] = 'email LIKE :email_like';
+                        $where[] = 'p.email LIKE :email_like';
                         $params[':email_like'] = $likeAny;
                         break;
                 }
@@ -150,16 +172,21 @@ class PatientsModel {
         }
 
         if (!empty($dob)) {
-            $where[] = 'birth_date = :dob';
+            $where[] = 'p.birth_date = :dob';
             $params[':dob'] = $dob;
         }
 
-        $sql = 'SELECT id, full_name, cedula, birth_date, phone, email FROM patients';
+        $sql = 'SELECT p.id, p.full_name, p.cedula, p.birth_date, p.phone, p.email, 
+                       p.representative_id, p.representative_relationship,
+                       COALESCE(p.cedula, rep.cedula) as billing_cedula,
+                       rep.full_name as representative_name 
+                FROM patients p
+                LEFT JOIN patients rep ON p.representative_id = rep.id';
         if (!empty($where)) {
             $sql .= ' WHERE ' . implode(' OR ', $where);
         }
         // Nota: en ausencia de created_at, ordena por id desc para recientes
-        $sql .= ' ORDER BY id DESC LIMIT ' . intval($limit);
+        $sql .= ' ORDER BY p.id DESC LIMIT ' . intval($limit);
 
         return $this->db->query($sql, $params);
     }

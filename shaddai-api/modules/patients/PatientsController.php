@@ -104,13 +104,23 @@ class PatientsController {
             if (empty($data['full_name'])) {
                 throw new Exception('El nombre completo es requerido');
             }
-            if (empty($data['cedula'])) {
-                throw new Exception('La cédula es requerida');
+
+            // NUEVA LÓGICA DE VALIDACIÓN DE CÉDULA Y REPRESENTANTE
+            $hasCedula = !empty($data['cedula']);
+            $hasRepresentative = !empty($data['representative_id']);
+
+            if (!$hasCedula && !$hasRepresentative) {
+                throw new Exception('El paciente debe poseer una cédula de identidad o, en su defecto, estar asociado a un representante legal.');
             }
 
-            // Validación de Cédula (V-123456 o E-123456)
-            if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
-                throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
+            // Si envió cédula, validamos el formato
+            if ($hasCedula) {
+                if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
+                    throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
+                }
+            } else {
+                // Si no tiene cédula, forzamos que sea null para la base de datos
+                $data['cedula'] = null;
             }
 
             // Validación de Teléfono (0412-1234567)
@@ -181,18 +191,27 @@ class PatientsController {
             if (empty($data['full_name'])) {
                 throw new Exception('El nombre completo es requerido');
             }
-            if (empty($data['cedula'])) {
-                throw new Exception('La cédula es requerida');
-            }
-            if (empty($data['phone'])) {
-                throw new Exception('El teléfono es requerido');
-            }
-            if (empty($data['email'])) {
-                throw new Exception('El email es requerido');
+            
+            // NUEVA LÓGICA DE VALIDACIÓN DE CÉDULA Y REPRESENTANTE
+            $hasCedula = !empty($data['cedula']);
+            $hasRepresentative = !empty($data['representative_id']);
+
+            if (!$hasCedula && !$hasRepresentative) {
+                throw new Exception('El paciente debe poseer una cédula de identidad o, en su defecto, estar asociado a un representante legal.');
             }
 
-            if (!empty($data['cedula']) && !preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
-                throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
+            // Si envió cédula, validamos el formato
+            if ($hasCedula) {
+                if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
+                    throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
+                }
+            } else {
+                // Si no tiene cédula, forzamos que sea null para la base de datos
+                $data['cedula'] = null;
+            }
+
+            if (empty($data['phone'])) {
+                throw new Exception('El teléfono es requerido');
             }
             
             $result = $this->model->updatePatient($id, $data);
