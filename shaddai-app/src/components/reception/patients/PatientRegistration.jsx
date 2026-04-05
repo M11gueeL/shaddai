@@ -106,7 +106,8 @@ export default function PatientRegistration({ onClose }) {
         phone: isMinorOrUndocumented ? null : (formData.phone_number ? `${formData.phone_code}${formData.phone_number}` : ''),
         email: isMinorOrUndocumented ? null : formData.email,
         representative_id: isMinorOrUndocumented && selectedRepresentative ? selectedRepresentative.id : null,
-        representative_relationship: isMinorOrUndocumented ? formData.representative_relationship : null
+        representative_relationship: isMinorOrUndocumented ? formData.representative_relationship : null,
+        marital_status: isMinorOrUndocumented ? null : formData.marital_status
       };
 
       // Eliminar campos temporales
@@ -347,34 +348,36 @@ export default function PatientRegistration({ onClose }) {
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
                     >
                         <option value="">Seleccione...</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Femenino">Femenino</option>
+                        <option value="M">Masculino</option>
+                        <option value="F">Femenino</option>
                     </select>
                 </div>
                 </div>
 
-                <div className="group">
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                    Estado Civil
-                </label>
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Heart className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                    </div>
-                    <select
-                        name="marital_status"
-                        value={formData.marital_status}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
-                    >
-                        <option value="">Seleccione...</option>
-                        <option value="Soltero">Soltero</option>
-                        <option value="Casado">Casado</option>
-                        <option value="Divorciado">Divorciado</option>
-                        <option value="Viudo">Viudo</option>
-                    </select>
-                </div>
-                </div>
+                {!isMinorOrUndocumented && (
+                  <div className="group">
+                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                      Estado Civil
+                  </label>
+                  <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Heart className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                      </div>
+                      <select
+                          name="marital_status"
+                          value={formData.marital_status}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 appearance-none cursor-pointer"
+                      >
+                          <option value="">Seleccione...</option>
+                          <option value="Soltero">Soltero</option>
+                          <option value="Casado">Casado</option>
+                          <option value="Divorciado">Divorciado</option>
+                          <option value="Viudo">Viudo</option>
+                      </select>
+                  </div>
+                  </div>
+                )}
             </div>
           </div>
 

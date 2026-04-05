@@ -215,7 +215,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                   {isEditing ? 'Modificar Datos' : patient.full_name}
                 </h2>
                 <p className="text-blue-50 opacity-90 text-sm font-medium">
-                  {isEditing ? 'Edite la información del paciente' : `Cédula: ${patient.cedula}`}
+                  {isEditing ? 'Edite la información del paciente' : `Cédula: ${patient.cedula || 'No posee'}`}
                 </p>
             </div>
         </div>
@@ -238,7 +238,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                     Información Personal
                 </h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Full Name */}
                     <div className="group">
                         <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
@@ -258,7 +258,7 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                     </div>
 
                     {/* Cedula */}
-                    <div className="group lg:col-span-2">
+                    <div className="group">
                         <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">
                             Cédula {!isMinorOrUndocumented && <span className="text-red-500">*</span>}
                         </label>
@@ -396,22 +396,8 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                                 </div>
                             </div>
                         )}
-                
-                {/* Address */}
-                <div className="md:col-span-2 group mt-6">
-                    <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Dirección</label>
-                    <div className="relative">
-                        <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                        <textarea
-                            name="address"
-                            value={formData.address}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            rows="2"
-                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 resize-none"
-                        />
                     </div>
-                </div>
+
                     <div className="group">
                         <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Fecha de Nacimiento</label>
                         <div className="relative">
@@ -440,33 +426,35 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 appearance-none"
                             >
                                 <option value="">Seleccione...</option>
-                                <option value="Masculino">Masculino</option>
-                                <option value="Femenino">Femenino</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
                             </select>
                         </div>
                     </div>
 
                     {/* Marital Status */}
-                    <div className="group">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Estado Civil</label>
-                        <div className="relative">
-                            <Heart className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            <select
-                                name="marital_status"
-                                value={formData.marital_status}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 appearance-none"
-                            >
-                                <option value="">Seleccione...</option>
-                                <option value="Soltero">Soltero</option>
-                                <option value="Casado">Casado</option>
-                                <option value="Divorciado">Divorciado</option>
-                                <option value="Viudo">Viudo</option>
-                                <option value="Unión Libre">Unión Libre</option>
-                            </select>
-                        </div>
-                    </div>
+                    {!isMinorOrUndocumented && (
+                      <div className="group">
+                          <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Estado Civil</label>
+                          <div className="relative">
+                              <Heart className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <select
+                                  name="marital_status"
+                                  value={formData.marital_status}
+                                  onChange={handleChange}
+                                  disabled={!isEditing}
+                                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 appearance-none"
+                              >
+                                  <option value="">Seleccione...</option>
+                                  <option value="Soltero">Soltero</option>
+                                  <option value="Casado">Casado</option>
+                                  <option value="Divorciado">Divorciado</option>
+                                  <option value="Viudo">Viudo</option>
+                                  <option value="Unión Libre">Unión Libre</option>
+                              </select>
+                          </div>
+                      </div>
+                    )}
                 </div>
             </div>
 
@@ -547,19 +535,19 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                         </div>
                     </div>
                 )}
-                    <div className="mt-4">
-                        <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Dirección</label>
-                        <div className="relative">
-                            <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-                            <textarea
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                disabled={!isEditing}
-                                rows="2"
-                                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 resize-none"
-                            />
-                        </div>
+
+                <div className="md:col-span-2 group mt-6">
+                    <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Dirección</label>
+                    <div className="relative">
+                        <MapPin className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                        <textarea
+                            name="address"
+                            value={formData.address}
+                            onChange={handleChange}
+                            disabled={!isEditing}
+                            rows="2"
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all disabled:opacity-70 disabled:bg-gray-100/50 font-medium text-gray-800 resize-none"
+                        />
                     </div>
                 </div>
             </div>
@@ -588,7 +576,40 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
                     type="button"
                     onClick={() => {
                         setIsEditing(false);
-                        setFormData(patient);
+                        setIsMinorOrUndocumented(initiallyIsMinor);
+                        setFormData(() => {
+                            let cedulaType = 'V';
+                            let cedulaNumber = '';
+                            
+                            if (patient.cedula) {
+                                if (patient.cedula.includes('-')) {
+                                    const parts = patient.cedula.split('-');
+                                    cedulaType = parts[0];
+                                    cedulaNumber = parts[1];
+                                } else {
+                                    cedulaNumber = patient.cedula;
+                                }
+                            }
+
+                            const phone = patient.phone || '';
+                            const phoneCode = phone.length >= 4 ? phone.substring(0, 4) : '0412';
+                            const phoneNumber = phone.length > 4 ? phone.substring(4) : '';
+
+                            return {
+                            ...patient,
+                            full_name: patient.full_name || '',
+                            birth_date: patient.birth_date || '',
+                            gender: patient.gender || '',
+                            marital_status: patient.marital_status || '',
+                            address: patient.address || '',
+                            email: patient.email || '',
+                            cedula_type: cedulaType,
+                            cedula_number: cedulaNumber,
+                            phone_code: phoneCode,
+                            phone_number: phoneNumber,
+                            representative_relationship: patient.representative_relationship || ''
+                            };
+                        });
                     }}
                     className="px-6 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium transition-all"
                 >
