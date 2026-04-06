@@ -121,6 +121,18 @@
     </style>
 </head>
 <body>
+    <?php
+    $rateBcv = (float)($receipt['rate_bcv'] ?? 0);
+    $totalUsd = (float)($receipt['total_usd'] ?? 0);
+    $totalBs = (float)($receipt['total_bs'] ?? 0);
+    if ($totalBs <= 0 && $rateBcv > 0) {
+        $totalBs = $totalUsd * $rateBcv;
+    }
+
+    $paidBsTotal = ($rateBcv > 0) ? ($paidUsdTotal * $rateBcv) : 0;
+    $saldoBs = ($rateBcv > 0) ? ($saldoUsd * $rateBcv) : 0;
+    ?>
+
     <?php if (($receipt['status'] ?? '') === 'annulled'): ?>
         <div class="watermark">ANULADO</div>
         <div class="annulled-banner">
@@ -195,23 +207,56 @@
                     <tr><td colspan="4" style="text-align:center; color: #94a3b8;">Sin cargos registrados</td></tr>
                 <?php else: ?>
                     <?php foreach($services as $s): ?>
+                    <?php
+                        $serviceQty = (int)$s['quantity'];
+                        $servicePriceUsd = (float)$s['price_usd'];
+                        $serviceUnitBs = isset($s['price_bs']) ? (float)$s['price_bs'] : (($rateBcv > 0) ? ($servicePriceUsd * $rateBcv) : 0);
+                        $serviceTotalUsd = $servicePriceUsd * $serviceQty;
+                        $serviceTotalBs = $serviceUnitBs * $serviceQty;
+                    ?>
                     <tr>
                         <td><?php echo htmlspecialchars($s['service_name']); ?></td>
-                        <td class="text-right"><?php echo (int)$s['quantity']; ?></td>
-                        <td class="text-right font-mono"><?php echo number_format((float)$s['price_usd'], 2); ?></td>
-                        <td class="text-right font-mono"><?php echo number_format((float)$s['price_usd'] * (int)$s['quantity'], 2); ?></td>
+                        <td class="text-right"><?php echo $serviceQty; ?></td>
+                        <td class="text-right font-mono">
+                            <div>$<?php echo number_format($servicePriceUsd, 2); ?></div>
+                            <?php if($rateBcv > 0): ?>
+                                <div style="font-size:10px; color:#64748b;">Bs. <?php echo number_format($serviceUnitBs, 2); ?></div>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-right font-mono">
+                            <div>$<?php echo number_format($serviceTotalUsd, 2); ?></div>
+                            <?php if($rateBcv > 0): ?>
+                                <div style="font-size:10px; color:#64748b;">Bs. <?php echo number_format($serviceTotalBs, 2); ?></div>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                     
                     <?php foreach($supplies as $sp): ?>
+                    <?php
+                        $supplyUnitUsd = (float)$sp['price_usd'];
+                        $supplyTotalUsd = (float)$sp['total_price_usd'];
+                        $supplyUnitBs = isset($sp['price_bs']) ? (float)$sp['price_bs'] : (($rateBcv > 0) ? ($supplyUnitUsd * $rateBcv) : 0);
+                        $supplyTotalBs = isset($sp['total_price_bs']) ? (float)$sp['total_price_bs'] : (($rateBcv > 0) ? ($supplyTotalUsd * $rateBcv) : 0);
+                    ?>
                     <tr>
                         <td>
                             <span style="color:#64748b; font-size:10px;">[INSUMO]</span> 
                             <?php echo htmlspecialchars($sp['item_name']); ?>
                         </td>
                         <td class="text-right"><?php echo (int)$sp['quantity']; ?></td>
-                        <td class="text-right font-mono"><?php echo number_format((float)$sp['price_usd'], 2); ?></td>
-                        <td class="text-right font-mono"><?php echo number_format((float)$sp['total_price_usd'], 2); ?></td>
+                        <td class="text-right font-mono">
+                            <div>$<?php echo number_format($supplyUnitUsd, 2); ?></div>
+                            <?php if($rateBcv > 0): ?>
+                                <div style="font-size:10px; color:#64748b;">Bs. <?php echo number_format($supplyUnitBs, 2); ?></div>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-right font-mono">
+                            <div>$<?php echo number_format($supplyTotalUsd, 2); ?></div>
+                            <?php if($rateBcv > 0): ?>
+                                <div style="font-size:10px; color:#64748b;">Bs. <?php echo number_format($supplyTotalBs, 2); ?></div>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -283,16 +328,31 @@
                     <table width="100%" cellspacing="0" cellpadding="5" style="border: 1px solid #cbd5e1; border-radius: 6px;">
                         <tr style="background: #f8fafc;">
                             <td style="color: #64748b; font-size: 11px; font-weight: bold;">Total Operación</td>
-                            <td class="text-right font-mono" style="font-weight: bold;">$<?php echo number_format((float)$receipt['total_usd'], 2); ?></td>
+                            <td class="text-right font-mono" style="font-weight: bold;">
+                                <div>$<?php echo number_format($totalUsd, 2); ?></div>
+                                <?php if($rateBcv > 0): ?>
+                                    <div style="font-size:10px; color:#64748b; font-weight:normal;">Bs. <?php echo number_format($totalBs, 2); ?></div>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <tr>
                             <td style="color: #64748b; font-size: 11px;">Abonado</td>
-                            <td class="text-right font-mono" style="color: #059669;">$<?php echo number_format($paidUsdTotal, 2); ?></td>
+                            <td class="text-right font-mono" style="color: #059669;">
+                                <div>$<?php echo number_format($paidUsdTotal, 2); ?></div>
+                                <?php if($rateBcv > 0): ?>
+                                    <div style="font-size:10px; color:#64748b;">Bs. <?php echo number_format($paidBsTotal, 2); ?></div>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php if($saldoUsd > 0.01): ?>
                         <tr style="background: #fff1f2;">
                             <td style="color: #be123c; font-size: 11px; font-weight: bold;">Saldo Pendiente</td>
-                            <td class="text-right font-mono" style="color: #be123c; font-weight: bold;">$<?php echo number_format($saldoUsd, 2); ?></td>
+                            <td class="text-right font-mono" style="color: #be123c; font-weight: bold;">
+                                <div>$<?php echo number_format($saldoUsd, 2); ?></div>
+                                <?php if($rateBcv > 0): ?>
+                                    <div style="font-size:10px; color:#be123c; font-weight:normal;">Bs. <?php echo number_format($saldoBs, 2); ?></div>
+                                <?php endif; ?>
+                            </td>
                         </tr>
                         <?php else: ?>
                         <tr style="background: #ecfdf5;">
