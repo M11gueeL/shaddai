@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Stethoscope, ChevronDown, X } from 'lucide-react';
 import usersAPI from './../../../api/userApi';
 
-const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
+const DoctorSelector = ({ onSelect, error, selectedDoctor, specialtyId = '', disabled = false }) => {
   const [doctors, setDoctors] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +25,14 @@ const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
       setIsLoading(false);
     }
   };
+
+  const filteredDoctors = Array.isArray(doctors)
+    ? doctors.filter((doctor) => {
+        if (!specialtyId) return true;
+        const specialties = Array.isArray(doctor.specialties) ? doctor.specialties : [];
+        return specialties.some((spec) => Number(spec.id) === Number(specialtyId));
+      })
+    : [];
 
   const handleDoctorSelect = (doctor) => {
     try {
@@ -52,17 +60,19 @@ const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
     <div className="relative">
       {/* 👈 CAMBIAR A DIV EN LUGAR DE BUTTON PRINCIPAL */}
       <div
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!disabled) setIsOpen(!isOpen);
+        }}
         className={`w-full px-4 py-2.5 text-left border rounded-lg focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 flex items-center justify-between cursor-pointer transition-all ${
           error ? 'border-red-500 bg-red-50' : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-        } ${isOpen ? 'bg-white ring-2 ring-blue-500/20 border-blue-500' : ''}`}
+        } ${isOpen ? 'bg-white ring-2 ring-blue-500/20 border-blue-500' : ''} ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed hover:bg-gray-100' : ''}`}
       >
         <div className="flex items-center flex-1">
           <Stethoscope className="w-4 h-4 text-gray-400 mr-2" />
           <span className={selectedDoctor ? 'text-gray-900' : 'text-gray-500'}>
             {selectedDoctor 
               ? `Dr. ${selectedDoctor.first_name} ${selectedDoctor.last_name}`
-              : 'Seleccionar médico...'
+              : (disabled ? 'Seleccione primero una especialidad' : 'Seleccionar médico...')
             }
           </span>
         </div>
@@ -71,6 +81,7 @@ const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
             <button
               type="button"
               onClick={handleClear}
+              disabled={disabled}
               className="mr-2 p-1 hover:bg-gray-100 rounded"
             >
               <X className="w-3 h-3 text-gray-400" />
@@ -80,15 +91,15 @@ const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
         </div>
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {isLoading ? (
             <div className="p-4 text-center">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
               <p className="mt-2 text-gray-500">Cargando médicos...</p>
             </div>
-          ) : doctors.length > 0 ? (
-            doctors.map((doctor) => (
+          ) : filteredDoctors.length > 0 ? (
+            filteredDoctors.map((doctor) => (
               <button
                 key={doctor.id}
                 type="button"
@@ -108,7 +119,7 @@ const DoctorSelector = ({ onSelect, error, selectedDoctor }) => {
             ))
           ) : (
             <div className="p-4 text-center text-gray-500">
-              No hay médicos disponibles
+              No hay médicos disponibles para esta especialidad
             </div>
           )}
         </div>

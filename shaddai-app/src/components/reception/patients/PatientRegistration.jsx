@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
 import { useToast } from '../../../context/ToastContext';
-import { UserPlus, X, User, CreditCard, Calendar, Phone, MapPin, Mail, Heart, Users } from 'lucide-react';
+import { UserPlus, X, User, CreditCard, Calendar, Phone, MapPin, Mail, Heart, Users, Search, Loader2 } from 'lucide-react';
 import PatientSearch from '../appointments/PatientSearch';
 
 export default function PatientRegistration({ onClose }) {
@@ -235,9 +235,10 @@ export default function PatientRegistration({ onClose }) {
                             />
                         </div>
                     ) : (
-                        <div className="space-y-4 pt-1 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                        <div className="space-y-4 pt-1 bg-blue-50/40 p-4 rounded-xl border border-blue-100">
+                            <div className="rounded-lg border border-blue-200 bg-white/80 p-3">
+                                <label className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1.5">
+                                    <Search className="w-3.5 h-3.5 text-blue-600" />
                                     Buscar Representante Legal <span className="text-red-500">*</span>
                                 </label>
                                 <PatientSearch 
@@ -257,40 +258,66 @@ export default function PatientRegistration({ onClose }) {
                                             setSelectedRepresentative(null);
                                         }}
                                     />
-                                </div>
-                                {showRepForm && (
-                                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mt-3 animate-in slide-in-from-top-2 duration-300">
-                                        <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-2">
-                                            <h4 className="text-xs font-bold text-gray-700 flex items-center gap-1"><User className="w-3.5 h-3.5"/> Nuevo Representante</h4>
-                                            <button type="button" onClick={() => setShowRepForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4"/></button>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div>
-                                                <label className="block text-[10px] uppercase font-semibold text-gray-500 mb-1">Nombre *</label>
-                                                <input type="text" name="full_name" value={repFormData.full_name} onChange={handleRepChange} placeholder="P.ej. Ana Silva" className="w-full px-3 py-1.5 text-sm bg-gray-50 border rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"/>
+                            </div>
+
+                            {showRepForm && (
+                                <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-xl shadow-sm border border-slate-200 mt-3 animate-in slide-in-from-top-2 fade-in-50 duration-300">
+                                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                                        <h4 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                            <div className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center">
+                                                <User className="w-3.5 h-3.5"/>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div>
-                                                    <label className="block text-[10px] uppercase font-semibold text-gray-500 mb-1">Cédula *</label>
-                                                    <div className="flex">
-                                                        <select name="cedula_type" value={repFormData.cedula_type} onChange={handleRepChange} className="w-12 px-1 text-sm bg-gray-50 border border-r-0 rounded-l-md"><option>V</option><option>E</option></select>
-                                                        <input type="text" name="cedula_number" value={repFormData.cedula_number} onChange={(e) => handleRepChange({target: {name:'cedula_number', value: e.target.value.replace(/[^\d ]/g, '').slice(0, 12)}})} className="w-full px-2 py-1.5 text-sm bg-gray-50 border rounded-r-md min-w-0" placeholder="12345678"/>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] uppercase font-semibold text-gray-500 mb-1">Teléfono *</label>
-                                                    <div className="flex">
-                                                        <select name="phone_code" value={repFormData.phone_code} onChange={handleRepChange} className="w-16 px-1 text-xs bg-gray-50 border border-r-0 rounded-l-md"><option>0412</option><option>0414</option><option>0424</option><option>0416</option><option>0426</option></select>
-                                                        <input type="text" name="phone_number" value={repFormData.phone_number} onChange={(e) => handleRepChange({target: {name:'phone_number', value: e.target.value.replace(/\D/g, '').slice(0, 7)}})} className="w-full px-2 py-1.5 text-sm bg-gray-50 border rounded-r-md min-w-0" placeholder="1234567"/>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button type="button" onClick={handleRepSubmit} disabled={repLoading} className={`w-full py-2 mt-2 rounded-md text-sm font-medium text-white transition-all ${repLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                                                {repLoading ? 'Guardando...' : 'Guardar y Asignar Representante'}
-                                            </button>
-                                        </div>
+                                            Nuevo Representante
+                                        </h4>
+                                        <button type="button" onClick={() => setShowRepForm(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4"/></button>
                                     </div>
-                                )}
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-[10px] uppercase font-semibold tracking-wide text-slate-500 mb-1">Nombre *</label>
+                                            <input
+                                                type="text"
+                                                name="full_name"
+                                                value={repFormData.full_name}
+                                                onChange={handleRepChange}
+                                                placeholder="P.ej. Ana Silva"
+                                                className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] uppercase font-semibold tracking-wide text-slate-500 mb-1">Cédula *</label>
+                                                <div className="flex">
+                                                    <select name="cedula_type" value={repFormData.cedula_type} onChange={handleRepChange} className="w-12 px-1 text-sm bg-white border border-r-0 border-slate-200 rounded-l-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"><option>V</option><option>E</option></select>
+                                                    <input type="text" name="cedula_number" value={repFormData.cedula_number} onChange={(e) => handleRepChange({target: {name:'cedula_number', value: e.target.value.replace(/[^\d ]/g, '').slice(0, 12)}})} className="w-full px-2 py-2 text-sm bg-white border border-slate-200 rounded-r-md min-w-0 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="12345678"/>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] uppercase font-semibold tracking-wide text-slate-500 mb-1">Teléfono *</label>
+                                                <div className="flex">
+                                                    <select name="phone_code" value={repFormData.phone_code} onChange={handleRepChange} className="w-16 px-1 text-xs bg-white border border-r-0 border-slate-200 rounded-l-md focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"><option>0412</option><option>0422</option><option>0414</option><option>0424</option><option>0416</option><option>0426</option></select>
+                                                    <input type="text" name="phone_number" value={repFormData.phone_number} onChange={(e) => handleRepChange({target: {name:'phone_number', value: e.target.value.replace(/\D/g, '').slice(0, 7)}})} className="w-full px-2 py-2 text-sm bg-white border border-slate-200 rounded-r-md min-w-0 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="1234567"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleRepSubmit}
+                                            disabled={repLoading}
+                                            className={`w-full py-2.5 mt-2 rounded-lg text-sm font-semibold text-white transition-all flex items-center justify-center gap-2 ${repLoading ? 'bg-blue-500/80 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20'}`}
+                                        >
+                                            {repLoading ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Guardando representante...
+                                                </>
+                                            ) : (
+                                                'Guardar y Asignar Representante'
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-600 mb-1">
                                         Parentesco / Relación <span className="text-red-500">*</span>

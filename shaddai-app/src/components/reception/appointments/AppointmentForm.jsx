@@ -1,10 +1,11 @@
 // src/components/reception/appointments/AppointmentForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Clock, User, Stethoscope, FileText, AlertCircle, X } from 'lucide-react';
+import { Calendar, Clock, User, FileText, AlertCircle, X, ChevronDown, Loader2 } from 'lucide-react';
 import PatientSearch from './PatientSearch';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
+import specialtiesAPI from '../../../api/specialties';
 import { getConsultingRoomsBySpecialty } from '../../../api/consultingRooms';
 import schedulesAPI from '../../../api/medicalSchedules';
 import { useToast } from '../../../context/ToastContext';
@@ -32,13 +33,13 @@ const AppointmentForm = ({ onClose }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [availableSpecialties, setAvailableSpecialties] = useState([]);
+  const [doctorSchedules, setDoctorSchedules] = useState([]);
+  const [loadingDoctorSchedules, setLoadingDoctorSchedules] = useState(false);
+  const [showSchedulesGuide, setShowSchedulesGuide] = useState(true);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOutsidePreferred, setIsOutsidePreferred] = useState(false);
   const { confirm } = useConfirm();
-
-  // Obtener token del localStorage
-  const getToken = () => localStorage.getItem('token');
 
   // Obtener fecha mínima (hoy) en local
   const getMinDate = () => {
@@ -126,14 +127,31 @@ const AppointmentForm = ({ onClose }) => {
   // Manejar selección de doctor
   const handleDoctorSelect = (doctor) => {
     setSelectedDoctor(doctor);
+    setShowSchedulesGuide(true);
     setFormData(prev => ({
       ...prev,
-      doctor_id: doctor ? doctor.id : '',
-      specialty_id: '' // Reset specialty when doctor changes
+      doctor_id: doctor ? doctor.id : ''
     }));
-    setAvailableSpecialties(doctor ? (doctor.specialties || []) : []);
     if (errors.doctor_id) {
       setErrors(prev => ({ ...prev, doctor_id: '' }));
+    }
+  };
+
+  const handleSpecialtyChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      specialty_id: value,
+      doctor_id: ''
+    }));
+    setSelectedDoctor(null);
+    setDoctorSchedules([]);
+    setIsOutsidePreferred(false);
+    if (errors.specialty_id || errors.doctor_id) {
+      setErrors((prev) => ({
+        ...prev,
+        specialty_id: '',
+        doctor_id: ''
+      }));
     }
   };
 
@@ -151,6 +169,92 @@ const AppointmentForm = ({ onClose }) => {
     const js = new Date(dateStr).getDay(); // 0=Domingo..6=Sábado
     return ((js + 6) % 7) + 1; // -> 1..7 (Lunes..Domingo)
   };
+
+  const dayLabels = {
+    1: 'Lunes',
+    2: 'Martes',
+    3: 'Miércoles',
+    4: 'Jueves',
+    5: 'Viernes',
+    6: 'Sábado',
+    7: 'Domingo'
+  };
+
+  const formatClock = (value) => {
+    if (!value) return '';
+    const [hh, mm] = String(value).slice(0, 5).split(':');
+    const hours = Number(hh);
+    const minutes = Number(mm);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return String(value).slice(0, 5);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const twelve = hours % 12 || 12;
+    return `${twelve}:${String(minutes).padStart(2, '0')} ${period}`;
+  };
+
+  const groupedDoctorSchedules = useMemo(() => {
+    if (!Array.isArray(doctorSchedules) || !doctorSchedules.length) return [];
+    const grouped = new Map();
+
+    doctorSchedules.forEach((item) => {
+      const day = Number(item.day_of_week);
+      if (!grouped.has(day)) grouped.set(day, []);
+      grouped.get(day).push(`${formatClock(item.start_time)} - ${formatClock(item.end_time)}`);
+    });
+
+    return [...grouped.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([day, ranges]) => ({
+        day,
+        label: dayLabels[day] || `Día ${day}`,
+        ranges
+      }));
+  }, [doctorSchedules]);
+
+  const totalScheduleBlocks = useMemo(
+    () => groupedDoctorSchedules.reduce((total, item) => total + item.ranges.length, 0),
+    [groupedDoctorSchedules]
+  );
+
+  useEffect(() => {
+    const loadSpecialties = async () => {
+      try {
+        const response = await specialtiesAPI.getAll();
+        const specialties = Array.isArray(response.data) ? response.data : [];
+        setAvailableSpecialties(specialties);
+      } catch (error) {
+        console.error('Error loading specialties:', error);
+        setAvailableSpecialties([]);
+      }
+    };
+
+    loadSpecialties();
+  }, []);
+
+  useEffect(() => {
+    const loadDoctorSchedules = async () => {
+      if (!formData.doctor_id) {
+        setDoctorSchedules([]);
+        setLoadingDoctorSchedules(false);
+        return;
+      }
+
+      setLoadingDoctorSchedules(true);
+      try {
+        const response = await schedulesAPI.list({ doctorId: formData.doctor_id });
+        const schedules = Array.isArray(response.data)
+          ? response.data
+          : (Array.isArray(response.data?.data) ? response.data.data : []);
+        setDoctorSchedules(schedules);
+      } catch (error) {
+        console.error('Error loading doctor schedules:', error);
+        setDoctorSchedules([]);
+      } finally {
+        setLoadingDoctorSchedules(false);
+      }
+    };
+
+    loadDoctorSchedules();
+  }, [formData.doctor_id]);
 
 
   // Fetch rooms when specialty changes
@@ -180,14 +284,12 @@ const AppointmentForm = ({ onClose }) => {
 
   const checkOutsidePreferred = async () => {
     try {
-      const token = getToken();
-      if (!token || !formData.doctor_id || !formData.appointment_date || !formData.appointment_time) {
+      if (!formData.doctor_id || !formData.appointment_date || !formData.appointment_time) {
         setIsOutsidePreferred(false);
         return false;
       }
 
-      const res = await schedulesAPI.list(token, { doctorId: formData.doctor_id });
-      const schedules = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const schedules = Array.isArray(doctorSchedules) ? doctorSchedules : [];
       if (!schedules.length) {
         setIsOutsidePreferred(true);
         return true;
@@ -230,8 +332,6 @@ const AppointmentForm = ({ onClose }) => {
 
     setIsLoading(true);
     try {
-        const token = getToken();
-
         const dataToSend = {
         ...formData,
         status: formData.status || 'programada' // FALLBACK
@@ -254,7 +354,7 @@ const AppointmentForm = ({ onClose }) => {
           }
         }
 
-    const response = await appointmentsAPI.create(dataToSend, token);
+    const response = await appointmentsAPI.create(dataToSend);
     toast.success('Cita agendada exitosamente');
         onClose(); // Cerrar modal
         
@@ -281,7 +381,7 @@ const AppointmentForm = ({ onClose }) => {
     };
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData.doctor_id, formData.appointment_date, formData.appointment_time, formData.duration]);
+  }, [doctorSchedules, formData.doctor_id, formData.appointment_date, formData.appointment_time, formData.duration]);
 
   return (
     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl mx-auto flex flex-col h-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
@@ -336,6 +436,27 @@ const AppointmentForm = ({ onClose }) => {
                     </div>
 
                     <div className="group">
+                      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
+                        Especialidad <span className="text-red-500">*</span>
+                      </label>
+                      <SpecialtySelector
+                        specialties={availableSpecialties}
+                        value={formData.specialty_id}
+                        onChange={handleSpecialtyChange}
+                        error={errors.specialty_id}
+                        disabled={false}
+                      />
+                      {errors.specialty_id && (
+                         <p className="text-red-500 text-xs mt-1 flex items-center">
+                          <AlertCircle className="w-3 h-3 mr-1" />
+                          {errors.specialty_id}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-6 mt-6">
+                    <div className="group">
                         <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
                             Médico <span className="text-red-500">*</span>
                         </label>
@@ -343,6 +464,8 @@ const AppointmentForm = ({ onClose }) => {
                             onSelect={handleDoctorSelect}
                             error={errors.doctor_id}
                             selectedDoctor={selectedDoctor}
+                        specialtyId={formData.specialty_id}
+                        disabled={!formData.specialty_id}
                         />
                         {errors.doctor_id && (
                             <p className="text-red-500 text-xs mt-1 flex items-center">
@@ -350,6 +473,76 @@ const AppointmentForm = ({ onClose }) => {
                                 {errors.doctor_id}
                             </p>
                         )}
+
+                      {!!formData.doctor_id && (
+                        <div className="mt-4 rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-blue-50/70 shadow-sm overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setShowSchedulesGuide((prev) => !prev)}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-sm">
+                                <Clock className="w-4 h-4" />
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-semibold text-slate-800">Guía de horario del médico</p>
+                                <p className="text-xs text-slate-500">
+                                  {loadingDoctorSchedules
+                                    ? 'Consultando disponibilidad habitual...'
+                                    : `${groupedDoctorSchedules.length || 0} días configurados · ${totalScheduleBlocks || 0} bloques`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {!loadingDoctorSchedules && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                                  Referencia
+                                </span>
+                              )}
+                              <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${showSchedulesGuide ? 'rotate-180' : ''}`} />
+                            </div>
+                          </button>
+
+                          {showSchedulesGuide && (
+                            <div className="px-4 pb-4 animate-in fade-in-50 duration-200">
+                              {loadingDoctorSchedules ? (
+                                <div className="space-y-2 mt-1">
+                                  <div className="flex items-center gap-2 text-slate-500 text-sm">
+                                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                                    Cargando horarios...
+                                  </div>
+                                  <div className="h-8 rounded-lg bg-slate-200/70 animate-pulse" />
+                                  <div className="h-8 rounded-lg bg-slate-200/70 animate-pulse" />
+                                </div>
+                              ) : groupedDoctorSchedules.length > 0 ? (
+                                <div className="space-y-2 mt-1">
+                                  {groupedDoctorSchedules.map((item) => (
+                                    <div key={item.day} className="flex flex-wrap items-center gap-2 bg-white/90 border border-slate-200 rounded-lg px-3 py-2">
+                                      <span className="text-xs font-semibold text-slate-700 min-w-20">{item.label}</span>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {item.ranges.map((range, idx) => (
+                                          <span
+                                            key={`${item.day}-${idx}`}
+                                            className="inline-flex items-center px-2 py-1 rounded-md bg-blue-50 border border-blue-100 text-[12px] font-medium text-blue-700"
+                                          >
+                                            {range}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700 flex items-start gap-2">
+                                  <AlertCircle className="w-4 h-4 mt-0.5" />
+                                  Este médico no tiene horarios preferidos configurados.
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                 </div>
             </div>
@@ -362,30 +555,6 @@ const AppointmentForm = ({ onClose }) => {
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-                    <div className="md:col-span-3 lg:col-span-1 group">
-                         <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
-                            Especialidad <span className="text-red-500">*</span>
-                        </label>
-                        <SpecialtySelector
-                            specialties={availableSpecialties}
-                            value={formData.specialty_id}
-                            onChange={(value) => {
-                                setFormData(prev => ({ ...prev, specialty_id: value }));
-                                if (errors.specialty_id) {
-                                setErrors(prev => ({ ...prev, specialty_id: '' }));
-                                }
-                            }}
-                            error={errors.specialty_id}
-                            disabled={!formData.doctor_id}
-                        />
-                        {errors.specialty_id && (
-                             <p className="text-red-500 text-xs mt-1 flex items-center">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                {errors.specialty_id}
-                            </p>
-                        )}
-                    </div>
-
                      <div className="group">
                         <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide group-focus-within:text-blue-600 transition-colors">
                             Fecha <span className="text-red-500">*</span>
