@@ -178,64 +178,69 @@ export default function ReportsHubModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-brightness-50 backdrop-blur-sm bg-black/20 p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl shrink-0">
-          <div className="text-white">
-            <h3 className="font-bold text-lg">Centro de Reportes</h3>
-            <p className="text-blue-100 text-xs opacity-90">Generación avanzada de reportes y estadísticas</p>
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-50 rounded-xl border border-blue-100 shadow-sm">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-xl text-gray-900">Centro de Reportes</h3>
+              <p className="text-gray-500 text-sm">Generación y exportación de reportes de citas</p>
+            </div>
           </div>
-          <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden bg-gray-50/40">
             {/* Sidebar Tabs */}
-            <div className="w-1/3 bg-gray-50 border-r border-gray-100 p-4 space-y-2 overflow-y-auto">
+            <div className="w-full max-w-[290px] bg-white border-r border-gray-100 p-4 space-y-2 overflow-y-auto">
                 <button 
                     onClick={() => setActiveTab('general')}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'general' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'general' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
-                    <div className={`p-2 rounded-lg ${activeTab === 'general' ? 'bg-blue-50' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-lg ${activeTab === 'general' ? 'bg-white' : 'bg-gray-100'}`}>
                         <ClipboardList className="w-4 h-4" />
                     </div>
                     Por Citas
                 </button>
                 <button 
                     onClick={() => setActiveTab('doctor')}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'doctor' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'doctor' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
-                    <div className={`p-2 rounded-lg ${activeTab === 'doctor' ? 'bg-blue-50' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-lg ${activeTab === 'doctor' ? 'bg-white' : 'bg-gray-100'}`}>
                         <Stethoscope className="w-4 h-4" />
                     </div>
                     Por Médico
                 </button>
                 <button 
                     onClick={() => setActiveTab('specialty')}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'specialty' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'specialty' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
-                    <div className={`p-2 rounded-lg ${activeTab === 'specialty' ? 'bg-blue-50' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-lg ${activeTab === 'specialty' ? 'bg-white' : 'bg-gray-100'}`}>
                         <Activity className="w-4 h-4" />
                     </div>
                     Por Especialidad
                 </button>
                 <button 
                     onClick={() => setActiveTab('patient')}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'patient' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'patient' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
-                    <div className={`p-2 rounded-lg ${activeTab === 'patient' ? 'bg-blue-50' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-lg ${activeTab === 'patient' ? 'bg-white' : 'bg-gray-100'}`}>
                         <Users className="w-4 h-4" />
                     </div>
                     Por Paciente
                 </button>
                 <button 
                     onClick={() => setActiveTab('advanced')}
-                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'advanced' ? 'bg-white shadow-sm text-blue-600 ring-1 ring-blue-100' : 'text-gray-600 hover:bg-gray-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center gap-3 ${activeTab === 'advanced' ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-100 shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}
                 >
-                    <div className={`p-2 rounded-lg ${activeTab === 'advanced' ? 'bg-blue-50' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-lg ${activeTab === 'advanced' ? 'bg-white' : 'bg-gray-100'}`}>
                         <TrendingUp className="w-4 h-4" />
                     </div>
                     Indicadores de Rendimiento
@@ -247,15 +252,15 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                 <div className="space-y-6">
                     
                     {/* Dynamic Title & Desc */}
-                    <div>
-                        <h4 className="text-lg font-bold text-gray-800">
+                    <div className="bg-gray-50/80 border border-gray-100 rounded-xl p-4">
+                        <h4 className="text-lg font-bold text-gray-900">
                             {activeTab === 'general' && 'Reporte General de Citas'}
                             {activeTab === 'doctor' && 'Reporte por Médico'}
                             {activeTab === 'specialty' && 'Reporte por Especialidad'}
                             {activeTab === 'patient' && 'Reporte por Paciente'}
                             {activeTab === 'advanced' && 'Indicadores de Rendimiento'}
                         </h4>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-gray-600 mt-1">
                             {activeTab === 'general' && 'Exporta un listado completo de todas las citas en el sistema.'}
                             {activeTab === 'doctor' && 'Analiza el rendimiento y citas asignadas a un médico específico.'}
                             {activeTab === 'specialty' && 'Estadísticas y listados detallados por área médica.'}
@@ -272,7 +277,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                                 name="doctor_id" 
                                 value={filters.doctor_id} 
                                 onChange={handleInputChange}
-                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 py-2.5"
+                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 py-2.5"
                             >
                                 <option value="">-- Seleccione un médico --</option>
                                 {doctors.map(doc => (
@@ -289,7 +294,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                                 name="specialty_id" 
                                 value={filters.specialty_id} 
                                 onChange={handleInputChange}
-                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 py-2.5"
+                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 py-2.5"
                             >
                                 <option value="">-- Seleccione una especialidad --</option>
                                 {specialties.map(spec => (
@@ -306,7 +311,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                                 name="patient_id" 
                                 value={filters.patient_id} 
                                 onChange={handleInputChange}
-                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 py-2.5"
+                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 py-2.5"
                             >
                                 <option value="">-- Seleccione un paciente --</option>
                                 {patients.map((pat) => (
@@ -325,19 +330,19 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={() => setAdvancedType('specialty')}
-                                        className={`flex-1 py-2 text-sm rounded-lg border ${advancedType === 'specialty' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        className={`flex-1 py-2 text-sm rounded-xl border transition-all ${advancedType === 'specialty' ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         Especialidad
                                     </button>
                                     <button
                                         onClick={() => setAdvancedType('doctor')}
-                                        className={`flex-1 py-2 text-sm rounded-lg border ${advancedType === 'doctor' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        className={`flex-1 py-2 text-sm rounded-xl border transition-all ${advancedType === 'doctor' ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         Médico
                                     </button>
                                     <button
                                         onClick={() => setAdvancedType('patient')}
-                                        className={`flex-1 py-2 text-sm rounded-lg border ${advancedType === 'patient' ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                        className={`flex-1 py-2 text-sm rounded-xl border transition-all ${advancedType === 'patient' ? 'bg-blue-50 border-blue-200 text-blue-700 shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                                     >
                                         Paciente
                                     </button>
@@ -357,7 +362,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                                 name="start_date"
                                 value={filters.start_date}
                                 onChange={handleInputChange}
-                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                             />
                         </div>
                         <div>
@@ -369,7 +374,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                                 name="end_date"
                                 value={filters.end_date}
                                 onChange={handleInputChange}
-                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                className="w-full text-sm border-gray-200 bg-gray-50 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                             />
                         </div>
                     </div>
@@ -381,7 +386,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                             <button
                                 type="button"
                                 onClick={() => setIsStatusOpen(!isStatusOpen)}
-                                className="w-full flex items-center justify-between text-sm border border-gray-200 bg-gray-50 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:bg-gray-100"
+                                className="w-full flex items-center justify-between text-sm border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all hover:bg-gray-100"
                             >
                                 <div className="flex items-center gap-2">
                                     {(() => {
@@ -430,13 +435,13 @@ export default function ReportsHubModal({ isOpen, onClose }) {
                             <button
                                 onClick={handleExportPerformance}
                                 disabled={advancedLoading}
-                                className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                                className="w-full py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                             >
                                 {advancedLoading ? <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"/> : <FileText className="w-5 h-5" />}
                                 Generar Reporte PDF
                             </button>
 
-                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800">
+                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-800">
                                 <p className="flex items-start gap-2">
                                     <TrendingUp className="w-5 h-5 shrink-0" />
                                     <span>
@@ -449,7 +454,7 @@ export default function ReportsHubModal({ isOpen, onClose }) {
 
                     {/* Action Buttons */}
                     {activeTab !== 'advanced' && (
-                    <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <div className="pt-4 border-t border-gray-100 space-y-3 sticky bottom-0 bg-white pb-1">
                         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Descargar como</p>
                         <div className="grid grid-cols-3 gap-3">
                             <button
