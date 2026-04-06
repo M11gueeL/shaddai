@@ -2,15 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Search, 
-  Filter, 
-  Calendar, 
+  Filter,
+  List,
   Clock, 
-  User, 
-  Stethoscope,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -42,7 +36,7 @@ const AppointmentsList = ({ onClose }) => {
 
   // Estados de paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(12);
   
   // Cargar citas al montar
   useEffect(() => {
@@ -169,29 +163,43 @@ const AppointmentsList = ({ onClose }) => {
   const paginatedAppointments = filteredAppointments.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl mx-auto flex flex-col h-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="bg-white w-full h-full flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
       {/* Header del modal */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-white shrink-0">
+      <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-gradient-to-r from-white via-sky-50/40 to-blue-50/40 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg border border-blue-100">
+          <div className="p-2.5 bg-blue-50 rounded-xl border border-blue-100 shadow-sm">
             <CalendarIcon className="w-6 h-6 text-blue-600" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Gestión de Citas</h2>
-            <p className="text-gray-500 text-sm">Administre las citas médicas programadas</p>
+            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Agenda de Citas</h2>
+            <p className="text-slate-500 text-sm">Consulta y gestiona tus citas en vista de lista o calendario</p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-all duration-200"
-        >
-          <X className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowFilters(prev => !prev)}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border transition-all ${
+              showFilters
+                ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200'
+                : 'bg-white text-slate-600 border-slate-300 hover:border-blue-300 hover:text-blue-700'
+            }`}
+          >
+            <Filter className="w-4 h-4" />
+            Filtros
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2.5 hover:bg-white rounded-full text-slate-400 hover:text-slate-700 transition-all duration-200 border border-slate-200"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Filtros y controles */}
       {showFilters && (
-      <div className="p-6 border-b border-gray-200 bg-gray-50/50">
+      <div className="p-5 border-b border-slate-200 bg-slate-50/70 animate-in slide-in-from-top-2 duration-300">
         <div className="flex flex-col lg:flex-row gap-4 mb-4">
           {/* Barra de búsqueda */}
           <div className="flex-1 relative">
@@ -199,32 +207,34 @@ const AppointmentsList = ({ onClose }) => {
             <input
               type="text"
               placeholder="Buscar por paciente, médico, especialidad..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             />
           </div>
 
           {/* Toggle de vista */}
-          <div className="flex bg-white rounded-lg border border-gray-300 p-1">
+          <div className="flex bg-white rounded-xl border border-slate-300 p-1">
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
+              <List className="w-4 h-4" />
               Lista
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
                 viewMode === 'calendar'
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-500 hover:text-gray-700'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
+              <CalendarIcon className="w-4 h-4" />
               Calendario
             </button>
           </div>
@@ -233,7 +243,7 @@ const AppointmentsList = ({ onClose }) => {
         {/* Filtros adicionales */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             value={filters.status}
             onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
           >
@@ -246,7 +256,7 @@ const AppointmentsList = ({ onClose }) => {
           </select>
 
           <select
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             value={filters.dateRange}
             onChange={(e) => setFilters(prev => ({ ...prev, dateRange: e.target.value }))}
           >
@@ -258,30 +268,30 @@ const AppointmentsList = ({ onClose }) => {
 
           <input
             type="date"
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             value={filters.date}
             onChange={(e) => setFilters(prev => ({ ...prev, date: e.target.value }))}
           />
 
           <button
             onClick={() => setFilters({ search: '', status: 'all', date: '', dateRange: 'all' })}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="px-4 py-2.5 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-colors font-medium"
           >
             Limpiar Filtros
           </button>
         </div>
 
         {/* Estadísticas rápidas */}
-        <div className="mt-4 flex gap-4 text-sm text-gray-600">
-          <span>Total: {filteredAppointments.length}</span>
-          <span>Confirmadas: {filteredAppointments.filter(a => a.status === 'confirmada').length}</span>
-          <span>Hoy: {filteredAppointments.filter(a => a.appointment_date === getLocalDateString(new Date())).length}</span>
+        <div className="mt-4 flex flex-wrap gap-2 text-sm">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-700">Total: {filteredAppointments.length}</span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-green-700">Confirmadas: {filteredAppointments.filter(a => a.status === 'confirmada').length}</span>
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700">Hoy: {filteredAppointments.filter(a => a.appointment_date === getLocalDateString(new Date())).length}</span>
         </div>
       </div>
       )}
 
-  {/* Contenido principal (ahora con scroll interno cuando el contenido excede la altura) */}
-  <div className="flex-1 overflow-y-auto">
+  {/* Contenido principal */}
+  <div className="flex-1 overflow-y-auto bg-gradient-to-b from-white to-slate-50/40">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -303,23 +313,23 @@ const AppointmentsList = ({ onClose }) => {
 
       {/* Paginación */}
       {viewMode === 'list' && totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div className="px-6 py-4 border-t border-slate-200 bg-white">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-slate-700 font-medium">
               Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredAppointments.length)} de {filteredAppointments.length}
             </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50"
+                className="px-3 py-1.5 border border-slate-300 rounded-lg disabled:opacity-50 hover:bg-slate-50"
               >
                 Anterior
               </button>
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50"
+                className="px-3 py-1.5 border border-slate-300 rounded-lg disabled:opacity-50 hover:bg-slate-50"
               >
                 Siguiente
               </button>

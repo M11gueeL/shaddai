@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Users, CalendarPlus, CheckCircle, XCircle, RefreshCw, TrendingUp } from 'lucide-react';
+import { Calendar, Users, CalendarPlus, CheckCircle } from 'lucide-react';
 import appointmentsApi from '../../../api/appointments';
 import { useAuth } from '../../../context/AuthContext';
 
-export default function StatsCard() {
+export default function StatsCard({ variant = 'default' }) {
   const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -75,28 +75,32 @@ export default function StatsCard() {
     }
   ];
 
+  const isHeader = variant === 'header';
+
   return (
     <div className="w-full">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-2 lg:grid-cols-4 ${isHeader ? 'gap-3' : 'gap-4'}`}>
         {items.map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.key} className={`bg-white rounded-2xl p-4 border ${item.border} shadow-sm hover:shadow-md transition-all duration-300 group`}>
+            <div
+              key={item.key}
+              className={
+                isHeader
+                  ? `rounded-2xl px-4 py-3 border ${item.border} bg-white/85 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300 group`
+                  : `bg-white rounded-2xl p-4 border ${item.border} shadow-sm hover:shadow-md transition-all duration-300 group`
+              }
+            >
               <div className="flex items-start justify-between mb-2">
                 <div className={`p-2 rounded-xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
-                  <Icon size={20} />
+                  <Icon size={isHeader ? 18 : 20} />
                 </div>
-                {item.key === 'today_appointments' && (
-                   <button onClick={load} className={`text-gray-300 hover:text-blue-500 transition-colors ${loading ? 'animate-spin' : ''}`}>
-                      <RefreshCw size={14} />
-                   </button>
-                )}
               </div>
               <div>
-                <div className="text-2xl font-bold text-gray-800 mb-0.5">
+                <div className={`${isHeader ? 'text-2xl' : 'text-2xl'} font-bold text-gray-800 mb-0.5`}>
                   {loading ? '...' : item.value}
                 </div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                <div className={`font-medium text-gray-500 uppercase tracking-wide ${isHeader ? 'text-[11px]' : 'text-xs'}`}>
                   {item.label}
                 </div>
               </div>
@@ -104,7 +108,7 @@ export default function StatsCard() {
           );
         })}
       </div>
-      {error && <div className="text-xs text-red-500 mt-2 text-center">{error}</div>}
+      {error && <div className={`text-xs text-red-500 mt-2 ${isHeader ? 'text-left' : 'text-center'}`}>{error}</div>}
     </div>
   );
 }

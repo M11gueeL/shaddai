@@ -16,7 +16,7 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
 
   return (
     <div className="overflow-y-auto h-full">
-      <div className="p-6 space-y-4">
+      <div className="p-5 md:p-6 space-y-4">
         {appointments.length === 0 ? (
           <div className="text-center py-12">
             <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -33,7 +33,7 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
               return (
             <div
               key={appointment.id}
-              className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
+              className="bg-white/95 border border-slate-200 rounded-2xl p-5 md:p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200 cursor-pointer"
               onClick={() => onViewAppointment(appointment)}
             >
               <div className="flex items-start justify-between">
@@ -45,7 +45,7 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                       <User className="w-4 h-4 mr-1" />
                       Paciente
                     </div>
-                    <div className="font-semibold text-gray-900">
+                    <div className="font-bold text-slate-900">
                       {appointment.patient_name || 'N/A'}
                     </div>
                     {hasCedula ? (
@@ -72,10 +72,10 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                       <Stethoscope className="w-4 h-4 mr-1" />
                       Médico
                     </div>
-                    <div className="font-semibold text-gray-900">
+                    <div className="font-bold text-slate-900">
                       Dr. {appointment.doctor_name || 'N/A'}
                     </div>
-                    <div className="text-sm text-blue-600">
+                    <div className="text-sm text-blue-700 font-medium">
                       {appointment.specialty_name || 'N/A'}
                     </div>
                   </div>
@@ -86,7 +86,7 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                       <Calendar className="w-4 h-4 mr-1" />
                       Fecha y Hora
                     </div>
-                    <div className="font-semibold text-gray-900">
+                    <div className="font-bold text-slate-900">
                       {formatDate(appointment.appointment_date)}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
@@ -121,7 +121,7 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                       e.stopPropagation();
                       onViewAppointment(appointment);
                     }}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors border border-transparent hover:border-blue-100"
                     title="Ver detalles"
                   >
                     <Eye className="w-4 h-4" />
@@ -131,9 +131,9 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
 
               {/* Motivo de consulta */}
               {appointment.chief_complaint && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="text-sm text-gray-500 mb-1">Motivo de consulta:</div>
-                  <div className="text-sm text-gray-700 italic">
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <div className="text-sm text-slate-500 mb-1">Motivo de consulta:</div>
+                  <div className="text-sm text-slate-700 italic">
                     "{appointment.chief_complaint}"
                   </div>
                 </div>
