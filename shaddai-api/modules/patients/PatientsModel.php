@@ -5,6 +5,19 @@ require_once __DIR__ . '/../../config/Database.php';
 class PatientsModel {
     private $db;
 
+    private function nullable($value) {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            return $trimmed === '' ? null : $trimmed;
+        }
+
+        return $value;
+    }
+
     public function __construct() {
         $this->db = Database::getInstance();
     }
@@ -38,16 +51,16 @@ class PatientsModel {
 
         $params = [
             ':full_name' => $data['full_name'],
-            ':cedula' => $data['cedula'] ?? null,
-            ':birth_date' => $data['birth_date'] ?? null,
-            ':gender' => $data['gender'] ?? null,
-            ':marital_status' => $data['marital_status'] ?? null,
-            ':address' => $data['address'] ?? null,
-            ':phone' => $data['phone'] ?? null,
-            ':email' => $data['email'] ?? null,
+            ':cedula' => $this->nullable($data['cedula'] ?? null),
+            ':birth_date' => $this->nullable($data['birth_date'] ?? null),
+            ':gender' => $this->nullable($data['gender'] ?? null),
+            ':marital_status' => $this->nullable($data['marital_status'] ?? null),
+            ':address' => $this->nullable($data['address'] ?? null),
+            ':phone' => $this->nullable($data['phone'] ?? null),
+            ':email' => $this->nullable($data['email'] ?? null),
             ':created_by' => $data['created_by'],
             ':representative_id' => !empty($data['representative_id']) ? $data['representative_id'] : null,
-            ':representative_relationship' => !empty($data['representative_relationship']) ? $data['representative_relationship'] : null
+            ':representative_relationship' => $this->nullable($data['representative_relationship'] ?? null)
         ];
 
         $success = $this->db->execute($query, $params);
@@ -104,15 +117,15 @@ class PatientsModel {
 
         $params = [
             ':full_name' => $data['full_name'],
-            ':cedula' => $data['cedula'] ?? null,
-            ':birth_date' => $data['birth_date'] ?? null,
-            ':gender' => $data['gender'] ?? null,
-            ':marital_status' => $data['marital_status'] ?? null,
-            ':address' => $data['address'] ?? null,
-            ':phone' => $data['phone'] ?? null,
-            ':email' => $data['email'] ?? null,
+            ':cedula' => $this->nullable($data['cedula'] ?? null),
+            ':birth_date' => $this->nullable($data['birth_date'] ?? null),
+            ':gender' => $this->nullable($data['gender'] ?? null),
+            ':marital_status' => $this->nullable($data['marital_status'] ?? null),
+            ':address' => $this->nullable($data['address'] ?? null),
+            ':phone' => $this->nullable($data['phone'] ?? null),
+            ':email' => $this->nullable($data['email'] ?? null),
             ':representative_id' => !empty($data['representative_id']) ? $data['representative_id'] : null,
-            ':representative_relationship' => !empty($data['representative_relationship']) ? $data['representative_relationship'] : null,
+            ':representative_relationship' => $this->nullable($data['representative_relationship'] ?? null),
             ':id' => $id
         ];
 

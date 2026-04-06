@@ -2,7 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, User, X } from 'lucide-react';
 import patientsAPI from './../../../api/PatientsApi';
 
-const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
+const PatientSearch = ({
+  onSelect,
+  error,
+  selectedPatient,
+  onAddNew,
+  noResultsMessage = 'No se encontraron pacientes con ese criterio.',
+  addNewLabel = '+ Registrar Nuevo'
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [patients, setPatients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -180,7 +187,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
       {/* Mensaje cuando no hay resultados y botón para agregar rápido */}
       {showDropdown && searchTerm.length >= 3 && patients.length === 0 && !isLoading && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center">
-          <p className="text-gray-500 mb-3">No se encontraron pacientes con ese criterio.</p>
+          <p className="text-gray-500 mb-3">{noResultsMessage}</p>
           {onAddNew && (
             <button
               type="button"
@@ -191,7 +198,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
               className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-600 font-medium rounded-lg hover:bg-blue-100 transition-colors"
             >
               <User className="w-8 h-4" />
-              + Registrar Representante
+              {addNewLabel}
             </button>
           )}
         </div>

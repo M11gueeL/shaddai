@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Clock, User, FileText, AlertCircle, X, ChevronDown, Loader2 } from 'lucide-react';
 import PatientSearch from './PatientSearch';
+import PatientRegistration from '../patients/PatientRegistration';
 import DoctorSelector from './DoctorSelector';
 import SpecialtySelector from './SpecialtySelector';
 import appointmentsAPI from '../../../api/appointments';
@@ -39,6 +40,8 @@ const AppointmentForm = ({ onClose }) => {
   const [availableRooms, setAvailableRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOutsidePreferred, setIsOutsidePreferred] = useState(false);
+  const [showPatientRegistration, setShowPatientRegistration] = useState(false);
+  const [newPatientHint, setNewPatientHint] = useState('');
   const { confirm } = useConfirm();
 
   // Obtener fecha mínima (hoy) en local
@@ -122,6 +125,18 @@ const AppointmentForm = ({ onClose }) => {
     if (errors.patient_id) {
       setErrors(prev => ({ ...prev, patient_id: '' }));
     }
+  };
+
+  const handleAddNewPatient = (term) => {
+    setNewPatientHint((term || '').trim());
+    setShowPatientRegistration(true);
+  };
+
+  const handlePatientCreated = (patient) => {
+    if (patient) {
+      handlePatientSelect(patient);
+    }
+    setShowPatientRegistration(false);
   };
 
   // Manejar selección de doctor
@@ -425,6 +440,8 @@ const AppointmentForm = ({ onClose }) => {
                                 onSelect={handlePatientSelect}
                                 error={errors.patient_id}
                                 selectedPatient={selectedPatient}
+                              onAddNew={handleAddNewPatient}
+                              addNewLabel="+ Registrar Nuevo Paciente"
                             />
                          </div>
                          {errors.patient_id && (
@@ -789,6 +806,18 @@ const AppointmentForm = ({ onClose }) => {
             </div>
         </form>
       </div>
+
+      {showPatientRegistration && (
+        <div className="fixed inset-0 backdrop-brightness-50 backdrop-blur-sm bg-black/20 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] transform transition-all duration-300 animate-in fade-in zoom-in-95">
+            <PatientRegistration
+              onClose={() => setShowPatientRegistration(false)}
+              onPatientCreated={handlePatientCreated}
+              initialPatientHint={newPatientHint}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

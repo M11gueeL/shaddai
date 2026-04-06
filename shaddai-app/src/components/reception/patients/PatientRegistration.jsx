@@ -4,22 +4,51 @@ import { useToast } from '../../../context/ToastContext';
 import { UserPlus, X, User, CreditCard, Calendar, Phone, MapPin, Mail, Heart, Users, Search, Loader2 } from 'lucide-react';
 import PatientSearch from '../appointments/PatientSearch';
 
-export default function PatientRegistration({ onClose }) {
+const buildInitialPatientData = (hint = '') => {
+    const defaultValues = {
+        full_name: '',
+        cedula_type: 'V',
+        cedula_number: '',
+        birth_date: '',
+        gender: '',
+        marital_status: '',
+        address: '',
+        phone_code: '0412',
+        phone_number: '',
+        email: '',
+        representative_id: '',
+        representative_relationship: ''
+    };
+
+    const normalizedHint = String(hint || '').trim();
+    if (!normalizedHint) return defaultValues;
+
+    const prefixedCedula = normalizedHint.match(/^([VEJG])[-\s]?([\d\s]{4,})$/i);
+    if (prefixedCedula) {
+        return {
+            ...defaultValues,
+            cedula_type: prefixedCedula[1].toUpperCase(),
+            cedula_number: prefixedCedula[2].replace(/\s+/g, '').slice(0, 12)
+        };
+    }
+
+    const digitsOnly = normalizedHint.replace(/\D/g, '');
+    if (digitsOnly.length >= 5) {
+        return {
+            ...defaultValues,
+            cedula_number: digitsOnly.slice(0, 12)
+        };
+    }
+
+    return {
+        ...defaultValues,
+        full_name: normalizedHint
+    };
+};
+
+export default function PatientRegistration({ onClose, onPatientCreated, initialPatientHint = '' }) {
   const toast = useToast();
-  const [formData, setFormData] = useState({
-    full_name: '',
-    cedula_type: 'V',
-    cedula_number: '',
-    birth_date: '',
-    gender: '',
-    marital_status: '',
-    address: '',
-    phone_code: '0412',
-    phone_number: '',
-    email: '',
-    representative_id: '',
-    representative_relationship: ''
-  });
+    const [formData, setFormData] = useState(() => buildInitialPatientData(initialPatientHint));
   const [isMinorOrUndocumented, setIsMinorOrUndocumented] = useState(false);
   const [selectedRepresentative, setSelectedRepresentative] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -116,8 +145,13 @@ export default function PatientRegistration({ onClose }) {
       delete payload.phone_code;
       delete payload.phone_number;
 
-      await PatientsApi.create(payload);
+            const response = await PatientsApi.create(payload);
+            const createdPatient = response?.data?.patient || response?.data?.data || response?.data;
+
       toast.success('Paciente registrado con éxito');
+            if (createdPatient && onPatientCreated) {
+                onPatientCreated(createdPatient);
+            }
       onClose(); // Cerrar modal inmediatamente tras éxito
       
     } catch (error) {
@@ -354,7 +388,6 @@ export default function PatientRegistration({ onClose }) {
                         name="birth_date"
                         value={formData.birth_date}
                         onChange={handleChange}
-                        required
                         className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800"
                     />
                 </div>
