@@ -51,12 +51,18 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
     const filtered = allPatients.filter(p => {
       const name = p.full_name?.toLowerCase() || '';
       const cedula = p.cedula?.toLowerCase() || '';
+          const representativeName = p.representative_name?.toLowerCase() || '';
+          const representativeCedula = p.representative_cedula?.toLowerCase() || '';
+          const billingCedula = p.billing_cedula?.toLowerCase() || '';
       const email = p.email?.toLowerCase() || '';
       const phone = p.phone?.toLowerCase() || '';
       const id = String(p.id);
 
       return name.includes(lowerQ) || 
              cedula.includes(lowerQ) || 
+            representativeName.includes(lowerQ) ||
+            representativeCedula.includes(lowerQ) ||
+            billingCedula.includes(lowerQ) ||
              email.includes(lowerQ) || 
              phone.includes(lowerQ) ||
              id.includes(lowerQ);
@@ -186,6 +192,11 @@ export default function SearchPatientBar({ onSearchByCedula, onSearchByPatientId
                         <span className="flex items-center gap-1">
                             <CreditCard className="h-3 w-3" /> {patient.cedula}
                         </span>
+                    )}
+                    {!patient.cedula && patient.representative_cedula && (
+                      <span className="flex items-center gap-1">
+                        <Hash className="h-3 w-3" /> Rep: {patient.representative_cedula}
+                      </span>
                     )}
                     {patient.phone && (
                         <span className="flex items-center gap-1">

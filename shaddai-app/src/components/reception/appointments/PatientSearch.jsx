@@ -21,9 +21,13 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
     try {
       const token = localStorage.getItem('token');
       const response = await patientsAPI.getAll(token);
+      const lowerTerm = term.toLowerCase();
       const filtered = response.data.filter(patient => 
-        (patient.full_name && patient.full_name.toLowerCase().includes(term.toLowerCase())) ||
-        (patient.cedula && patient.cedula.toLowerCase().includes(term.toLowerCase()))
+        (patient.full_name && patient.full_name.toLowerCase().includes(lowerTerm)) ||
+        (patient.cedula && patient.cedula.toLowerCase().includes(lowerTerm)) ||
+        (patient.representative_name && patient.representative_name.toLowerCase().includes(lowerTerm)) ||
+        (patient.representative_cedula && patient.representative_cedula.toLowerCase().includes(lowerTerm)) ||
+        (patient.billing_cedula && patient.billing_cedula.toLowerCase().includes(lowerTerm))
       );
       setPatients(filtered);
     } catch (error) {
@@ -34,21 +38,23 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
     }
   };
 
-  // Buscar por cédula específica - CORREGIDO: agregar token
+  // Buscar por cédula (paciente o representante)
   const searchByCedula = async (cedula) => {
     if (cedula.length < 5) return;
     
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await patientsAPI.getByCedula(cedula, token); 
-      if (response.data) {
-        setPatients([response.data]);
-      }
+      const lowerCedula = cedula.toLowerCase();
+      const response = await patientsAPI.getAll(token);
+      const filtered = response.data.filter(patient =>
+        (patient.cedula && patient.cedula.toLowerCase().includes(lowerCedula)) ||
+        (patient.representative_cedula && patient.representative_cedula.toLowerCase().includes(lowerCedula)) ||
+        (patient.billing_cedula && patient.billing_cedula.toLowerCase().includes(lowerCedula))
+      );
+      setPatients(filtered);
     } catch (error) {
-      if (error.response?.status !== 404) {
-        console.error('Error searching by cedula:', error);
-      }
+      console.error('Error searching by cedula:', error);
       setPatients([]); // Limpiar resultados en caso de error
     } finally {
       setIsLoading(false);
@@ -120,7 +126,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
           value={searchTerm}
           onChange={handleInputChange}
           onFocus={() => setShowDropdown(true)}
-          placeholder="Buscar por cédula o nombre del paciente..."
+          placeholder="Buscar por cédula (paciente/representante) o nombre..."
           className={`w-full pl-10 pr-10 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${
             error ? 'border-red-500' : 'border-gray-200'
           }`}
@@ -162,7 +168,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
                     {patient.full_name}
                   </div>
                   <div className="text-sm text-gray-500">
-                    Cédula: {patient.cedula} | Teléfono: {patient.phone}
+                    Cédula: {patient.cedula || 'Sin cédula'} | Rep: {patient.representative_cedula || 'N/A'} | Teléfono: {patient.phone || 'N/A'}
                   </div>
                 </div>
               </div>
