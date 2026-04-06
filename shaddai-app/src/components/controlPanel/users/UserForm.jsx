@@ -26,6 +26,28 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
   const [errors, setErrors] = useState({});
   const isMedico = formData.roles.includes(2);
 
+    const normalizeSpaces = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+
+    const validateName = (value, min = 2, max = 40) => {
+        const normalized = normalizeSpaces(value);
+        if (normalized.length < min || normalized.length > max) return false;
+        return /^[\p{L}][\p{L}\s'\-.]+$/u.test(normalized);
+    };
+
+    const cleanCedulaDigits = (value) => String(value || '').replace(/\D/g, '');
+
+    const validateCedulaDigits = (digits) => {
+        if (digits.length < 3 || digits.length > 9) return false;
+        if (/^0+$/.test(digits)) return false;
+        return true;
+    };
+
+    const validatePhoneDigits = (digits) => {
+        if (!/^\d{7}$/.test(digits)) return false;
+        if (/^0+$/.test(digits)) return false;
+        return true;
+    };
+
   useEffect(() => {
     if (user) {
       // Parsear cédula
@@ -102,10 +124,22 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
   const validate = () => {
     const newErrors = {};
     
-    if (!formData.first_name) newErrors.first_name = 'Nombre es requerido';
-    if (!formData.last_name) newErrors.last_name = 'Apellido es requerido';
-    if (!formData.cedula_number) newErrors.cedula = 'Cédula es requerida';
-    if (!formData.email) newErrors.email = 'Email es requerido para enviar invitación';
+        if (!validateName(formData.first_name, 2, 40)) newErrors.first_name = 'Nombre inválido (2-40, solo letras)';
+        if (!validateName(formData.last_name, 2, 40)) newErrors.last_name = 'Apellido inválido (2-40, solo letras)';
+
+        const cedulaDigits = cleanCedulaDigits(formData.cedula_number);
+        if (!validateCedulaDigits(cedulaDigits)) newErrors.cedula = 'Cédula inválida (3-9 dígitos, no solo ceros)';
+
+        if (!formData.email) {
+            newErrors.email = 'Email es requerido para enviar invitación';
+        } else if (!/^\S+@\S+\.\S+$/.test(formData.email.trim())) {
+            newErrors.email = 'Email con formato inválido';
+        }
+
+        if (!validatePhoneDigits(formData.phone_number)) {
+            newErrors.phone = 'Teléfono inválido (7 dígitos, no 0000000)';
+        }
+
     // Password not required for creation (invitation) or edit (optional)
     if (formData.roles.length === 0) newErrors.roles = 'Debe seleccionar al menos un rol';
     
@@ -184,6 +218,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                                 name="first_name"
                                 value={formData.first_name}
                                 onChange={handleChange}
+                                maxLength={40}
                                 required
                                 className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${errors.first_name ? 'border-red-500' : 'border-gray-200'}`}
                             />
@@ -205,6 +240,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                                 name="last_name"
                                 value={formData.last_name}
                                 onChange={handleChange}
+                                maxLength={40}
                                 required
                                 className={`w-full pl-10 pr-4 py-2.5 bg-gray-50 border rounded-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${errors.last_name ? 'border-red-500' : 'border-gray-200'}`}
                             />
@@ -239,7 +275,7 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                                     handleChange({ target: { name: 'cedula_number', value: val } });
                                 }}
                                 required
-                                minLength={6}
+                                minLength={3}
                                 maxLength={12}
                                 className={`w-full px-4 py-2.5 bg-gray-50 border rounded-r-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400 ${errors.cedula ? 'border-red-500' : 'border-gray-200'}`}
                             />
@@ -318,9 +354,11 @@ export default function UserForm({ user, onSubmit, onCancel, specialties, medica
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 7);
                                     handleChange({ target: { name: 'phone_number', value: val } });
                                 }}
+                                maxLength={7}
                                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-r-lg focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm text-gray-800 placeholder-gray-400"
                             />
                         </div>
+                        {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                     </div>
 
                     {/* Email */}

@@ -10,6 +10,90 @@ class UsersController {
         $this->model = new UserModel(); 
     }
 
+    private function normalizeSpaces($value) {
+        $value = trim((string)$value);
+        return preg_replace('/\s+/', ' ', $value);
+    }
+
+    private function validatePersonName($value, $fieldLabel, $min = 2, $max = 40) {
+        $name = $this->normalizeSpaces($value);
+        if ($name === '') {
+            throw new Exception("El campo {$fieldLabel} es obligatorio");
+        }
+        if (mb_strlen($name) < $min) {
+            throw new Exception("{$fieldLabel} es demasiado corto");
+        }
+        if (mb_strlen($name) > $max) {
+            throw new Exception("{$fieldLabel} no puede superar {$max} caracteres");
+        }
+        if (!preg_match('/^[\p{L}][\p{L}\s\'\-\.]+$/u', $name)) {
+            throw new Exception("{$fieldLabel} contiene caracteres inválidos");
+        }
+        return $name;
+    }
+
+    private function normalizeCedula($cedula) {
+        $raw = strtoupper($this->normalizeSpaces($cedula));
+        if ($raw === '') {
+            throw new Exception('La cédula es obligatoria');
+        }
+
+        if (!preg_match('/^([VE])[-\s]?([\d\s]{3,15})$/', $raw, $matches)) {
+            throw new Exception('Formato de cédula inválido. Use V-123456 o E-123456');
+        }
+
+        $type = $matches[1];
+        $digits = preg_replace('/\s+/', '', $matches[2]);
+
+        if (strlen($digits) < 3 || strlen($digits) > 9) {
+            throw new Exception('La cédula debe tener entre 3 y 9 dígitos');
+        }
+
+        if (preg_match('/^0+$/', $digits)) {
+            throw new Exception('La cédula no puede contener solo ceros');
+        }
+
+        return $type . '-' . $digits;
+    }
+
+    private function normalizeAndValidatePhone($phone) {
+        $clean = preg_replace('/\D/', '', (string)$phone);
+        if ($clean === '') {
+            throw new Exception('El teléfono es obligatorio');
+        }
+
+        if (strlen($clean) !== 11) {
+            throw new Exception('El teléfono debe tener 11 dígitos (ejemplo: 04121234567)');
+        }
+
+        $validCodes = ['0412', '0414', '0416', '0422', '0424', '0426'];
+        $code = substr($clean, 0, 4);
+        if (!in_array($code, $validCodes, true)) {
+            throw new Exception('Código de teléfono inválido. Use 0412, 0414, 0416, 0422, 0424 o 0426');
+        }
+
+        $line = substr($clean, 4);
+        if (preg_match('/^0+$/', $line)) {
+            throw new Exception('El número telefónico no puede terminar en 0000000');
+        }
+
+        return $clean;
+    }
+
+    private function normalizeAndValidateEmail($email) {
+        $value = trim((string)$email);
+        if ($value === '') {
+            throw new Exception('El email es requerido para enviar invitación');
+        }
+        if (strlen($value) > 120) {
+            throw new Exception('El correo no puede superar 120 caracteres');
+        }
+        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('El correo electrónico no tiene un formato válido');
+        }
+        return strtolower($value);
+    }
+
     private function validateBirthDate($birthDate) {
         if (empty($birthDate)) {
             return;
@@ -88,20 +172,13 @@ class UsersController {
                 }
             }
 
-            // Validación de Cédula (V-123456 o E-123456)
-            if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
-                throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
-            }
+            $data['first_name'] = $this->validatePersonName($data['first_name'] ?? '', 'Nombre', 2, 40);
+            $data['last_name'] = $this->validatePersonName($data['last_name'] ?? '', 'Apellido', 2, 40);
+            $data['cedula'] = $this->normalizeCedula($data['cedula'] ?? '');
+            $data['phone'] = $this->normalizeAndValidatePhone($data['phone'] ?? '');
+            $data['email'] = $this->normalizeAndValidateEmail($data['email'] ?? '');
 
             $this->validateBirthDate($data['birth_date'] ?? null);
-
-            // Validación de Teléfono
-            if (!empty($data['phone'])) {
-                $cleanPhone = preg_replace('/[^0-9]/', '', $data['phone']);
-                if (strlen($cleanPhone) !== 11) {
-                     // throw new Exception('El teléfono debe tener 11 dígitos');
-                }
-            }
 
             $userId = $this->model->createUser($data);
 
@@ -160,10 +237,11 @@ class UsersController {
                 }
             }
 
-            // Validación de Cédula (V-123456 o E-123456)
-            if (!empty($data['cedula']) && !preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
-                throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
-            }
+            $data['first_name'] = $this->validatePersonName($data['first_name'] ?? '', 'Nombre', 2, 40);
+            $data['last_name'] = $this->validatePersonName($data['last_name'] ?? '', 'Apellido', 2, 40);
+            $data['cedula'] = $this->normalizeCedula($data['cedula'] ?? '');
+            $data['phone'] = $this->normalizeAndValidatePhone($data['phone'] ?? '');
+            $data['email'] = $this->normalizeAndValidateEmail($data['email'] ?? '');
 
             $this->validateBirthDate($data['birth_date'] ?? null);
 

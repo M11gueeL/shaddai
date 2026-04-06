@@ -72,6 +72,27 @@ export default function PatientRegistration({ onClose, onPatientCreated, initial
   });
   const [repLoading, setRepLoading] = useState(false);
 
+    const normalizeSpaces = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+    const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+
+    const validateFullName = (value) => {
+        const normalized = normalizeSpaces(value);
+        if (normalized.length < 3 || normalized.length > 120) return false;
+        return /^[\p{L}][\p{L}\s'\-.]+$/u.test(normalized);
+    };
+
+    const validateCedulaDigits = (digits) => {
+        if (digits.length < 3 || digits.length > 9) return false;
+        if (/^0+$/.test(digits)) return false;
+        return true;
+    };
+
+    const validatePhoneDigits = (digits) => {
+        if (!/^\d{7}$/.test(digits)) return false;
+        if (/^0+$/.test(digits)) return false;
+        return true;
+    };
+
   const handleRepChange = (e) => {
     const { name, value } = e.target;
     setRepFormData(prev => ({ ...prev, [name]: value }));
@@ -115,6 +136,11 @@ export default function PatientRegistration({ onClose, onPatientCreated, initial
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+        if (!validateFullName(formData.full_name)) {
+            toast.error('Nombre completo inválido (3-120 caracteres, solo letras)');
+            return;
+        }
+
     if (isMinorOrUndocumented && (!selectedRepresentative || !formData.representative_relationship)) {
       toast.error('Debe seleccionar un representante y especificar el parentesco.');
       return;
@@ -124,6 +150,17 @@ export default function PatientRegistration({ onClose, onPatientCreated, initial
         toast.error('La cédula es requerida si el paciente posee una.');
         return;
     }
+
+        if (!isMinorOrUndocumented) {
+            if (!validateCedulaDigits(onlyDigits(formData.cedula_number))) {
+                toast.error('Cédula inválida (3-9 dígitos, no solo ceros).');
+                return;
+            }
+            if (!validatePhoneDigits(onlyDigits(formData.phone_number))) {
+                toast.error('Teléfono inválido (7 dígitos, no 0000000).');
+                return;
+            }
+        }
 
     setLoading(true);
     

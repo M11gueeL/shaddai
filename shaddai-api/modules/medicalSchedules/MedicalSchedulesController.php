@@ -8,6 +8,31 @@ class MedicalSchedulesController {
         $this->model = new MedicalSchedulesModel();
     }
 
+    private function mapScheduleErrorMessage($message) {
+        if (!$message) {
+            return 'No se pudo procesar el horario.';
+        }
+
+        if (strpos($message, '1062 Duplicate entry') !== false || strpos($message, 'uk_medical_day_start') !== false) {
+            return 'Ya existe un horario con ese mismo médico, día y hora de inicio.';
+        }
+
+        if (strpos($message, '1452') !== false || stripos($message, 'foreign key constraint fails') !== false) {
+            return 'El médico seleccionado no es válido o ya no existe.';
+        }
+
+        if (stripos($message, 'obligatorio') !== false ||
+            stripos($message, 'formato') !== false ||
+            stripos($message, 'solapa') !== false ||
+            stripos($message, 'duración mínima') !== false ||
+            stripos($message, 'hora de fin') !== false ||
+            stripos($message, 'ya existe un horario') !== false) {
+            return $message;
+        }
+
+        return 'No se pudo guardar el horario. Verifique los datos e intente nuevamente.';
+    }
+
     /**
      * Obtiene todos los horarios o los de un médico específico.
      * GET /schedules
@@ -91,9 +116,9 @@ class MedicalSchedulesController {
             } else {
                 throw new Exception('No se pudo crear el horario preferido.');
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             http_response_code(400); // Bad request por datos inválidos o error
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['error' => $this->mapScheduleErrorMessage($e->getMessage())]);
         }
     }
 
@@ -110,7 +135,7 @@ class MedicalSchedulesController {
             }
 
             // Validar datos requeridos
-            $this->model->validateData($data);
+            $this->model->validateData($data, $id);
 
             // Verificar si el horario existe
             $existing = $this->model->getById($id);
@@ -128,9 +153,9 @@ class MedicalSchedulesController {
                 // Podría ser que no hubo cambios o un error real
                  throw new Exception('No se pudo actualizar el horario preferido.');
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            echo json_encode(['error' => $this->mapScheduleErrorMessage($e->getMessage())]);
         }
     }
 

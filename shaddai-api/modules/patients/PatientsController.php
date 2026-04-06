@@ -8,6 +8,89 @@ class PatientsController {
         $this->model = new PatientsModel();
     }
 
+    private function normalizeSpaces($value) {
+        $value = trim((string)$value);
+        return preg_replace('/\s+/', ' ', $value);
+    }
+
+    private function validateFullName($fullName) {
+        $name = $this->normalizeSpaces($fullName);
+        if ($name === '') {
+            throw new Exception('El nombre completo es requerido');
+        }
+        if (mb_strlen($name) < 3) {
+            throw new Exception('El nombre completo es demasiado corto');
+        }
+        if (mb_strlen($name) > 120) {
+            throw new Exception('El nombre completo no puede superar 120 caracteres');
+        }
+        if (!preg_match('/^[\p{L}][\p{L}\s\'\-\.]+$/u', $name)) {
+            throw new Exception('El nombre completo contiene caracteres inválidos');
+        }
+        return $name;
+    }
+
+    private function normalizeCedula($cedula) {
+        $raw = strtoupper($this->normalizeSpaces($cedula));
+        if ($raw === '') return null;
+
+        if (!preg_match('/^([VE])[-\s]?([\d\s]{3,15})$/', $raw, $matches)) {
+            throw new Exception('Formato de cédula inválido. Use V-123456 o E-123456');
+        }
+
+        $type = $matches[1];
+        $digits = preg_replace('/\s+/', '', $matches[2]);
+
+        if (strlen($digits) < 3 || strlen($digits) > 9) {
+            throw new Exception('La cédula debe tener entre 3 y 9 dígitos');
+        }
+
+        if (preg_match('/^0+$/', $digits)) {
+            throw new Exception('La cédula no puede contener solo ceros');
+        }
+
+        return $type . '-' . $digits;
+    }
+
+    private function normalizeAndValidatePhone($phone, $required = true) {
+        $clean = preg_replace('/\D/', '', (string)$phone);
+        if ($clean === '') {
+            if ($required) {
+                throw new Exception('El teléfono es obligatorio');
+            }
+            return null;
+        }
+
+        if (strlen($clean) !== 11) {
+            throw new Exception('El teléfono debe tener 11 dígitos (ejemplo: 04121234567)');
+        }
+
+        $validCodes = ['0412', '0414', '0416', '0422', '0424', '0426'];
+        $code = substr($clean, 0, 4);
+        if (!in_array($code, $validCodes, true)) {
+            throw new Exception('Código de teléfono inválido. Use 0412, 0414, 0416, 0422, 0424 o 0426');
+        }
+
+        $line = substr($clean, 4);
+        if (preg_match('/^0+$/', $line)) {
+            throw new Exception('El número telefónico no puede terminar en 0000000');
+        }
+
+        return $clean;
+    }
+
+    private function normalizeAndValidateEmail($email) {
+        $value = trim((string)$email);
+        if ($value === '') return null;
+        if (strlen($value) > 120) {
+            throw new Exception('El correo no puede superar 120 caracteres');
+        }
+        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception('El correo electrónico no tiene un formato válido');
+        }
+        return strtolower($value);
+    }
+
     private function validateBirthDate($birthDate) {
         if (empty($birthDate)) {
             return;
@@ -122,10 +205,7 @@ class PatientsController {
             // Asiganar created_by automáticamente
             $data['created_by'] = $jwtPayload->sub;
             
-            // Validación básica
-            if (empty($data['full_name'])) {
-                throw new Exception('El nombre completo es requerido');
-            }
+            $data['full_name'] = $this->validateFullName($data['full_name'] ?? '');
 
             $this->validateBirthDate($data['birth_date'] ?? null);
 
@@ -139,9 +219,7 @@ class PatientsController {
 
             // Si envió cédula, validamos el formato
             if ($hasCedula) {
-                if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
-                    throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
-                }
+                $data['cedula'] = $this->normalizeCedula($data['cedula']);
             } else {
                 // Si no tiene cédula, forzamos que sea null para la base de datos
                 $data['cedula'] = null;
@@ -150,44 +228,12 @@ class PatientsController {
             // Lógica de Fallback de Contacto (Solución 3: Delegación a Representante)
             if ($hasRepresentative && !$hasCedula) {
                 // Es un menor sin cédula: el teléfono y correo son opcionales
-                if (empty($data['phone'])) {
-                    $data['phone'] = null;
-                }
-                if (empty($data['email'])) {
-                    $data['email'] = null;
-                }
+                $data['phone'] = $this->normalizeAndValidatePhone($data['phone'] ?? '', false);
+                $data['email'] = $this->normalizeAndValidateEmail($data['email'] ?? '');
             } else {
                 // Es un adulto / principal: validamos que tenga teléfono obligatoriamente
-                if (empty($data['phone'])) {
-                    throw new Exception('El teléfono es obligatorio si el paciente no es un menor de edad con representante.');
-                }
-            }
-
-            // Validación de Teléfono (0412-1234567)
-            // Aceptamos formatos con guion o sin guion, pero validamos el código
-            // Códigos válidos: 0412, 0414, 0424, 0416, 0426, 0212 (ejemplo fijo)
-            // El usuario pidió: 0412, 0422, 0416, 0426, 0414, 0424 y un codigo 123 11 22 (???)
-            // Asumiré que "123 11 22" es un ejemplo de número, no un código.
-            // Validaremos que empiece por los códigos solicitados.
-            if (!empty($data['phone'])) {
-                // Limpiar separadores para validar
-                $cleanPhone = preg_replace('/[^0-9]/', '', $data['phone']);
-                $validCodes = ['0412', '0422', '0416', '0426', '0414', '0424'];
-                $isValidCode = false;
-                foreach ($validCodes as $code) {
-                    if (strpos($cleanPhone, $code) === 0) {
-                        $isValidCode = true;
-                        break;
-                    }
-                }
-                if (!$isValidCode) {
-                    // throw new Exception('Código de teléfono inválido. Use: 0412, 0422, 0416, 0426, 0414, 0424');
-                    // Permitir guardar aunque no sea exacto si el usuario insiste? Mejor validar estricto como pidió.
-                }
-                // Validar longitud? 11 dígitos (4 código + 7 número)
-                if (strlen($cleanPhone) !== 11) {
-                     // throw new Exception('El teléfono debe tener 11 dígitos');
-                }
+                $data['phone'] = $this->normalizeAndValidatePhone($data['phone'] ?? '', true);
+                $data['email'] = $this->normalizeAndValidateEmail($data['email'] ?? '');
             }
             
             $result = $this->model->createPatient($data);
@@ -230,9 +276,7 @@ class PatientsController {
                 $data = json_decode($input, true);
             }
             
-            if (empty($data['full_name'])) {
-                throw new Exception('El nombre completo es requerido');
-            }
+            $data['full_name'] = $this->validateFullName($data['full_name'] ?? '');
 
             $this->validateBirthDate($data['birth_date'] ?? null);
             
@@ -246,9 +290,7 @@ class PatientsController {
 
             // Si envió cédula, validamos el formato
             if ($hasCedula) {
-                if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
-                    throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
-                }
+                $data['cedula'] = $this->normalizeCedula($data['cedula']);
             } else {
                 // Si no tiene cédula, forzamos que sea null para la base de datos
                 $data['cedula'] = null;
@@ -257,17 +299,12 @@ class PatientsController {
             // Lógica de Fallback de Contacto (Solución 3: Delegación a Representante)
             if ($hasRepresentative && !$hasCedula) {
                 // Es un menor sin cédula: el teléfono y correo son opcionales
-                if (empty($data['phone'])) {
-                    $data['phone'] = null;
-                }
-                if (empty($data['email'])) {
-                    $data['email'] = null;
-                }
+                $data['phone'] = $this->normalizeAndValidatePhone($data['phone'] ?? '', false);
+                $data['email'] = $this->normalizeAndValidateEmail($data['email'] ?? '');
             } else {
                 // Es un adulto / principal: validamos que tenga teléfono obligatoriamente
-                if (empty($data['phone'])) {
-                    throw new Exception('El teléfono es obligatorio si el paciente no es un menor de edad con representante.');
-                }
+                $data['phone'] = $this->normalizeAndValidatePhone($data['phone'] ?? '', true);
+                $data['email'] = $this->normalizeAndValidateEmail($data['email'] ?? '');
             }
             
             $result = $this->model->updatePatient($id, $data);

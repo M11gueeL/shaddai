@@ -50,7 +50,33 @@ export default function ScheduleForm({ initial = null, onCancel, onSaved }) {
         if (!day) return 'Seleccione el día';
         if (!start || !end) return 'Ingrese la hora de inicio y fin';
         if (end <= start) return 'La hora fin debe ser mayor a la hora inicio';
+
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        const startMinutes = (sh * 60) + sm;
+        const endMinutes = (eh * 60) + em;
+        if ((endMinutes - startMinutes) < 15) return 'La duración mínima del horario es de 15 minutos';
+
         return null;
+    };
+
+    const mapSaveError = (error) => {
+        const raw = error?.response?.data?.error || error?.message || '';
+        if (!raw) return 'No se pudo guardar el horario';
+
+        if (raw.includes('uk_medical_day_start') || raw.includes('1062 Duplicate entry')) {
+            return 'Ya existe un horario con ese mismo médico, día y hora de inicio.';
+        }
+        if (raw.toLowerCase().includes('solapa')) {
+            return 'El rango horario se solapa con otro horario existente.';
+        }
+        if (raw.toLowerCase().includes('duración mínima')) {
+            return 'La duración mínima del horario es de 15 minutos.';
+        }
+        if (raw.toLowerCase().includes('hora de fin')) {
+            return 'La hora de fin debe ser mayor que la hora de inicio.';
+        }
+        return raw;
     };
 
     const onSubmit = async (e) => {
@@ -83,7 +109,7 @@ export default function ScheduleForm({ initial = null, onCancel, onSaved }) {
             }
             onSaved?.();
         } catch (e) {
-            toast.error(e?.response?.data?.error || 'No se pudo guardar el horario');
+            toast.error(mapSaveError(e));
         } finally {
             setSaving(false);
         }

@@ -111,6 +111,70 @@ class MedicalSchedulesModel {
         return $this->db->execute($query, $params);
     }
 
+    private function normalizeTime($value) {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim((string)$value);
+        if (preg_match('/^\d{2}:\d{2}$/', $value)) {
+            return $value . ':00';
+        }
+        return $value;
+    }
+
+    private function timeToSeconds($time) {
+        $parts = explode(':', $time);
+        if (count($parts) < 2) return null;
+        $h = (int)$parts[0];
+        $m = (int)$parts[1];
+        $s = isset($parts[2]) ? (int)$parts[2] : 0;
+        return ($h * 3600) + ($m * 60) + $s;
+    }
+
+    private function existsSameStart($medicalId, $dayOfWeek, $startTime, $excludeId = null) {
+        $query = "SELECT id FROM {$this->tableName}
+                  WHERE medical_id = :medical_id
+                    AND day_of_week = :day_of_week
+                    AND start_time = :start_time";
+        $params = [
+            ':medical_id' => $medicalId,
+            ':day_of_week' => $dayOfWeek,
+            ':start_time' => $startTime
+        ];
+
+        if ($excludeId !== null) {
+            $query .= " AND id <> :exclude_id";
+            $params[':exclude_id'] = (int)$excludeId;
+        }
+
+        $query .= ' LIMIT 1';
+        $result = $this->db->query($query, $params);
+        return !empty($result);
+    }
+
+    private function hasOverlap($medicalId, $dayOfWeek, $startTime, $endTime, $excludeId = null) {
+        $query = "SELECT id FROM {$this->tableName}
+                  WHERE medical_id = :medical_id
+                    AND day_of_week = :day_of_week
+                    AND start_time < :end_time
+                    AND end_time > :start_time";
+        $params = [
+            ':medical_id' => $medicalId,
+            ':day_of_week' => $dayOfWeek,
+            ':start_time' => $startTime,
+            ':end_time' => $endTime
+        ];
+
+        if ($excludeId !== null) {
+            $query .= " AND id <> :exclude_id";
+            $params[':exclude_id'] = (int)$excludeId;
+        }
+
+        $query .= ' LIMIT 1';
+        $result = $this->db->query($query, $params);
+        return !empty($result);
+    }
+
     /**
      * Elimina un registro de horario preferido por su ID.
      * @param int $id ID del horario a eliminar.
@@ -127,7 +191,7 @@ class MedicalSchedulesModel {
      * @param array $data Datos del horario.
      * @throws Exception Si falta algún campo requerido.
      */
-    public function validateData($data) {
+    public function validateData($data, $excludeId = null) {
         $requiredFields = ['medical_id', 'day_of_week', 'start_time', 'end_time'];
         foreach ($requiredFields as $field) {
             if (empty($data[$field])) {
@@ -139,7 +203,44 @@ class MedicalSchedulesModel {
         if (!is_numeric($data['day_of_week']) || $data['day_of_week'] < 1 || $data['day_of_week'] > 7) {
              throw new Exception("El campo 'day_of_week' debe ser un número entre 1 y 7.");
         }
-        // Puedes agregar validaciones para el formato de hora si lo necesitas
+        $startTime = $this->normalizeTime($data['start_time']);
+        $endTime = $this->normalizeTime($data['end_time']);
+
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', (string)$startTime)) {
+            throw new Exception('La hora de inicio tiene un formato inválido. Use HH:MM.');
+        }
+        if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/', (string)$endTime)) {
+            throw new Exception('La hora de fin tiene un formato inválido. Use HH:MM.');
+        }
+
+        $startSeconds = $this->timeToSeconds($startTime);
+        $endSeconds = $this->timeToSeconds($endTime);
+
+        if ($startSeconds === null || $endSeconds === null) {
+            throw new Exception('No se pudo interpretar el rango horario.');
+        }
+
+        if ($endSeconds <= $startSeconds) {
+            throw new Exception('La hora de fin debe ser mayor que la hora de inicio.');
+        }
+
+        if (($endSeconds - $startSeconds) < 900) {
+            throw new Exception('El horario debe tener una duración mínima de 15 minutos.');
+        }
+
+        $medicalId = (int)$data['medical_id'];
+        $dayOfWeek = (int)$data['day_of_week'];
+
+        if ($this->existsSameStart($medicalId, $dayOfWeek, $startTime, $excludeId)) {
+            throw new Exception('Ya existe un horario para este médico, día y hora de inicio.');
+        }
+
+        if ($this->hasOverlap($medicalId, $dayOfWeek, $startTime, $endTime, $excludeId)) {
+            throw new Exception('El rango horario se solapa con otro horario existente del médico en ese día.');
+        }
+
+        $data['start_time'] = $startTime;
+        $data['end_time'] = $endTime;
     }
 }
 ?>
