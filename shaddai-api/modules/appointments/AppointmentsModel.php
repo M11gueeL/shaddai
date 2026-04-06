@@ -227,6 +227,7 @@ class AppointmentsModel {
             p.representative_relationship,
             rep.full_name as representative_name,
             rep.cedula as representative_cedula,
+            rep.email as representative_email,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula, u.email as doctor_email,
             ms.name as specialty_name,
             cr.name as consulting_room_name,

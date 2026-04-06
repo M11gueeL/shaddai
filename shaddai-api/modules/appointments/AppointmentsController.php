@@ -13,6 +13,26 @@ class AppointmentsController {
         $this->emailService = new EmailService();
     }
 
+    private function isValidEmail($email) {
+        return !empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL);
+    }
+
+    private function resolvePatientNotificationEmail($appointmentDetails) {
+        $patientEmail = trim((string)($appointmentDetails['patient_direct_email'] ?? $appointmentDetails['patient_email'] ?? ''));
+        $representativeEmail = trim((string)($appointmentDetails['representative_email'] ?? ''));
+        $patientCedula = trim((string)($appointmentDetails['patient_cedula'] ?? ''));
+
+        if ($this->isValidEmail($patientEmail)) {
+            return $patientEmail;
+        }
+
+        if ($patientCedula === '' && $this->isValidEmail($representativeEmail)) {
+            return $representativeEmail;
+        }
+
+        return null;
+    }
+
     public function exportPatientReport() {
         try {
             $patientId = $_GET['patient_id'] ?? null;
@@ -221,11 +241,12 @@ class AppointmentsController {
             if ($result) {
                 // Obtener detalles completos para el correo
                 $apptDetails = $this->model->getAppointmentById($result);
+                $patientNotificationEmail = $this->resolvePatientNotificationEmail($apptDetails);
                 
                 // Enviar al Paciente (si tiene email)
-                if (!empty($apptDetails['patient_email'])) {
+                if (!empty($patientNotificationEmail)) {
                     $this->emailService->sendPatientConfirmation(
-                        $apptDetails['patient_email'],
+                        $patientNotificationEmail,
                         $apptDetails['patient_name'],
                         $apptDetails['doctor_name'],
                         $apptDetails['appointment_date'],

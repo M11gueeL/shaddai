@@ -8,6 +8,27 @@ require_once __DIR__ . '/../services/EmailServive.php';
 
 date_default_timezone_set('America/Caracas');
 
+function isValidEmail($email) {
+    return !empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL);
+}
+
+function resolveReminderEmail(array $appointment) {
+    $patientEmail = trim((string)($appointment['patient_email'] ?? ''));
+    $representativeEmail = trim((string)($appointment['representative_email'] ?? ''));
+    $patientCedula = trim((string)($appointment['patient_cedula'] ?? ''));
+
+    if (isValidEmail($patientEmail)) {
+        return $patientEmail;
+    }
+
+    // Si no tiene cedula (menor), usar email del representante cuando sea valido.
+    if ($patientCedula === '' && isValidEmail($representativeEmail)) {
+        return $representativeEmail;
+    }
+
+    return null;
+}
+
 try {
     $db = Database::getInstance();
     $emailService = new EmailService();
@@ -44,10 +65,13 @@ try {
                 a.appointment_date, 
                 a.appointment_time, 
                 p.full_name as paciente_nombre,
-                p.email,
+                p.cedula as patient_cedula,
+                p.email as patient_email,
+                rep.email as representative_email,
                 (SELECT CONCAT(u.first_name, ' ', u.last_name) FROM users u WHERE u.id = a.doctor_id) as doctor_name
             FROM appointments a
             JOIN patients p ON a.patient_id = p.id
+            LEFT JOIN patients rep ON p.representative_id = rep.id
             WHERE 
                 (a.status = 'programada' OR a.status = 'confirmada')
                 AND CONCAT(a.appointment_date, ' ', a.appointment_time) >= :start_time
@@ -69,8 +93,9 @@ try {
         echo "    Citas encontradas en la ventana: $countAppts\n";
 
         foreach ($appointments as $appt) {
-             // Validar email antes de intentar nada
-             if (empty($appt['email']) || !filter_var($appt['email'], FILTER_VALIDATE_EMAIL)) {
+             $targetEmail = resolveReminderEmail($appt);
+
+             if ($targetEmail === null) {
                  echo ' [SKIP] Email inválido/inexistente para: ' . ($appt['paciente_nombre'] ?? 'Desconocido') . "\n";
                  continue; // Continuar con la siguiente iteración sin romper el script
              }
@@ -86,7 +111,7 @@ try {
                 
                 // Enviar Correo usando el método específico
                 $sent = $emailService->sendReminder(
-                    $appt['email'], 
+                    $targetEmail,
                     $patientName, 
                     $date, 
                     $time
@@ -98,14 +123,14 @@ try {
                         "INSERT INTO appointment_notifications_log (appointment_id, rule_id) VALUES (:appt_id, :rule_id)", 
                         [':appt_id' => $appt['appointment_id'], ':rule_id' => $rule['id']]
                     );
-                    echo " [OK] Enviado a {$appt['email']}\n";
+                    echo " [OK] Enviado a {$targetEmail}\n";
                 } else {
-                    echo " [ERROR] El servicio devolvió false para {$appt['email']}\n";
+                    echo " [ERROR] El servicio devolvió false para {$targetEmail}\n";
                 }
 
             } catch (Exception $e) {
                 // Capturar cualquier error de envío o DB localmente para NO detener el cron
-                echo " [ERROR] Excepción al enviar a {$appt['email']}: " . $e->getMessage() . "\n";
+                echo " [ERROR] Excepción al enviar a {$targetEmail}: " . $e->getMessage() . "\n";
             }
         }
     }

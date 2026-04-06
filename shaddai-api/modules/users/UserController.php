@@ -10,6 +10,28 @@ class UsersController {
         $this->model = new UserModel(); 
     }
 
+    private function validateBirthDate($birthDate) {
+        if (empty($birthDate)) {
+            return;
+        }
+
+        $birthDateObj = DateTime::createFromFormat('Y-m-d', $birthDate);
+        if (!$birthDateObj || $birthDateObj->format('Y-m-d') !== $birthDate) {
+            throw new Exception('La fecha de nacimiento debe tener formato YYYY-MM-DD');
+        }
+
+        $today = new DateTime('today');
+        $minBirthDate = (clone $today)->modify('-120 years');
+
+        if ($birthDateObj > $today) {
+            throw new Exception('La fecha de nacimiento no puede ser mayor a hoy');
+        }
+
+        if ($birthDateObj < $minBirthDate) {
+            throw new Exception('La fecha de nacimiento no puede exceder 120 años de antiguedad');
+        }
+    }
+
     public function getAllUsers() {
         try {
             $users = $this->model->getAllUsers();
@@ -70,6 +92,8 @@ class UsersController {
             if (!preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
                 throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
             }
+
+            $this->validateBirthDate($data['birth_date'] ?? null);
 
             // Validación de Teléfono
             if (!empty($data['phone'])) {
@@ -140,6 +164,8 @@ class UsersController {
             if (!empty($data['cedula']) && !preg_match('/^[VE]-[\d ]{6,15}$/', $data['cedula'])) {
                 throw new Exception('Formato de cédula inválido. Debe ser V-XXXXXX o E-XXXXXX (permitiendo espacios y hasta 9 dígitos)');
             }
+
+            $this->validateBirthDate($data['birth_date'] ?? null);
 
             $updatedUser = $this->model->updateUser($id, $data); // <--- Recibe el objeto actualizado
             

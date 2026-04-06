@@ -126,14 +126,11 @@ export default function Login() {
           {/* Tarjeta del Versículo */}
           <div className="relative p-6 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md rounded-2xl border-t border-l border-white/20 shadow-xl">
             <p className="text-lg italic font-serif leading-relaxed text-white px-2">
-              "Jehová es mi fortaleza y mi escudo;
-                En él confió mi corazón, y fui ayudado,
-                Por lo que se gozó mi corazón,
-                Y con mi cántico le alabaré."
+              "Dios mío, tú eres mi luz y mi salvación; ¿de quién voy a tener miedo? Tú eres quien protege mi vida; ¡nadie me infunde temor! Cuando mis enemigos me atacan y amenazan con destruirme, son ellos los que tropiezan, son ellos los que caen. Aunque me ataque un ejército, no tendré miedo; aunque hasta una guerra estalle contra mí, yo seguiré confiando en ti."
             </p>
             <div className="mt-4 flex items-center justify-center space-x-2">
               <div className="h-px w-6 bg-indigo-300"></div>
-              <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase">Salmos 28:7</span>
+              <span className="text-xs font-bold tracking-widest text-indigo-300 uppercase">Salmos 27: 1-3</span>
               <div className="h-px w-6 bg-indigo-300"></div>
             </div>
           </div>

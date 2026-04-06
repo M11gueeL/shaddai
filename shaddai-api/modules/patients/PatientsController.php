@@ -8,6 +8,28 @@ class PatientsController {
         $this->model = new PatientsModel();
     }
 
+    private function validateBirthDate($birthDate) {
+        if (empty($birthDate)) {
+            return;
+        }
+
+        $birthDateObj = DateTime::createFromFormat('Y-m-d', $birthDate);
+        if (!$birthDateObj || $birthDateObj->format('Y-m-d') !== $birthDate) {
+            throw new Exception('La fecha de nacimiento debe tener formato YYYY-MM-DD');
+        }
+
+        $today = new DateTime('today');
+        $minBirthDate = (clone $today)->modify('-120 years');
+
+        if ($birthDateObj > $today) {
+            throw new Exception('La fecha de nacimiento no puede ser mayor a hoy');
+        }
+
+        if ($birthDateObj < $minBirthDate) {
+            throw new Exception('La fecha de nacimiento no puede exceder 120 años de antiguedad');
+        }
+    }
+
     public function getAllPatients() {
         try {
             $patients = $this->model->getAllPatients();
@@ -104,6 +126,8 @@ class PatientsController {
             if (empty($data['full_name'])) {
                 throw new Exception('El nombre completo es requerido');
             }
+
+            $this->validateBirthDate($data['birth_date'] ?? null);
 
             // NUEVA LÓGICA DE VALIDACIÓN DE CÉDULA Y REPRESENTANTE
             $hasCedula = !empty($data['cedula']);
@@ -209,6 +233,8 @@ class PatientsController {
             if (empty($data['full_name'])) {
                 throw new Exception('El nombre completo es requerido');
             }
+
+            $this->validateBirthDate($data['birth_date'] ?? null);
             
             // NUEVA LÓGICA DE VALIDACIÓN DE CÉDULA Y REPRESENTANTE
             $hasCedula = !empty($data['cedula']);
