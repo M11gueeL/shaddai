@@ -78,6 +78,15 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
   
   if (!currentAppointment) return null;
 
+  const hasPatientCedula = Boolean(
+    currentAppointment.patient_cedula && String(currentAppointment.patient_cedula).trim()
+  );
+  const isRepresentativeContact = !hasPatientCedula && Boolean(
+    currentAppointment.representative_name &&
+    ((!currentAppointment.patient_direct_phone && currentAppointment.patient_phone) ||
+      (!currentAppointment.patient_direct_email && currentAppointment.patient_email))
+  );
+
   const formatDate = (dateString) => {
     return formatDateLocal(dateString);
   };
@@ -204,10 +213,26 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Cédula</p>
-                                    <p className="text-gray-700">{currentAppointment.patient_cedula || 'N/A'}</p>
+                                    {hasPatientCedula ? (
+                                      <p className="text-gray-700">{currentAppointment.patient_cedula}</p>
+                                    ) : (
+                                      <div className="flex flex-col gap-1">
+                                        <span className="inline-flex items-center w-fit px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                          Sin Cédula (Menor)
+                                        </span>
+                                        {currentAppointment.representative_name && (
+                                          <span className="text-xs text-gray-500">
+                                            Rep: {currentAppointment.representative_name}
+                                            {currentAppointment.representative_relationship ? ` (${currentAppointment.representative_relationship})` : ''}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                 </div>
                                 <div>
-                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Teléfono</p>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                      {isRepresentativeContact ? 'Teléfono (Representante)' : 'Teléfono'}
+                                    </p>
                                     <p className="text-gray-700 flex items-center gap-1.5">
                                         <Phone className="w-3.5 h-3.5 text-gray-400" />
                                         {currentAppointment.patient_phone || 'N/A'}
@@ -215,7 +240,9 @@ const AppointmentDetailModal = ({ appointment, onClose, onDeleted }) => {
                                 </div>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email</p>
+                                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                                  {isRepresentativeContact ? 'Email (Representante)' : 'Email'}
+                                </p>
                                 <p className="text-gray-700 flex items-center gap-1.5 truncate">
                                     <Mail className="w-3.5 h-3.5 text-gray-400" />
                                     {currentAppointment.patient_email || 'N/A'}

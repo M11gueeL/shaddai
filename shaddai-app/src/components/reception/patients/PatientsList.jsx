@@ -73,10 +73,14 @@ export default function PatientList({ onClose }) {
             case 'name':
               return (
                 (p.full_name && p.full_name.toLowerCase().includes(term)) ||
-                ((p.first_name || '') + ' ' + (p.last_name || '')).toLowerCase().includes(term)
+                ((p.first_name || '') + ' ' + (p.last_name || '')).toLowerCase().includes(term) ||
+                (p.representative_name && p.representative_name.toLowerCase().includes(term))
               );
             case 'cedula':
-              return (p.cedula || '').toLowerCase().includes(term);
+              return (
+                (p.cedula || '').toLowerCase().includes(term) ||
+                (p.representative_cedula || '').toLowerCase().includes(term)
+              );
             case 'email':
               return (p.email || '').toLowerCase().includes(term);
             case 'phone':
@@ -89,8 +93,10 @@ export default function PatientList({ onClose }) {
         result = result.filter((p) =>
           (p.full_name && p.full_name.toLowerCase().includes(term)) ||
           ((p.first_name || '') + ' ' + (p.last_name || '')).toLowerCase().includes(term) ||
+          (p.representative_name && p.representative_name.toLowerCase().includes(term)) ||
           (p.email && p.email.toLowerCase().includes(term)) ||
           (p.cedula && p.cedula.toLowerCase().includes(term)) ||
+          (p.representative_cedula && p.representative_cedula.toLowerCase().includes(term)) ||
           (p.phone && p.phone.toLowerCase().includes(term)) ||
           (p.id && String(p.id).toLowerCase().includes(term))
         );

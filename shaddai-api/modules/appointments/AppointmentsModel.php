@@ -187,7 +187,15 @@ class AppointmentsModel {
         $query = "SELECT 
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
-            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            p.full_name as patient_name,
+            p.cedula as patient_cedula,
+            COALESCE(NULLIF(p.phone, ''), rep.phone) as patient_phone,
+            COALESCE(NULLIF(p.email, ''), rep.email) as patient_email,
+            p.phone as patient_direct_phone,
+            p.email as patient_direct_email,
+            p.representative_relationship,
+            rep.full_name as representative_name,
+            rep.cedula as representative_cedula,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name,
             ms.name as specialty_name,
             cr.name as consulting_room_name,
@@ -195,6 +203,7 @@ class AppointmentsModel {
             CONCAT(uc.first_name, ' ', uc.last_name) as created_by_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN patients rep ON p.representative_id = rep.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN consulting_rooms cr ON a.consulting_room_id = cr.id
@@ -209,13 +218,22 @@ class AppointmentsModel {
         $query = "SELECT 
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
-            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            p.full_name as patient_name,
+            p.cedula as patient_cedula,
+            COALESCE(NULLIF(p.phone, ''), rep.phone) as patient_phone,
+            COALESCE(NULLIF(p.email, ''), rep.email) as patient_email,
+            p.phone as patient_direct_phone,
+            p.email as patient_direct_email,
+            p.representative_relationship,
+            rep.full_name as representative_name,
+            rep.cedula as representative_cedula,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula, u.email as doctor_email,
             ms.name as specialty_name,
             cr.name as consulting_room_name,
             cr.color as consulting_room_color
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN patients rep ON p.representative_id = rep.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
@@ -243,13 +261,22 @@ class AppointmentsModel {
         $query = "SELECT 
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
-            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            p.full_name as patient_name,
+            p.cedula as patient_cedula,
+            COALESCE(NULLIF(p.phone, ''), rep.phone) as patient_phone,
+            COALESCE(NULLIF(p.email, ''), rep.email) as patient_email,
+            p.phone as patient_direct_phone,
+            p.email as patient_direct_email,
+            p.representative_relationship,
+            rep.full_name as representative_name,
+            rep.cedula as representative_cedula,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
             ms.name as specialty_name,
             cr.name as consulting_room_name,
             cr.color as consulting_room_color
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN patients rep ON p.representative_id = rep.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN consulting_rooms cr ON a.consulting_room_id = cr.id
@@ -264,11 +291,20 @@ class AppointmentsModel {
         $query = "SELECT 
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
-            p.full_name as patient_name, p.cedula as patient_cedula, p.phone as patient_phone, p.email as patient_email,
+            p.full_name as patient_name,
+            p.cedula as patient_cedula,
+            COALESCE(NULLIF(p.phone, ''), rep.phone) as patient_phone,
+            COALESCE(NULLIF(p.email, ''), rep.email) as patient_email,
+            p.phone as patient_direct_phone,
+            p.email as patient_direct_email,
+            p.representative_relationship,
+            rep.full_name as representative_name,
+            rep.cedula as representative_cedula,
             CONCAT(u.first_name, ' ', u.last_name) as doctor_name, u.cedula as doctor_cedula,
             ms.name as specialty_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN patients rep ON p.representative_id = rep.id
         INNER JOIN users u ON a.doctor_id = u.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
@@ -282,10 +318,19 @@ class AppointmentsModel {
         $query = "SELECT 
             a.*,
             ami.chief_complaint, ami.symptoms, ami.notes,
-            p.full_name as patient_name, p.phone as patient_phone, p.email as patient_email,
+            p.full_name as patient_name,
+            p.cedula as patient_cedula,
+            COALESCE(NULLIF(p.phone, ''), rep.phone) as patient_phone,
+            COALESCE(NULLIF(p.email, ''), rep.email) as patient_email,
+            p.phone as patient_direct_phone,
+            p.email as patient_direct_email,
+            p.representative_relationship,
+            rep.full_name as representative_name,
+            rep.cedula as representative_cedula,
             ms.name as specialty_name
         FROM appointments a
         INNER JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN patients rep ON p.representative_id = rep.id
         INNER JOIN medical_specialties ms ON a.specialty_id = ms.id
         LEFT JOIN appointment_medical_info ami ON a.id = ami.appointment_id
         WHERE a.doctor_id = :doctor_id";

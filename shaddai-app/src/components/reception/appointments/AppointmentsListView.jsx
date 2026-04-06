@@ -25,6 +25,12 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
           </div>
         ) : (
           appointments.map((appointment) => (
+            (() => {
+              const hasCedula = Boolean(
+                appointment.patient_cedula && String(appointment.patient_cedula).trim()
+              );
+
+              return (
             <div
               key={appointment.id}
               className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
@@ -42,9 +48,22 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                     <div className="font-semibold text-gray-900">
                       {appointment.patient_name || 'N/A'}
                     </div>
-                    <div className="text-sm text-gray-600">
-                      C.I: {appointment.patient_cedula || 'N/A'}
-                    </div>
+                    {hasCedula ? (
+                      <div className="text-sm text-gray-600">
+                        C.I: {appointment.patient_cedula}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          C.I: No posee
+                        </span>
+                        {appointment.representative_name && (
+                          <span className="text-xs text-gray-500 truncate" title={`Rep: ${appointment.representative_name}`}>
+                            Rep: {appointment.representative_name}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Médico y Especialidad */}
@@ -120,6 +139,8 @@ const AppointmentsListView = ({ appointments, onViewAppointment, getStatusBadge 
                 </div>
               )}
             </div>
+              );
+            })()
           ))
         )}
       </div>

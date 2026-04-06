@@ -162,7 +162,7 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
                     {patient.full_name}
                   </div>
                   <div className="text-sm text-gray-500">
-                    Cédula: {patient.cedula || 'No posee'} | Teléfono: {patient.phone || 'Delegado'}
+                    Cédula: {patient.cedula} | Teléfono: {patient.phone}
                   </div>
                 </div>
               </div>
@@ -184,8 +184,8 @@ const PatientSearch = ({ onSelect, error, selectedPatient, onAddNew }) => {
               }}
               className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-50 text-blue-600 font-medium rounded-lg hover:bg-blue-100 transition-colors"
             >
-              <User className="w-4 h-4" />
-              + Registrar Nuevo Representante
+              <User className="w-8 h-4" />
+              + Registrar Representante
             </button>
           )}
         </div>
