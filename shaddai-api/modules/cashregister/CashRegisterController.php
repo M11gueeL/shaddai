@@ -61,7 +61,7 @@ class CashRegisterController {
     }
 
     private function getDigitalPayments($userId, $startTime) {
-        $sql = "SELECT id, payment_method, amount, currency, reference_number, payment_date, registered_by 
+        $sql = "SELECT id, account_id, payment_method, amount, currency, reference_number, payment_date, registered_by 
                 FROM payments 
                 WHERE registered_by = :uid 
                 AND payment_method IN ('transfer_bs', 'mobile_payment_bs') 
@@ -94,11 +94,13 @@ class CashRegisterController {
             foreach ($digitals as $p) {
                 $lbl = ($p['payment_method'] === 'transfer_bs') ? 'Transferencia' : 'Pago Móvil';
                 if (!empty($p['reference_number'])) $lbl .= ' Ref: ' . $p['reference_number'];
+                if (!empty($p['account_id'])) $lbl .= ' | Cuenta #' . (int)$p['account_id'];
 
                 $movements[] = [
                     'id' => 'dig_' . $p['id'], // Virtual ID
                     'session_id' => $open['id'],
                     'payment_id' => $p['id'],
+                    'account_id' => $p['account_id'] ?? null,
                     'movement_type' => 'payment_in',
                     'amount' => $p['amount'],
                     'currency' => $p['currency'],
@@ -271,6 +273,7 @@ class CashRegisterController {
                 'session' => $details['session'],
                 'totals' => $totals,
                 'accounts_created' => $details['opened_accounts'] ?? [],
+                'accounts_billed' => $details['billed_accounts'] ?? [],
                 'cancelled_receipts' => $reversedMovements,
                 'electronic_payments' => $electronicPayments,
                 'meta' => [

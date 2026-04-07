@@ -129,10 +129,11 @@ export default function SessionDetailModal({ sessionId, onClose }) {
                                  <div className="text-sm font-semibold text-gray-900">
                                    {m.payment_method ? formatPaymentMethod(m.payment_method) : m.description}
                                  </div>
-                                 <div className="text-xs text-gray-500">
-                                   {new Date(m.created_at).toLocaleTimeString()}
-                                   {m.reference_number && ` • Ref: ${m.reference_number}`}
-                                 </div>
+                                                 <div className="text-xs text-gray-500">
+                                                    {new Date(m.created_at).toLocaleTimeString()}
+                                                    {m.reference_number && ` • Ref: ${m.reference_number}`}
+                                                    {m.account_id && ` • Cuenta #${m.account_id}`}
+                                                 </div>
                               </div>
                            </div>
                            <div className="text-right">
@@ -175,6 +176,30 @@ export default function SessionDetailModal({ sessionId, onClose }) {
                              <div className="text-right">
                                 <div className="text-sm font-bold text-indigo-600">${Number(acc.total_usd).toFixed(2)}</div>
                                 <div className="text-[10px] text-gray-400">{new Date(acc.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+
+                    {/* Billed Accounts */}
+                    <div className="space-y-3">
+                       <h3 className="font-bold text-gray-900 border-b pb-2 flex justify-between">
+                          <span>Cuentas Facturadas</span>
+                          <span className="text-xs bg-emerald-100 px-2 py-1 rounded-full text-emerald-700">{(data.billed_accounts || []).length}</span>
+                       </h3>
+                       {(data.billed_accounts || []).length === 0 ? (
+                          <div className="p-4 rounded-xl border border-dashed border-gray-200 text-center text-gray-400 text-sm">
+                             Sin cuentas cobradas en este turno
+                          </div>
+                       ) : (data.billed_accounts || []).map(acc => (
+                          <div key={acc.id} className="p-3 bg-emerald-50/70 rounded-xl flex justify-between items-center">
+                             <div>
+                                <div className="text-sm font-bold text-gray-900">{acc.full_name}</div>
+                                <div className="text-xs text-gray-500">Cuenta #{acc.id} • {acc.payments_count} pagos</div>
+                             </div>
+                             <div className="text-right">
+                                <div className="text-sm font-bold text-emerald-700">${Number(acc.collected_usd || 0).toFixed(2)} / Bs {Number(acc.collected_bs || 0).toFixed(2)}</div>
+                                <div className="text-[10px] text-gray-400">{acc.last_payment_at ? new Date(acc.last_payment_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '-'}</div>
                              </div>
                           </div>
                        ))}

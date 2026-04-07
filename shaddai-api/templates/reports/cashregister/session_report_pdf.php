@@ -4,6 +4,7 @@
 // $movements: (array) all cash movements [optional for summary, but good for detail]
 // $electronic: (array) summary of electronic payments in that period [transfer_bs, mobile_payment_bs]
 // $accounts_created: (array) list of billing accounts created by user in session period
+// $accounts_billed: (array) list of billing accounts billed by user in session period
 // $cancelled_receipts: (array) list of receipts cancelled in period
 // $totals: (array) calculated totals [cash_in_usd, cash_in_bs, etc.]
 // $generated_by: (string) name of admin requesting report
@@ -116,6 +117,7 @@
             <tr>
                 <th>Fecha</th>
                 <th>Método</th>
+                <th>Cuenta</th>
                 <th>Referencia</th>
                 <th>Descripción / Cuenta</th>
                 <th style="text-align:right">Monto (Bs)</th>
@@ -131,8 +133,14 @@
                         echo $m === 'mobile_payment_bs' ? 'Pago Móvil' : ($m === 'transfer_bs' ? 'Transferencia' : $m);
                     ?>
                 </td>
+                <td><?= !empty($ep['account_id']) ? ('#' . (int)$ep['account_id']) : 'N/A' ?></td>
                 <td style="font-family:monospace;"><?= htmlspecialchars($ep['reference_number'] ?? 'N/A') ?></td>
-                <td><?= htmlspecialchars($ep['description'] ?? '-') ?></td>
+                <td>
+                    <?= !empty($ep['description']) ? htmlspecialchars($ep['description']) : '-' ?>
+                    <?php if (!empty($ep['account_id'])): ?>
+                        <br><span style="font-size:10px; color:#666;">Aplica a Cuenta #<?= (int)$ep['account_id'] ?></span>
+                    <?php endif; ?>
+                </td>
                 <td style="text-align:right"><?= number_format($ep['amount'], 2) ?></td>
             </tr>
             <?php endforeach; ?>
@@ -178,6 +186,37 @@
                             <?= strtoupper($statusMap[$acc['status']] ?? $acc['status']) ?>
                         </span>
                     </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+
+    <!-- BILLED ACCOUNTS -->
+    <div class="section-title">CUENTAS FACTURADAS EN SESIÓN (<?= count($accounts_billed ?? []) ?>)</div>
+    <?php if (empty($accounts_billed)): ?>
+        <p style="font-style:italic; color:#666; margin-left:10px;">No se registraron cobros en cuentas durante este periodo.</p>
+    <?php else: ?>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Cuenta</th>
+                    <th>Paciente</th>
+                    <th># Pagos</th>
+                    <th>Recaudado USD</th>
+                    <th>Recaudado Bs</th>
+                    <th>Último Cobro</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($accounts_billed as $ab): ?>
+                <tr>
+                    <td>#<?= (int)$ab['id'] ?></td>
+                    <td><?= htmlspecialchars(($ab['full_name'] ?? 'S/N') . (!empty($ab['dni']) ? (' (' . $ab['dni'] . ')') : '')) ?></td>
+                    <td><?= (int)($ab['payments_count'] ?? 0) ?></td>
+                    <td style="text-align:right">$<?= number_format((float)($ab['collected_usd'] ?? 0), 2) ?></td>
+                    <td style="text-align:right">Bs <?= number_format((float)($ab['collected_bs'] ?? 0), 2) ?></td>
+                    <td><?= !empty($ab['last_payment_at']) ? date('d/m H:i', strtotime($ab['last_payment_at'])) : '-' ?></td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

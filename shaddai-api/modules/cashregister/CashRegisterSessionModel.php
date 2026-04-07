@@ -113,8 +113,8 @@ class CashRegisterSessionModel {
         $endTime = $session['end_time'] ?? date('Y-m-d H:i:s');
 
         // 2. Movements (Cash Registry)
-        $cashMovements = $this->db->query("
-            SELECT m.*, p.payment_method, p.reference_number
+            $cashMovements = $this->db->query("
+                SELECT m.*, p.payment_method, p.reference_number, p.account_id
             FROM cash_register_movements m
             LEFT JOIN payments p ON m.payment_id = p.id
             WHERE m.session_id = :id
@@ -135,7 +135,8 @@ class CashRegisterSessionModel {
                 registered_by as created_by, 
                 notes as description,
                 payment_method, 
-                reference_number
+                reference_number,
+                account_id
             FROM payments
             WHERE registered_by = :uid
               AND created_at >= :start AND created_at <= :end
@@ -174,7 +175,36 @@ class CashRegisterSessionModel {
             ':end' => $endTime
         ]);
 
-        // 4. Cancelled Accounts (Updated to cancelled in this timeframe)
+            // 4. Accounts billed in this session (received payments grouped by account)
+            $billedAccounts = $this->db->query("
+                SELECT 
+                    ba.id,
+                    ba.status,
+                    ba.total_usd,
+                    ba.total_bs,
+                    p.full_name,
+                    p.cedula as dni,
+                    COUNT(pay.id) as payments_count,
+                    MIN(pay.created_at) as first_payment_at,
+                    MAX(pay.created_at) as last_payment_at,
+                    SUM(CASE WHEN pay.currency = 'USD' THEN pay.amount ELSE 0 END) as collected_usd,
+                    SUM(CASE WHEN pay.currency = 'BS' THEN pay.amount ELSE 0 END) as collected_bs
+                FROM payments pay
+                INNER JOIN billing_accounts ba ON ba.id = pay.account_id
+                LEFT JOIN patients p ON ba.patient_id = p.id
+                WHERE pay.registered_by = :uid
+                  AND pay.created_at >= :start AND pay.created_at <= :end
+                  AND pay.deleted_at IS NULL
+                  AND pay.status != 'rejected'
+                GROUP BY ba.id, ba.status, ba.total_usd, ba.total_bs, p.full_name, p.cedula
+                ORDER BY last_payment_at DESC
+            ", [
+                ':uid' => $session['user_id'],
+                ':start' => $session['start_time'],
+                ':end' => $endTime
+            ]);
+
+        // 5. Cancelled Accounts (Updated to cancelled in this timeframe)
         $cancelledAccounts = $this->db->query("
             SELECT ba.id, ba.updated_at as cancelled_at, ba.total_usd, ba.total_bs, 
                    p.full_name, p.cedula as dni
@@ -185,7 +215,7 @@ class CashRegisterSessionModel {
             ORDER BY ba.updated_at DESC
         ", [':start' => $session['start_time'], ':end' => $endTime]);
 
-        // 5. Aggregated Metrics (Calculated here for ease of use)
+        // 6. Aggregated Metrics (Calculated here for ease of use)
         // Group by Payment Method and Currency
         $metrics = [
              'USD' => ['cash' => 0, 'zelle' => 0, 'other' => 0],
@@ -219,6 +249,7 @@ class CashRegisterSessionModel {
             'movements' => $movements,
             'metrics' => $metrics,
             'opened_accounts' => $openedAccounts,
+                'billed_accounts' => $billedAccounts,
             'cancelled_accounts' => $cancelledAccounts
         ];
     }
