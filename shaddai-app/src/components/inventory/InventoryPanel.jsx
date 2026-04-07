@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
-import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats } from '../../api/inventoryApi';
+import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, storePurchase } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryTable from './InventoryTable';
 import Modal from './Modal';
@@ -17,12 +17,14 @@ import ElegantHeader from '../common/ElegantHeader';
 import InventoryStats from './InventoryStats';
 import InventoryFilters from './InventoryFilters';
 import InventoryReportsModal from './InventoryReportsModal';
+import PurchaseRestockModal from './PurchaseRestockModal';
 
 export default function InventoryPanel() {
     const { token, hasRole } = useAuth();
     const toast = useToast();
     const { confirm } = useConfirm();
     const canEdit = hasRole(['admin']);
+    const canPurchase = hasRole(['admin', 'farmacia']);
 
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -41,6 +43,10 @@ export default function InventoryPanel() {
     const [batchItem, setBatchItem] = useState(null);
     const [showBrandModal, setShowBrandModal] = useState(false);
     const [showReportsModal, setShowReportsModal] = useState(false);
+    const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+    const [suppliers, setSuppliers] = useState([]);
+    const [submittingPurchase, setSubmittingPurchase] = useState(false);
+    const [creatingSupplier, setCreatingSupplier] = useState(false);
     const [stats, setStats] = useState({ total_items: 0, low_stock_count: 0, total_value: 0 });
 
     // Advanced Filters State
@@ -61,6 +67,23 @@ export default function InventoryPanel() {
             getBrands({}, token).then(res => setBrands(res.data || [])).catch(console.error);
         }
     }, [token]);
+
+    const fetchSuppliers = useCallback(async () => {
+        if (!token) return;
+        try {
+            const res = await getSuppliers(token);
+            const payload = res.data?.data || res.data || [];
+            setSuppliers(Array.isArray(payload) ? payload : []);
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'Error cargando proveedores');
+        }
+    }, [token, toast]);
+
+    useEffect(() => {
+        if (showPurchaseModal) {
+            fetchSuppliers();
+        }
+    }, [showPurchaseModal, fetchSuppliers]);
 
     // Auto-refresh interval (every 5 seconds)
     useEffect(() => {
@@ -211,6 +234,52 @@ export default function InventoryPanel() {
         }
     };
 
+    const handleCreateSupplierQuick = async (supplierData) => {
+        try {
+            setCreatingSupplier(true);
+            const res = await createSupplierApi(supplierData, token);
+            const supplierId = res.data?.supplier_id || res.data?.id;
+
+            const newSupplier = {
+                id: supplierId,
+                name: supplierData.name,
+                tax_id: supplierData.tax_id || null,
+                phone: supplierData.phone || null,
+                email: supplierData.email || null,
+                address: supplierData.address || null,
+            };
+
+            if (supplierId) {
+                setSuppliers((prev) => {
+                    const exists = prev.some((s) => String(s.id) === String(supplierId));
+                    return exists ? prev : [...prev, newSupplier].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+                });
+            }
+
+            toast.success('Proveedor creado correctamente');
+            return newSupplier;
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'No se pudo crear el proveedor');
+            return null;
+        } finally {
+            setCreatingSupplier(false);
+        }
+    };
+
+    const handleStorePurchase = async (purchaseData) => {
+        try {
+            setSubmittingPurchase(true);
+            await storePurchase(purchaseData, token);
+            toast.success('Abastecimiento registrado correctamente');
+            setShowPurchaseModal(false);
+            fetchInventory();
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'Error procesando compra');
+        } finally {
+            setSubmittingPurchase(false);
+        }
+    };
+
     return (
         <div className="min-h-screen pb-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 pt-6">
@@ -238,9 +307,11 @@ export default function InventoryPanel() {
                     setFilters={setFilters}
                     brands={brands}
                     canEdit={canEdit}
+                    canPurchase={canPurchase}
                     onShowBrandModal={() => setShowBrandModal(true)}
                     onShowAlerts={handleShowAlerts}
                     onOpenReports={() => setShowReportsModal(true)}
+                    onOpenPurchase={() => setShowPurchaseModal(true)}
                     onCreate={() => setCreating(true)}
                 />
 
@@ -304,6 +375,17 @@ export default function InventoryPanel() {
             <InventoryReportsModal 
                 isOpen={showReportsModal} 
                 onClose={() => setShowReportsModal(false)} 
+            />
+
+            <PurchaseRestockModal
+                open={showPurchaseModal}
+                onClose={() => setShowPurchaseModal(false)}
+                products={items}
+                suppliers={suppliers}
+                onSubmit={handleStorePurchase}
+                onCreateSupplier={handleCreateSupplierQuick}
+                submitting={submittingPurchase}
+                creatingSupplier={creatingSupplier}
             />
         </div>
     );

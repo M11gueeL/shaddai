@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle, FileText, Bookmark, Bell } from 'lucide-react';
+import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle, FileText, Bookmark, Bell, Truck } from 'lucide-react';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function InventoryFilters({
@@ -9,9 +9,11 @@ export default function InventoryFilters({
     filters, setFilters,
     brands,
     canEdit,
+    canPurchase,
     onShowBrandModal,
     onShowAlerts,
     onOpenReports,
+    onOpenPurchase,
     onCreate
 }) {
     return (
@@ -82,6 +84,17 @@ export default function InventoryFilters({
                         <FileText size={18} />
                         <span className="hidden sm:inline font-medium">Reportes</span>
                     </button>
+
+                    {canPurchase && (
+                        <button
+                            onClick={onOpenPurchase}
+                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200 hover:shadow-emerald-300 transition-all duration-300 transform hover:-translate-y-0.5 font-medium text-sm"
+                        >
+                            <Truck size={18} />
+                            <span className="hidden sm:inline">Registrar Abastecimiento</span>
+                            <span className="sm:hidden">Abastecer</span>
+                        </button>
+                    )}
 
                     {canEdit && (
                         <button
