@@ -9,16 +9,19 @@ class InventoryRoutes {
         $router->add('GET', 'inventory/expiring', [$c, 'expiring'], ['auth']);
         $router->add('GET', 'inventory/stats', [$c, 'stats'], ['auth']);
         $router->add('GET', 'inventory/reports', [$c, 'generateReport'], ['auth']);
+        $router->add('GET', 'inventory/suppliers', [$c, 'getSuppliers'], ['auth']);
         $router->add('GET', 'inventory/{id}', [$c, 'get'], ['auth']);
         $router->add('GET', 'inventory/{id}/batches', [$c, 'getBatches'], ['auth']);
         $router->add('GET', 'inventory/{id}/movements', [$c, 'movements'], ['auth']);
 
-        // Escritura: solo admin
+        // Escritura: por defecto admin (compras permite admin/farmacia)
         $router->add('POST', 'inventory', [$c, 'create'], ['auth', 'role:admin']);
         $router->add('POST', 'inventory/batches/discard', [$c, 'discardBatch'], ['auth', 'role:admin']);
         $router->add('POST', 'inventory/batches/adjust', [$c, 'adjustBatch'], ['auth', 'role:admin']);
         $router->add('POST', 'inventory/batches/status', [$c, 'toggleBatchStatus'], ['auth', 'role:admin']);
         $router->add('POST', 'inventory/batches/update-expiration', [$c, 'updateBatchExpiration'], ['auth', 'role:admin']);
+        $router->add('POST', 'inventory/suppliers', [$c, 'createSupplier'], ['auth', 'role:admin']);
+        $router->add('POST', 'inventory/purchases', [$c, 'storePurchase'], ['auth', 'role:admin,farmacia']);
         $router->add('PUT', 'inventory/{id}', [$c, 'update'], ['auth', 'role:admin']);
         $router->add('DELETE', 'inventory/{id}', [$c, 'delete'], ['auth', 'role:admin']);
         $router->add('POST', 'inventory/{id}/restock', [$c, 'restock'], ['auth', 'role:admin']);

@@ -1,14 +1,126 @@
 <?php
 require_once __DIR__ . '/InventoryModel.php';
+require_once __DIR__ . '/SupplierModel.php';
+require_once __DIR__ . '/PurchaseModel.php';
 require_once __DIR__ . '/../../services/InventoryReportService.php';
 
 class InventoryController {
     private $model;
+    private $supplierModel;
+    private $purchaseModel;
     private $reportService;
 
     public function __construct() {
         $this->model = new InventoryModel();
+        $this->supplierModel = new SupplierModel();
+        $this->purchaseModel = new PurchaseModel();
         $this->reportService = new InventoryReportService();
+    }
+
+    public function getSuppliers() {
+        try {
+            $suppliers = $this->supplierModel->getAll(true);
+            http_response_code(200);
+            echo json_encode(['success' => true, 'data' => $suppliers]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function createSupplier() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'No autorizado']);
+                return;
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data) $data = $_POST;
+
+            if (empty($data['name'])) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'El nombre del proveedor es obligatorio.']);
+                return;
+            }
+
+            $newId = $this->supplierModel->create($data);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Proveedor creado correctamente.',
+                'supplier_id' => (int)$newId
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+    }
+
+    public function storePurchase() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload || !isset($payload->sub)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'No autorizado']);
+                return;
+            }
+
+            $body = json_decode(file_get_contents('php://input'), true);
+            if (!$body) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Payload JSON inválido o vacío.']);
+                return;
+            }
+
+            $purchaseData = [
+                'supplier_id' => $body['supplier_id'] ?? null,
+                'invoice_number' => $body['invoice_number'] ?? null,
+                'purchase_date' => $body['purchase_date'] ?? null,
+                'total_amount' => $body['total_amount'] ?? null,
+                'currency' => $body['currency'] ?? 'USD',
+                'status' => $body['status'] ?? 'received',
+                'notes' => $body['notes'] ?? null,
+            ];
+
+            $items = $body['items'] ?? null;
+
+            if (empty($purchaseData['supplier_id']) || empty($purchaseData['purchase_date']) || !is_array($items) || empty($items)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Datos incompletos: supplier_id, purchase_date e items son obligatorios.']);
+                return;
+            }
+
+            foreach ($items as $index => $item) {
+                $line = $index + 1;
+                if (empty($item['item_id']) || !isset($item['quantity']) || !isset($item['unit_cost'])) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => "Item #$line inválido: item_id, quantity y unit_cost son obligatorios."]);
+                    return;
+                }
+
+                if ((int)$item['quantity'] <= 0) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => "Item #$line inválido: quantity debe ser mayor a 0."]);
+                    return;
+                }
+            }
+
+            $result = $this->purchaseModel->processPurchaseTransaction($purchaseData, $items, (int)$payload->sub);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Abastecimiento registrado correctamente.',
+                'data' => $result
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     public function updateBatchExpiration() {
