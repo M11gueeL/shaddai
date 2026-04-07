@@ -49,17 +49,17 @@ class InventoryModel {
                     i.unit_of_measure,
                     i.price_usd as unit_value,
                     
-                    -- Sumar salidas facturadas
-                    SUM(CASE WHEN m.movement_type = 'out_billed' THEN m.quantity ELSE 0 END) as billed_qty,
+                    -- Sumar salidas por ventas
+                    SUM(CASE WHEN m.movement_type = 'out_sale' THEN m.quantity ELSE 0 END) as billed_qty,
                     
                     -- Calcular dinero generado (Aprox)
-                    (SUM(CASE WHEN m.movement_type = 'out_billed' THEN m.quantity ELSE 0 END) * i.price_usd) as billed_amount,
+                    (SUM(CASE WHEN m.movement_type = 'out_sale' THEN m.quantity ELSE 0 END) * i.price_usd) as billed_amount,
                     
-                    -- Sumar salidas por uso interno
-                    SUM(CASE WHEN m.movement_type = 'out_internal_use' THEN m.quantity ELSE 0 END) as internal_qty,
+                    -- Sumar salidas por consumo interno
+                    SUM(CASE WHEN m.movement_type = 'out_consumption' THEN m.quantity ELSE 0 END) as internal_qty,
                     
                     -- Calcular costo operativo (Aprox - Dinero que no entró)
-                    (SUM(CASE WHEN m.movement_type = 'out_internal_use' THEN m.quantity ELSE 0 END) * i.price_usd) as internal_cost_amount
+                    (SUM(CASE WHEN m.movement_type = 'out_consumption' THEN m.quantity ELSE 0 END) * i.price_usd) as internal_cost_amount
 
                 FROM inventory_movements m
                 JOIN inventory_items i ON m.item_id = i.id
@@ -210,7 +210,7 @@ class InventoryModel {
         return $this->discardFromBatch($batchId, $quantity, $userId, $reason);
     }
 
-    public function registerInflow($id, $quantity, $userId, $movementType = 'in_restock', $notes = null) {
+    public function registerInflow($id, $quantity, $userId, $movementType = 'in_purchase', $notes = null) {
         // Por defecto sin fecha de vencimiento si es un ajuste rápido
         return $this->restock($id, $quantity, $userId, null, 'AJUSTE-IN', $notes);
     }
@@ -275,7 +275,7 @@ class InventoryModel {
             $batchId = $this->db->lastInsertId();
 
             // 2. Registrar Movimiento vinculado al Lote
-            $this->recordMovement($id, 'in_restock', $quantity, $userId, "Entrada Lote: $batchNumber", $batchId);
+            $this->recordMovement($id, 'in_purchase', $quantity, $userId, "Entrada Lote: $batchNumber", $batchId);
 
             $this->syncItemStats($id);
             
@@ -296,7 +296,7 @@ class InventoryModel {
      * Si pides 10 pastillas y hay 2 lotes (uno con 3 y otro con 50),
      * crea DOS movimientos en el historial para trazabilidad exacta.
      */
-    public function registerOutflow($id, $quantity, $userId, $movementType = 'out_billed', $notes = null) {
+    public function registerOutflow($id, $quantity, $userId, $movementType = 'out_sale', $notes = null) {
         $startedTransaction = false;
         if (!$this->db->inTransaction()) {
             $this->db->beginTransaction();
@@ -592,8 +592,8 @@ class InventoryModel {
 
             foreach ($allMovements as $mov) {
                 // Determinar si el movimiento SUMÓ o RESTÓ al stock
-                // Tipos de entrada: in_restock, in_adjustment
-                // Tipos de salida: out_adjustment, out_expired, out_damaged, out_internal_use, out_billed
+                // Tipos de entrada: in_purchase, in_adjustment
+                // Tipos de salida: out_adjustment, out_sale, out_consumption, out_expired
                 
                 $isEntry = strpos($mov['movement_type'], 'in_') === 0;
                 $qty = $mov['quantity_moved'];
@@ -674,7 +674,7 @@ class InventoryModel {
                 JOIN inventory_items i ON im.item_id = i.id
                 LEFT JOIN users u ON im.created_by = u.id
                 WHERE DATE(im.created_at) BETWEEN :start_date AND :end_date
-                AND im.movement_type IN ("in_adjustment", "out_adjustment")
+                AND im.movement_type IN ("in_adjustment", "out_adjustment", "out_expired")
                 ORDER BY im.created_at DESC';
         
         return $this->db->query($sql, [
@@ -757,7 +757,7 @@ class InventoryModel {
 
             // Record movement
             $noteText = $notes ?? "Devolución a Lote Original: " . ($batch['batch_number']);
-            $this->recordMovement($itemId, 'in_restock', $quantity, $userId, $noteText, $batchId);
+            $this->recordMovement($itemId, 'in_purchase', $quantity, $userId, $noteText, $batchId);
 
             $this->syncItemStats($itemId);
             

@@ -305,7 +305,7 @@ class InventoryController {
                 $itemId, 
                 $quantity, 
                 $userId, 
-                'out_internal_use', // <--- AQUÍ ESTÁ LA CLAVE
+                'out_consumption', // <--- AQUÍ ESTÁ LA CLAVE
                 $notes
             );
 

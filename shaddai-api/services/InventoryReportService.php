@@ -53,13 +53,13 @@ class InventoryReportService {
 
     private function translateMovementType($type) {
         $map = [
-            'in_restock' => 'Abastecimiento',
+            'in_purchase' => 'Compra',
             'in_adjustment' => 'Ajuste de stock (Entrada)',
             'out_adjustment' => 'Ajuste de stock (Salida)',
+            'out_sale' => 'Salida por Venta',
+            'out_consumption' => 'Salida por Consumo',
             'out_expired' => 'Baja / Vencimiento',
-            'out_damaged' => 'Baja / Dañado',
-            'out_internal_use' => 'Uso Interno',
-            'out_billed' => 'Salida / Consumo'
+            'out_damaged' => 'Baja / Dañado'
         ];
         return $map[$type] ?? ucfirst(str_replace('_', ' ', $type));
     }
