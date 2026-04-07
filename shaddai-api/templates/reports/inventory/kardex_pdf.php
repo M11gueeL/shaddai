@@ -12,10 +12,27 @@
         td { border-bottom: 1px solid #ddd; padding: 6px; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         .type-badge { font-weight: bold; font-size: 10px; padding: 2px 4px; border-radius: 3px; display: inline-block; }
+        .badge-in-adjustment { background: #dcfce7; color: #166534; }
+        .badge-out-adjustment { background: #fee2e2; color: #991b1b; }
+        .badge-out-sale { background: #dbeafe; color: #1e40af; }
+        .badge-out-consumption { background: #ffedd5; color: #9a3412; }
+        .badge-out-expired { background: #e5e7eb; color: #374151; }
+        .badge-in-purchase { background: #d1fae5; color: #065f46; }
+        .badge-default { background: #f3f4f6; color: #374151; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; font-size: 10px; text-align: center; color: #aaa; }
     </style>
 </head>
 <body>
+    <?php
+    $movementMeta = [
+        'in_adjustment' => ['label' => 'Ajuste de Entrada', 'badge' => 'badge-in-adjustment'],
+        'out_adjustment' => ['label' => 'Ajuste de Salida', 'badge' => 'badge-out-adjustment'],
+        'out_sale' => ['label' => 'Venta', 'badge' => 'badge-out-sale'],
+        'out_consumption' => ['label' => 'Consumo Interno', 'badge' => 'badge-out-consumption'],
+        'out_expired' => ['label' => 'Merma/Vencido', 'badge' => 'badge-out-expired'],
+        'in_purchase' => ['label' => 'Compra/Abastecimiento', 'badge' => 'badge-in-purchase']
+    ];
+    ?>
     <div class="header">
         <h1>Centro de Especialidades Médicas Shaddai Rafa</h1>
         <h1>Kardex de Movimientos de Inventario </h1>
@@ -41,13 +58,17 @@
         </thead>
         <tbody>
             <?php foreach ($data as $row): ?>
+            <?php
+                $meta = $movementMeta[$row['movement_type']] ?? ['label' => ucfirst(str_replace('_', ' ', $row['movement_type'])), 'badge' => 'badge-default'];
+                $typeLabel = !empty($row['movement_type_label']) ? $row['movement_type_label'] : $meta['label'];
+            ?>
             <tr>
                 <td><?php echo date('d/m/Y H:i', strtotime($row['created_at'])); ?></td>
                 <td><?php echo htmlspecialchars($row['item_code']); ?></td>
                 <td><?php echo htmlspecialchars($row['item_name']); ?></td>
                 <td>
-                    <span class="type-badge">
-                        <?php echo htmlspecialchars($row['movement_type_label']); ?>
+                    <span class="type-badge <?php echo $meta['badge']; ?>">
+                        <?php echo htmlspecialchars($typeLabel); ?>
                     </span>
                 </td>
                 <td><?php echo htmlspecialchars($row['user_name']); ?></td>

@@ -16,10 +16,28 @@
         .text-right { text-align: right; }
         .text-green { color: #15803D; font-weight: bold; }
         .text-red { color: #B91C1C; font-weight: bold; }
+        .type-badge { font-weight: bold; font-size: 10px; padding: 2px 6px; border-radius: 10px; display: inline-block; }
+        .badge-in-adjustment { background: #dcfce7; color: #166534; }
+        .badge-out-adjustment { background: #fee2e2; color: #991b1b; }
+        .badge-out-sale { background: #dbeafe; color: #1e40af; }
+        .badge-out-consumption { background: #ffedd5; color: #9a3412; }
+        .badge-out-expired { background: #e5e7eb; color: #374151; }
+        .badge-in-purchase { background: #d1fae5; color: #065f46; }
+        .badge-default { background: #f3f4f6; color: #374151; }
         .footer { position: fixed; bottom: 0; left: 0; right: 0; font-size: 10px; text-align: center; color: #999; border-top: 1px solid #ddd; padding-top: 5px; }
     </style>
 </head>
 <body>
+    <?php
+    $movementMeta = [
+        'in_adjustment' => ['label' => 'Ajuste de Entrada', 'badge' => 'badge-in-adjustment'],
+        'out_adjustment' => ['label' => 'Ajuste de Salida', 'badge' => 'badge-out-adjustment'],
+        'out_sale' => ['label' => 'Venta', 'badge' => 'badge-out-sale'],
+        'out_consumption' => ['label' => 'Consumo Interno', 'badge' => 'badge-out-consumption'],
+        'out_expired' => ['label' => 'Merma/Vencido', 'badge' => 'badge-out-expired'],
+        'in_purchase' => ['label' => 'Compra/Abastecimiento', 'badge' => 'badge-in-purchase']
+    ];
+    ?>
     <div class="header">
         <h1>Centro de Especialidades Médicas Shaddai Rafa</h1>
         <h1>Reporte de Fugas y Ajustes Manuales</h1>
@@ -42,12 +60,16 @@
                 $isEntry = strpos($item['movement_type'], 'in_') === 0;
                 $sign = $isEntry ? '+' : '-';
                 $class = $isEntry ? 'text-green' : 'text-red';
+                $meta = $movementMeta[$item['movement_type']] ?? ['label' => ucfirst(str_replace('_', ' ', $item['movement_type'])), 'badge' => 'badge-default'];
+                $typeLabel = !empty($item['movement_type_label']) ? $item['movement_type_label'] : $meta['label'];
             ?>
                 <tr>
                     <td><?= date('d/m/Y H:i', strtotime($item['created_at'])) ?></td>
                     <td><?= htmlspecialchars($item['item_name']) ?></td>
                     <td><?= htmlspecialchars($item['user_name']) ?></td>
-                    <td><?= htmlspecialchars($item['movement_type_label']) ?></td>
+                    <td>
+                        <span class="type-badge <?= $meta['badge'] ?>"><?= htmlspecialchars($typeLabel) ?></span>
+                    </td>
                     <td class="text-center <?= $class ?>">
                         <?= $sign . $item['quantity_adjusted'] ?>
                     </td>
