@@ -1,13 +1,12 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
-import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, restockInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, storePurchase } from '../../api/inventoryApi';
+import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, updateSupplier as updateSupplierApi, storePurchase, getPurchases } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryTable from './InventoryTable';
 import Modal from './Modal';
 import ItemForm from './ItemForm';
-import RestockForm from './RestockForm';
 import InternalConsumptionForm from './InternalConsumptionForm';
 import MovementsDrawer from './MovementsDrawer';
 import ExpiringModal from './ExpiringModal';
@@ -18,6 +17,10 @@ import InventoryStats from './InventoryStats';
 import InventoryFilters from './InventoryFilters';
 import InventoryReportsModal from './InventoryReportsModal';
 import PurchaseRestockModal from './PurchaseRestockModal';
+import PurchasesRecentModal from './PurchasesRecentModal';
+import SuppliersDirectoryModal from './SuppliersDirectoryModal';
+import NewSupplierModal from './NewSupplierModal';
+import EditSupplierModal from './EditSupplierModal';
 
 export default function InventoryPanel() {
     const { token, hasRole } = useAuth();
@@ -32,7 +35,6 @@ export default function InventoryPanel() {
     const [lowStockOnly, setLowStockOnly] = useState(false);
     const [creating, setCreating] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [restockItem, setRestockItem] = useState(null);
     const [consumptionItem, setConsumptionItem] = useState(null);
     const [movementsItem, setMovementsItem] = useState(null);
     const [movements, setMovements] = useState([]);
@@ -44,9 +46,17 @@ export default function InventoryPanel() {
     const [showBrandModal, setShowBrandModal] = useState(false);
     const [showReportsModal, setShowReportsModal] = useState(false);
     const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+    const [showPurchasesModal, setShowPurchasesModal] = useState(false);
+    const [showSuppliersModal, setShowSuppliersModal] = useState(false);
+    const [showNewSupplierModal, setShowNewSupplierModal] = useState(false);
+    const [editingSupplier, setEditingSupplier] = useState(null);
     const [suppliers, setSuppliers] = useState([]);
+    const [purchases, setPurchases] = useState([]);
     const [submittingPurchase, setSubmittingPurchase] = useState(false);
     const [creatingSupplier, setCreatingSupplier] = useState(false);
+    const [loadingPurchases, setLoadingPurchases] = useState(false);
+    const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+    const [updatingSupplier, setUpdatingSupplier] = useState(false);
     const [stats, setStats] = useState({ total_items: 0, low_stock_count: 0, total_value: 0 });
 
     // Advanced Filters State
@@ -68,14 +78,33 @@ export default function InventoryPanel() {
         }
     }, [token]);
 
-    const fetchSuppliers = useCallback(async () => {
+    const fetchSuppliers = useCallback(async (params = {}) => {
         if (!token) return;
         try {
-            const res = await getSuppliers(token);
+            setLoadingSuppliers(true);
+            const res = await getSuppliers(params);
             const payload = res.data?.data || res.data || [];
             setSuppliers(Array.isArray(payload) ? payload : []);
         } catch (e) {
             toast.error(e.response?.data?.error || 'Error cargando proveedores');
+        } finally {
+            setLoadingSuppliers(false);
+        }
+    }, [token, toast]);
+
+    const fetchRecentPurchases = useCallback(async () => {
+        if (!token) return;
+        try {
+            setLoadingPurchases(true);
+            const purchasesRes = await getPurchases({ limit: 80 });
+
+            const purchasePayload = purchasesRes.data?.data || purchasesRes.data || [];
+
+            setPurchases(Array.isArray(purchasePayload) ? purchasePayload : []);
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'Error cargando compras');
+        } finally {
+            setLoadingPurchases(false);
         }
     }, [token, toast]);
 
@@ -84,6 +113,18 @@ export default function InventoryPanel() {
             fetchSuppliers();
         }
     }, [showPurchaseModal, fetchSuppliers]);
+
+    useEffect(() => {
+        if (showPurchasesModal) {
+            fetchRecentPurchases();
+        }
+    }, [showPurchasesModal, fetchRecentPurchases]);
+
+    useEffect(() => {
+        if (showSuppliersModal) {
+            fetchSuppliers({ all: 1 });
+        }
+    }, [showSuppliersModal, fetchSuppliers]);
 
     // Auto-refresh interval (every 5 seconds)
     useEffect(() => {
@@ -180,21 +221,6 @@ export default function InventoryPanel() {
         }
     };
 
-    const handleRestock = async (formData) => {
-        try {
-            const res = await restockInventoryItem(restockItem.id, formData, token);
-            if (res.data.message) {
-                toast.info(res.data.message);
-                return;
-            }
-            toast.success('Stock actualizado correctamente');
-            setRestockItem(null);
-            fetchInventory();
-        } catch (e) {
-            toast.error(e.response?.data?.error || 'Error en abastecimiento');
-        }
-    };
-
     const handleInternalConsumption = async (formData) => {
         try {
             const res = await registerInternalConsumption(formData, token);
@@ -272,11 +298,50 @@ export default function InventoryPanel() {
             await storePurchase(purchaseData, token);
             toast.success('Abastecimiento registrado correctamente');
             setShowPurchaseModal(false);
+            fetchRecentPurchases();
             fetchInventory();
         } catch (e) {
             toast.error(e.response?.data?.error || 'Error procesando compra');
         } finally {
             setSubmittingPurchase(false);
+        }
+    };
+
+    const handleSupplierCreatedFromDirectory = (supplier) => {
+        if (!supplier?.id) return;
+
+        setSuppliers((prev) => {
+            const exists = prev.some((s) => String(s.id) === String(supplier.id));
+            if (exists) return prev;
+            return [...prev, supplier].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        });
+
+        toast.success('Proveedor creado correctamente');
+    };
+
+    const handleSupplierUpdated = async (supplierData) => {
+        if (!editingSupplier?.id) return;
+
+        try {
+            setUpdatingSupplier(true);
+            await updateSupplierApi(editingSupplier.id, supplierData);
+
+            setSuppliers((prev) => prev.map((s) => {
+                if (String(s.id) !== String(editingSupplier.id)) return s;
+                return {
+                    ...s,
+                    ...supplierData,
+                    id: s.id
+                };
+            }));
+
+            toast.success('Proveedor actualizado correctamente');
+            setEditingSupplier(null);
+            setShowSuppliersModal(true);
+        } catch (e) {
+            toast.error(e.response?.data?.error || 'No se pudo actualizar el proveedor');
+        } finally {
+            setUpdatingSupplier(false);
         }
     };
 
@@ -311,6 +376,8 @@ export default function InventoryPanel() {
                     onShowBrandModal={() => setShowBrandModal(true)}
                     onShowAlerts={handleShowAlerts}
                     onOpenReports={() => setShowReportsModal(true)}
+                    onOpenPurchases={() => setShowPurchasesModal(true)}
+                    onOpenSuppliers={() => setShowSuppliersModal(true)}
                     onOpenPurchase={() => setShowPurchaseModal(true)}
                     onCreate={() => setCreating(true)}
                 />
@@ -322,7 +389,6 @@ export default function InventoryPanel() {
                         loading={loading}
                         onEdit={setEditingItem}
                         onDelete={handleDelete}
-                        onRestock={setRestockItem}
                         onInternalConsumption={setConsumptionItem}
                         onMovements={openMovements}
                         onManageBatches={setBatchItem}
@@ -337,9 +403,6 @@ export default function InventoryPanel() {
             </Modal>
             <Modal open={!!editingItem} title={`Editar: ${editingItem?.name || ''}`} onClose={() => setEditingItem(null)} maxWidth="max-w-md lg:max-w-xl">
                 {editingItem && <ItemForm initial={editingItem} loading={false} onSubmit={handleUpdate} />}
-            </Modal>
-            <Modal open={!!restockItem} title={`Abastecer: ${restockItem?.name || ''}`} onClose={() => setRestockItem(null)} maxWidth="max-w-sm md:max-w-md">
-                {restockItem && <RestockForm item={restockItem} loading={false} onSubmit={handleRestock} />}
             </Modal>
             <Modal open={!!consumptionItem} title={`Uso Interno: ${consumptionItem?.name || ''}`} onClose={() => setConsumptionItem(null)} maxWidth="max-w-sm md:max-w-md">
                 {consumptionItem && <InternalConsumptionForm item={consumptionItem} loading={false} onSubmit={handleInternalConsumption} />}
@@ -375,6 +438,57 @@ export default function InventoryPanel() {
             <InventoryReportsModal 
                 isOpen={showReportsModal} 
                 onClose={() => setShowReportsModal(false)} 
+            />
+
+            <PurchasesRecentModal
+                open={showPurchasesModal}
+                onClose={() => setShowPurchasesModal(false)}
+                purchases={purchases}
+                loading={loadingPurchases}
+                canPurchase={canPurchase}
+                onOpenPurchase={() => {
+                    setShowPurchasesModal(false);
+                    setShowPurchaseModal(true);
+                }}
+            />
+
+            <SuppliersDirectoryModal
+                open={showSuppliersModal}
+                onClose={() => setShowSuppliersModal(false)}
+                suppliers={suppliers}
+                loading={loadingSuppliers}
+                canCreate={canEdit}
+                canEdit={canEdit}
+                onOpenCreateSupplier={() => {
+                    setShowSuppliersModal(false);
+                    setShowNewSupplierModal(true);
+                }}
+                onEditSupplier={(supplier) => {
+                    setShowSuppliersModal(false);
+                    setEditingSupplier(supplier);
+                }}
+            />
+
+            <NewSupplierModal
+                open={showNewSupplierModal}
+                onClose={() => setShowNewSupplierModal(false)}
+                onSuccess={(supplier) => {
+                    handleSupplierCreatedFromDirectory(supplier);
+                    fetchSuppliers({ all: 1 });
+                    setShowNewSupplierModal(false);
+                    setShowSuppliersModal(true);
+                }}
+            />
+
+            <EditSupplierModal
+                open={!!editingSupplier}
+                supplier={editingSupplier}
+                loading={updatingSupplier}
+                onClose={() => {
+                    setEditingSupplier(null);
+                    setShowSuppliersModal(true);
+                }}
+                onSave={handleSupplierUpdated}
             />
 
             <PurchaseRestockModal

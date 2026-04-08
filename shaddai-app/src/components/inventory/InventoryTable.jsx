@@ -1,11 +1,11 @@
 import React from 'react';
 import { 
     Package, Loader2, Edit, Trash2, 
-    History, Layers, PlusCircle, AlertCircle, Briefcase,
+  History, Layers, AlertCircle, Briefcase,
     NotebookPen
 } from 'lucide-react';
 
-export default function InventoryTable({ items, onEdit, onDelete, onRestock, onInternalConsumption, onMovements, onManageBatches, loading, canEdit }) {
+export default function InventoryTable({ items, onEdit, onDelete, onInternalConsumption, onMovements, onManageBatches, loading, canEdit }) {
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center py-24">
@@ -81,9 +81,6 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onI
                     </button>
                     {canEdit && (
                         <>
-                            <button onClick={() => onRestock(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap">
-                                <PlusCircle size={14} /> Stock
-                            </button>
                             <button onClick={() => onInternalConsumption(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-amber-50 border border-amber-100 text-amber-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-colors whitespace-nowrap">
                                 <Briefcase size={14} /> Uso Int.
                             </button>
@@ -184,13 +181,6 @@ export default function InventoryTable({ items, onEdit, onDelete, onRestock, onI
                         {canEdit && (
                             <>
                                 {/* Grupo: Operativo */}
-                                <button 
-                                    onClick={() => onRestock(item)} 
-                                    className="p-2 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm shadow-indigo-200 mr-1"
-                                    title="Abastecer Stock"
-                                >
-                                    <PlusCircle size={16} />
-                                </button>
                                 <button 
                                     onClick={() => onInternalConsumption(item)} 
                                     className="p-2 text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors mr-2"

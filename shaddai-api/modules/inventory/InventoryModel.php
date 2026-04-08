@@ -9,18 +9,90 @@ class InventoryModel {
         $this->db = Database::getInstance();
     }
 
+    private function normalizeCode($code) {
+        if ($code === null) return null;
+        $value = strtoupper(trim((string)$code));
+        return $value === '' ? null : $value;
+    }
+
+    private function isValidDateYmd($value) {
+        if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return false;
+        }
+
+        $parts = explode('-', $value);
+        return checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0]);
+    }
+
+    private function ensureValidInventoryData($data, $excludeId = null) {
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '' || mb_strlen($name) < 2) {
+            throw new Exception('El nombre del insumo debe tener al menos 2 caracteres.');
+        }
+
+        if (mb_strlen($name) > 255) {
+            throw new Exception('El nombre del insumo es demasiado largo.');
+        }
+
+        $code = $this->normalizeCode($data['code'] ?? null);
+        if ($code !== null && !preg_match('/^[A-Z0-9._-]{2,50}$/', $code)) {
+            throw new Exception('El código/SKU solo permite letras, números, punto, guion y guion bajo.');
+        }
+
+        if ($code !== null) {
+            $sql = 'SELECT id FROM inventory_items WHERE code = :code AND is_deleted = 0';
+            $params = [':code' => $code];
+            if ($excludeId !== null) {
+                $sql .= ' AND id <> :id';
+                $params[':id'] = (int)$excludeId;
+            }
+
+            $exists = $this->db->query($sql, $params);
+            if (!empty($exists)) {
+                throw new Exception('Ya existe un insumo con ese código/SKU.');
+            }
+        }
+
+        $price = isset($data['price_usd']) ? (float)$data['price_usd'] : null;
+        if ($price === null || $price < 0) {
+            throw new Exception('El precio debe ser un número mayor o igual a 0.');
+        }
+
+        $reorder = isset($data['reorder_level']) ? (int)$data['reorder_level'] : 5;
+        if ($reorder < 0) {
+            throw new Exception('El punto de reorden no puede ser negativo.');
+        }
+
+        $unit = trim((string)($data['unit_of_measure'] ?? 'unidad'));
+        if ($unit === '' || mb_strlen($unit) > 50) {
+            throw new Exception('La unidad de medida es obligatoria y debe ser corta.');
+        }
+
+        if (!preg_match('/^[\p{L}0-9 .\-\/]+$/u', $unit)) {
+            throw new Exception('La unidad de medida contiene caracteres no permitidos.');
+        }
+    }
+
     // desarrolla un metodo que obtenga de las tablas relacionadas al inventory los siguientes tres datos: total de items, total de stock bajo (dinmicamente segun el reorder_level) y total de valor de inventario (sumando stock_quantity * price_usd) de forma general osea todos los items
     public function updateBatchExpiration($batchId, $newDate, $userId) {
+        if ($batchId <= 0) {
+            throw new Exception('El lote indicado no es válido.');
+        }
+
         // Validar formato de fecha
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDate)) {
+        if (!$this->isValidDateYmd($newDate)) {
             throw new Exception("Formato de fecha inválido.");
+        }
+
+        if (strtotime($newDate) < strtotime(date('Y-m-d'))) {
+            throw new Exception('La fecha de vencimiento no puede estar en el pasado.');
         }
 
         // Registrar en historial (opcional, pero recomendado para auditoría)
         // Por simplicidad, solo actualizamos el lote, pero idealmente se guardaría un log.
         
         $sql = 'UPDATE inventory_batches SET expiration_date = :date, updated_at = NOW() WHERE id = :id';
-        $this->db->query($sql, [
+        $this->db->execute($sql, [
             ':date' => $newDate,
             ':id' => $batchId
         ]);
@@ -150,11 +222,14 @@ class InventoryModel {
     }
 
     public function create($data, $userId = null) {
+        $this->ensureValidInventoryData($data);
+        $normalizedCode = $this->normalizeCode($data['code'] ?? null);
+
         $sql = 'INSERT INTO inventory_items (code, name, description, stock_quantity, unit_of_measure, reorder_level, price_usd, is_active, brand_id) 
                 VALUES (:code, :name, :description, :stock_quantity, :unit_of_measure, :reorder_level, :price_usd, :is_active, :brand_id)';
         
         $params = [
-            ':code' => $data['code'] ?? null,
+            ':code' => $normalizedCode,
             ':name' => $data['name'],
             ':description' => $data['description'] ?? null,
             ':stock_quantity' => isset($data['stock_quantity']) ? (int)$data['stock_quantity'] : 0,
@@ -178,10 +253,13 @@ class InventoryModel {
     }
 
     public function update($id, $data, $userId = null) {
+        $this->ensureValidInventoryData($data, (int)$id);
+        $normalizedCode = $this->normalizeCode($data['code'] ?? null);
+
         $sql = 'UPDATE inventory_items SET code = :code, name = :name, description = :description, unit_of_measure = :unit_of_measure, reorder_level = :reorder_level, price_usd = :price_usd, is_active = :is_active, brand_id = :brand_id WHERE id = :id';
         
         $params = [
-            ':code' => $data['code'] ?? null,
+            ':code' => $normalizedCode,
             ':name' => $data['name'],
             ':description' => $data['description'] ?? null,
             ':unit_of_measure' => $data['unit_of_measure'] ?? 'unidad',
@@ -253,6 +331,27 @@ class InventoryModel {
      * RESTOCK: Crea lote con cantidad inicial y actual sincronizadas
      */
     public function restock($id, $quantity, $userId, $expirationDate, $batchNumber = null, $notes = null) {
+        if ((int)$id <= 0) {
+            throw new Exception('El insumo indicado no es válido.');
+        }
+
+        if ((int)$quantity <= 0) {
+            throw new Exception('La cantidad a ingresar debe ser mayor a 0.');
+        }
+
+        if (!$this->isValidDateYmd((string)$expirationDate)) {
+            throw new Exception('La fecha de vencimiento del lote no es válida.');
+        }
+
+        if (strtotime($expirationDate) < strtotime(date('Y-m-d'))) {
+            throw new Exception('No se puede registrar un lote con fecha de vencimiento en el pasado.');
+        }
+
+        $normalizedBatch = trim((string)$batchNumber);
+        if ($normalizedBatch !== '' && !preg_match('/^[A-Za-z0-9._\/-]{2,50}$/', $normalizedBatch)) {
+            throw new Exception('El número de lote contiene caracteres no permitidos.');
+        }
+
         $startedTransaction = false;
         if (!$this->db->inTransaction()) {
             $this->db->beginTransaction();
@@ -260,13 +359,27 @@ class InventoryModel {
         }
 
         try {
+            if ($normalizedBatch !== '') {
+                $existingBatch = $this->db->query(
+                    'SELECT id FROM inventory_batches WHERE item_id = :item_id AND batch_number = :batch_number AND status IN ("active", "suspended") LIMIT 1',
+                    [
+                        ':item_id' => (int)$id,
+                        ':batch_number' => $normalizedBatch
+                    ]
+                );
+
+                if (!empty($existingBatch)) {
+                    throw new Exception('Ya existe un lote activo/suspendido con ese número para este insumo.');
+                }
+            }
+
             // 1. Insertar Lote con initial_quantity
             $sqlBatch = 'INSERT INTO inventory_batches (item_id, batch_number, quantity, initial_quantity, expiration_date, status) 
                          VALUES (:item_id, :batch_number, :quantity, :initial_quantity, :expiration_date, "active")';
             
             $this->db->execute($sqlBatch, [
                 ':item_id' => $id,
-                ':batch_number' => $batchNumber,
+                ':batch_number' => $normalizedBatch !== '' ? $normalizedBatch : null,
                 ':quantity' => $quantity,
                 ':initial_quantity' => $quantity,
                 ':expiration_date' => $expirationDate
@@ -275,7 +388,8 @@ class InventoryModel {
             $batchId = $this->db->lastInsertId();
 
             // 2. Registrar Movimiento vinculado al Lote
-            $this->recordMovement($id, 'in_purchase', $quantity, $userId, "Entrada Lote: $batchNumber", $batchId);
+            $batchLabel = $normalizedBatch !== '' ? $normalizedBatch : 'SIN-LOTE';
+            $this->recordMovement($id, 'in_purchase', $quantity, $userId, "Entrada Lote: $batchLabel", $batchId);
 
             $this->syncItemStats($id);
             

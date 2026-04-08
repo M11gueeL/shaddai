@@ -17,14 +17,85 @@ class InventoryController {
         $this->reportService = new InventoryReportService();
     }
 
+    private function mapFriendlyErrorMessage($rawMessage) {
+        $message = (string)$rawMessage;
+        $lower = strtolower($message);
+
+        if (strpos($lower, 'duplicate entry') !== false || strpos($lower, 'integrity constraint violation') !== false) {
+            if (strpos($lower, 'uk_inventory_code') !== false) {
+                return 'Ya existe un insumo con ese código/SKU.';
+            }
+
+            if (strpos($lower, 'tax_id') !== false) {
+                return 'Ya existe un proveedor con ese RIF/Cédula.';
+            }
+
+            if (strpos($lower, 'phone') !== false) {
+                return 'Ya existe un proveedor con ese teléfono.';
+            }
+
+            if (strpos($lower, 'email') !== false) {
+                return 'Ya existe un proveedor con ese correo.';
+            }
+
+            return 'No se pudo guardar porque el registro ya existe o viola una regla de integridad.';
+        }
+
+        if (strpos($lower, 'cannot add or update a child row') !== false || strpos($lower, 'foreign key constraint fails') !== false) {
+            return 'No se pudo guardar porque hay datos relacionados que no existen o están inactivos.';
+        }
+
+        return $message;
+    }
+
+    private function failFromException($e, $defaultStatus = 400) {
+        $friendly = $this->mapFriendlyErrorMessage($e->getMessage());
+        $status = $defaultStatus;
+
+        $errorLower = strtolower($friendly);
+        if (strpos($errorLower, 'no autorizado') !== false) {
+            $status = 401;
+        }
+
+        if ($status < 400 || $status > 599) {
+            $status = 400;
+        }
+
+        http_response_code($status);
+        echo json_encode(['success' => false, 'error' => $friendly]);
+    }
+
     public function getSuppliers() {
         try {
-            $suppliers = $this->supplierModel->getAll(true);
+            $onlyActive = !isset($_GET['all']) || (string)$_GET['all'] !== '1';
+            $suppliers = $this->supplierModel->getAll($onlyActive);
             http_response_code(200);
             echo json_encode(['success' => true, 'data' => $suppliers]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            $this->failFromException($e, 500);
+        }
+    }
+
+    public function getPurchases() {
+        try {
+            $filters = [
+                'supplier_id' => $_GET['supplier_id'] ?? null,
+                'status' => $_GET['status'] ?? null,
+                'start_date' => $_GET['start_date'] ?? null,
+                'end_date' => $_GET['end_date'] ?? null,
+            ];
+
+            $purchases = $this->purchaseModel->getAll($filters);
+
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;
+            if ($limit > 0) {
+                $purchases = array_slice($purchases, 0, $limit);
+            }
+
+            http_response_code(200);
+            echo json_encode(['success' => true, 'data' => $purchases]);
+        } catch (Exception $e) {
+            $this->failFromException($e, 500);
         }
     }
 
@@ -55,8 +126,42 @@ class InventoryController {
                 'supplier_id' => (int)$newId
             ]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            $this->failFromException($e);
+        }
+    }
+
+    public function updateSupplier($id) {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) {
+                throw new Exception('No autorizado');
+            }
+
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!$data || !is_array($data)) {
+                parse_str(file_get_contents('php://input'), $putData);
+                $data = is_array($putData) && !empty($putData) ? $putData : $_POST;
+            }
+
+            if (empty($data['name'])) {
+                throw new Exception('El nombre del proveedor es obligatorio.');
+            }
+
+            $existing = $this->supplierModel->getById((int)$id);
+            if (!$existing) {
+                throw new Exception('El proveedor indicado no existe.');
+            }
+
+            $this->supplierModel->update((int)$id, $data);
+
+            http_response_code(200);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Proveedor actualizado correctamente.',
+                'supplier_id' => (int)$id
+            ]);
+        } catch (Exception $e) {
+            $this->failFromException($e);
         }
     }
 
@@ -118,8 +223,7 @@ class InventoryController {
                 'data' => $result
             ]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -143,8 +247,7 @@ class InventoryController {
             echo json_encode(['message' => 'Fecha de vencimiento actualizada correctamente.']);
 
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -223,8 +326,7 @@ class InventoryController {
             http_response_code(201);
             echo json_encode(['id' => (int)$id]);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -250,8 +352,7 @@ class InventoryController {
             $ok = $this->model->update($id, $data, $userId);
             echo json_encode(['updated' => (bool)$ok]);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -260,8 +361,7 @@ class InventoryController {
             $ok = $this->model->delete($id);
             echo json_encode(['deleted' => (bool)$ok]);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -295,8 +395,7 @@ class InventoryController {
             $this->model->discardBatch($batchId, $quantity, $reason, $userId);
             echo json_encode(['message' => 'Lote actualizado']);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -321,8 +420,7 @@ class InventoryController {
             $this->model->adjustBatchQuantity($batchId, $quantity, $userId, $reason, $type);
             echo json_encode(['message' => 'Lote ajustado correctamente']);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -345,8 +443,7 @@ class InventoryController {
             $this->model->toggleBatchStatus($batchId, $status, $userId);
             echo json_encode(['message' => 'Estado del lote actualizado']);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -376,8 +473,7 @@ class InventoryController {
             // Devolvemos éxito (el stock se recalcula internamente)
             echo json_encode(['success' => true]);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -387,8 +483,7 @@ class InventoryController {
             $rows = $this->model->getMovementsByItem($id, $limit);
             echo json_encode($rows);
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e);
         }
     }
 
@@ -434,8 +529,7 @@ class InventoryController {
             $days = isset($_GET['days']) ? (int)$_GET['days'] : null;
             echo json_encode($this->model->getExpiring($days));
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->failFromException($e, 500);
         }
     }
 

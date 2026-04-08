@@ -9,6 +9,64 @@ class PurchaseModel {
         $this->db = Database::getInstance();
     }
 
+    private function isValidDateYmd($value) {
+        if (!is_string($value) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return false;
+        }
+
+        $parts = explode('-', $value);
+        return checkdate((int)$parts[1], (int)$parts[2], (int)$parts[0]);
+    }
+
+    private function validatePurchaseHeader($purchaseData) {
+        $supplierId = (int)($purchaseData['supplier_id'] ?? 0);
+        if ($supplierId <= 0) {
+            throw new Exception('Proveedor inválido.');
+        }
+
+        $supplier = $this->db->query('SELECT id, is_active FROM inventory_suppliers WHERE id = :id LIMIT 1', [':id' => $supplierId]);
+        if (empty($supplier)) {
+            throw new Exception('El proveedor seleccionado no existe.');
+        }
+
+        if ((int)$supplier[0]['is_active'] !== 1) {
+            throw new Exception('No se puede registrar una compra con un proveedor inactivo.');
+        }
+
+        $purchaseDate = (string)($purchaseData['purchase_date'] ?? '');
+        if (!$this->isValidDateYmd($purchaseDate)) {
+            throw new Exception('La fecha de compra no tiene un formato válido.');
+        }
+
+        if (strtotime($purchaseDate) > strtotime(date('Y-m-d'))) {
+            throw new Exception('La fecha de compra no puede estar en el futuro.');
+        }
+
+        $invoice = trim((string)($purchaseData['invoice_number'] ?? ''));
+        if ($invoice !== '' && !preg_match('/^[A-Za-z0-9\-_.\/]{3,100}$/', $invoice)) {
+            throw new Exception('El número de factura contiene caracteres no permitidos.');
+        }
+
+        if ($invoice !== '') {
+            $existingInvoice = $this->db->query(
+                'SELECT id FROM inventory_purchases WHERE supplier_id = :supplier_id AND invoice_number = :invoice_number AND status = "received" LIMIT 1',
+                [
+                    ':supplier_id' => $supplierId,
+                    ':invoice_number' => $invoice
+                ]
+            );
+
+            if (!empty($existingInvoice)) {
+                throw new Exception('Ya existe una compra activa con ese número de factura para este proveedor.');
+            }
+        }
+
+        $currency = strtoupper((string)($purchaseData['currency'] ?? 'USD'));
+        if (!in_array($currency, ['USD', 'BS'], true)) {
+            throw new Exception('La moneda seleccionada no es válida.');
+        }
+    }
+
     public function getAll($filters = []) {
         $sql = 'SELECT p.id, p.supplier_id, s.name AS supplier_name, p.invoice_number, p.purchase_date,
                        p.total_amount, p.currency, p.status, p.notes, p.created_by, p.created_at
@@ -119,6 +177,8 @@ class PurchaseModel {
             throw new Exception('Datos de compra incompletos: se requiere cabecera y detalle de compra.');
         }
 
+        $this->validatePurchaseHeader($purchaseData);
+
         try {
             $this->db->beginTransaction();
 
@@ -173,9 +233,47 @@ class PurchaseModel {
                     throw new Exception("Detalle #$line inválido: quantity debe ser mayor a 0.");
                 }
 
+                if ($qty > 1000000) {
+                    throw new Exception("Detalle #$line inválido: cantidad demasiado alta.");
+                }
+
                 $unitCost = isset($detail['unit_cost']) ? (float)$detail['unit_cost'] : 0;
                 if ($unitCost < 0) {
                     throw new Exception("Detalle #$line inválido: unit_cost no puede ser negativo.");
+                }
+
+                if ($unitCost > 100000000) {
+                    throw new Exception("Detalle #$line inválido: costo unitario fuera de rango.");
+                }
+
+                $batchNumber = trim((string)($detail['batch_number'] ?? ''));
+                if ($batchNumber === '') {
+                    throw new Exception("Detalle #$line inválido: batch_number es obligatorio.");
+                }
+
+                if (!preg_match('/^[A-Za-z0-9._\/-]{2,50}$/', $batchNumber)) {
+                    throw new Exception("Detalle #$line inválido: formato de batch_number no permitido.");
+                }
+
+                $expiration = (string)($detail['expiration_date'] ?? '');
+                if (!$this->isValidDateYmd($expiration)) {
+                    throw new Exception("Detalle #$line inválido: expiration_date tiene formato inválido.");
+                }
+
+                if (strtotime($expiration) < strtotime($purchaseData['purchase_date'])) {
+                    throw new Exception("Detalle #$line inválido: el vencimiento no puede ser menor a la fecha de compra.");
+                }
+
+                $existingBatch = $this->db->query(
+                    'SELECT id FROM inventory_batches WHERE item_id = :item_id AND batch_number = :batch_number AND status IN ("active", "suspended") LIMIT 1',
+                    [
+                        ':item_id' => (int)$detail['item_id'],
+                        ':batch_number' => $batchNumber
+                    ]
+                );
+
+                if (!empty($existingBatch)) {
+                    throw new Exception("Detalle #$line inválido: ya existe un lote activo con ese número para el producto.");
                 }
 
                 $subtotal = isset($detail['subtotal']) ? (float)$detail['subtotal'] : ($qty * $unitCost);
@@ -193,10 +291,10 @@ class PurchaseModel {
                 $this->db->execute($batchSql, [
                     ':item_id' => (int)$detail['item_id'],
                     ':purchase_id' => $newPurchaseId,
-                    ':batch_number' => $detail['batch_number'] ?? null,
+                    ':batch_number' => $batchNumber,
                     ':quantity' => $qty,
                     ':initial_quantity' => $qty,
-                    ':expiration_date' => $detail['expiration_date'] ?? null,
+                    ':expiration_date' => $expiration,
                     ':status' => 'active',
                 ]);
 

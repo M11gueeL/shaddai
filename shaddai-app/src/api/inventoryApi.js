@@ -33,11 +33,15 @@ export const toggleBatchStatus = (data) => api.post('/inventory/batches/status',
 export const updateBatchExpiration = (data) => api.post('/inventory/batches/update-expiration', data);
 
 // --- PURCHASES / SUPPLIERS ---
-export const getSuppliers = () => api.get('/inventory/suppliers');
+export const getSuppliers = (params = {}) => api.get('/inventory/suppliers', { params });
 
 export const createSupplier = (supplierData) => api.post('/inventory/suppliers', supplierData);
 
+export const updateSupplier = (id, supplierData) => api.put(`/inventory/suppliers/${id}`, supplierData);
+
 export const storePurchase = (purchaseData) => api.post('/inventory/purchases', purchaseData);
+
+export const getPurchases = (params = {}) => api.get('/inventory/purchases', { params });
 
 // --- BRANDS ---
 export const getBrands = (params = {}) => api.get('/brands', { params });

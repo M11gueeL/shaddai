@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, AlertTriangle, Tag, Download, Plus, XCircle, FileText, Bookmark, Bell, Truck } from 'lucide-react';
+import { Search, Filter, Tag, Plus, XCircle, FileText, Bookmark, Bell, Truck, ClipboardList, Building2 } from 'lucide-react';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function InventoryFilters({
@@ -13,6 +13,8 @@ export default function InventoryFilters({
     onShowBrandModal,
     onShowAlerts,
     onOpenReports,
+    onOpenPurchases,
+    onOpenSuppliers,
     onOpenPurchase,
     onCreate
 }) {
@@ -84,6 +86,28 @@ export default function InventoryFilters({
                         <FileText size={18} />
                         <span className="hidden sm:inline font-medium">Reportes</span>
                     </button>
+
+                    {canPurchase && (
+                        <button
+                            onClick={onOpenPurchases}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 rounded-xl transition-all duration-300 shadow-sm"
+                            title="Compras recientes"
+                        >
+                            <ClipboardList size={18} />
+                            <span className="hidden sm:inline font-medium">Compras</span>
+                        </button>
+                    )}
+
+                    {canPurchase && (
+                        <button
+                            onClick={onOpenSuppliers}
+                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 rounded-xl transition-all duration-300 shadow-sm"
+                            title="Directorio de proveedores"
+                        >
+                            <Building2 size={18} />
+                            <span className="hidden sm:inline font-medium">Proveedores</span>
+                        </button>
+                    )}
 
                     {canPurchase && (
                         <button

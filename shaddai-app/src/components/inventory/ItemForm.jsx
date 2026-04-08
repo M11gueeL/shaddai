@@ -7,6 +7,7 @@ import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtil
 export default function ItemForm({ initial, onSubmit, loading }) {
   const { token } = useAuth();
   const [brands, setBrands] = useState([]);
+  const [formError, setFormError] = useState('');
   
   const [form, setForm] = useState(() => ({
     code: initial?.code || '',
@@ -27,11 +28,40 @@ export default function ItemForm({ initial, onSubmit, loading }) {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    if (name === 'code') {
+      const normalized = value.toUpperCase().replace(/[^A-Z0-9._-]/g, '');
+      setForm(f => ({ ...f, [name]: normalized }));
+      return;
+    }
+
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? (checked ? 1 : 0) : value }));
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setFormError('');
+
+    const code = String(form.code || '').trim();
+    if (code && !/^[A-Z0-9._-]{2,50}$/.test(code)) {
+      setFormError('El código/SKU solo permite letras, números, punto, guion y guion bajo.');
+      return;
+    }
+
+    if (Number(form.price_usd) < 0) {
+      setFormError('El precio no puede ser negativo.');
+      return;
+    }
+
+    if (Number(form.reorder_level) < 0) {
+      setFormError('El punto de reorden no puede ser negativo.');
+      return;
+    }
+
+    onSubmit(form);
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       
       <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mb-6">
         <h3 className="text-sm font-bold text-indigo-900 mb-1">Información General</h3>
@@ -57,6 +87,7 @@ export default function ItemForm({ initial, onSubmit, loading }) {
             name="code" 
             value={form.code} 
             onChange={handleChange} 
+            maxLength={50}
             placeholder="Ej. MED-001"
             className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4" 
           />
@@ -152,6 +183,12 @@ export default function ItemForm({ initial, onSubmit, loading }) {
             </div>
         </div>
       </div>
+
+      {formError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {formError}
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
         <button 

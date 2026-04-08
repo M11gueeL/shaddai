@@ -11,6 +11,9 @@ const initialForm = {
   address: ''
 };
 
+const rifRegex = /^[A-Za-z0-9-]{5,20}$/;
+const phoneRegex = /^[0-9+()\-\s]{7,20}$/;
+
 export default function NewSupplierModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
@@ -32,6 +35,21 @@ export default function NewSupplierModal({ open, onClose, onSuccess }) {
 
     if (!form.name.trim()) {
       setError('El nombre del proveedor es obligatorio.');
+      return;
+    }
+
+    if (form.tax_id.trim() && !rifRegex.test(form.tax_id.trim())) {
+      setError('El RIF/Cédula tiene un formato inválido.');
+      return;
+    }
+
+    if (form.phone.trim() && !phoneRegex.test(form.phone.trim())) {
+      setError('El teléfono tiene un formato inválido.');
+      return;
+    }
+
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('El correo tiene un formato inválido.');
       return;
     }
 
@@ -94,6 +112,7 @@ export default function NewSupplierModal({ open, onClose, onSuccess }) {
               type="text"
               value={form.tax_id}
               onChange={(e) => onFieldChange('tax_id', e.target.value)}
+              pattern="[A-Za-z0-9-]{5,20}"
               className="block w-full rounded-xl border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               placeholder="J-12345678-9"
             />
@@ -104,6 +123,7 @@ export default function NewSupplierModal({ open, onClose, onSuccess }) {
               type="text"
               value={form.phone}
               onChange={(e) => onFieldChange('phone', e.target.value)}
+              pattern="[0-9+()\-\s]{7,20}"
               className="block w-full rounded-xl border-gray-300 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               placeholder="0412-0000000"
             />
