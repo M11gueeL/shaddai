@@ -43,6 +43,8 @@ export const storePurchase = (purchaseData) => api.post('/inventory/purchases', 
 
 export const getPurchases = (params = {}) => api.get('/inventory/purchases', { params });
 
+export const getPurchaseDetails = (id) => api.get(`/inventory/purchases/${id}`);
+
 // --- BRANDS ---
 export const getBrands = (params = {}) => api.get('/brands', { params });
 

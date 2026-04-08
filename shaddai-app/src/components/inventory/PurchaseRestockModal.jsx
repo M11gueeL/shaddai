@@ -234,7 +234,7 @@ export default function PurchaseRestockModal({
   };
 
   return (
-    <Modal open={open} title="Registrar abastecimiento" onClose={onClose} maxWidth="max-w-4xl">
+    <Modal open={open} title="Registrar abastecimiento" onClose={onClose} maxWidth="max-w-6xl">
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/40 p-4 shadow-sm">
           <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-900">

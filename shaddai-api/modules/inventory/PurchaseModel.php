@@ -118,6 +118,39 @@ class PurchaseModel {
         return $res[0] ?? null;
     }
 
+    public function getPurchaseDetails($id) {
+        $purchase = $this->getById((int)$id);
+        if (!$purchase) {
+            return null;
+        }
+
+        $details = $this->db->query(
+            'SELECT d.id, d.purchase_id, d.item_id, i.code AS item_code, i.name AS item_name,
+                    d.quantity, d.unit_cost, d.subtotal
+             FROM inventory_purchase_details d
+             INNER JOIN inventory_items i ON i.id = d.item_id
+             WHERE d.purchase_id = :purchase_id
+             ORDER BY d.id ASC',
+            [':purchase_id' => (int)$id]
+        );
+
+        $batches = $this->db->query(
+            'SELECT b.id, b.purchase_id, b.item_id, i.name AS item_name, b.batch_number,
+                    b.quantity, b.initial_quantity, b.expiration_date, b.status
+             FROM inventory_batches b
+             INNER JOIN inventory_items i ON i.id = b.item_id
+             WHERE b.purchase_id = :purchase_id
+             ORDER BY b.expiration_date ASC, b.id ASC',
+            [':purchase_id' => (int)$id]
+        );
+
+        return [
+            'purchase' => $purchase,
+            'details' => $details,
+            'batches' => $batches
+        ];
+    }
+
     public function create($data) {
         $sql = 'INSERT INTO inventory_purchases
                     (supplier_id, invoice_number, purchase_date, total_amount, currency, status, notes, created_by)

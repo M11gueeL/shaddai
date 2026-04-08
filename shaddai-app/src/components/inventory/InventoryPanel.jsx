@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
-import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, updateSupplier as updateSupplierApi, storePurchase, getPurchases } from '../../api/inventoryApi';
+import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, updateSupplier as updateSupplierApi, storePurchase, getPurchases, getPurchaseDetails } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryTable from './InventoryTable';
 import Modal from './Modal';
@@ -53,6 +53,9 @@ export default function InventoryPanel() {
     const [editingSupplier, setEditingSupplier] = useState(null);
     const [suppliers, setSuppliers] = useState([]);
     const [purchases, setPurchases] = useState([]);
+    const [selectedPurchaseId, setSelectedPurchaseId] = useState(null);
+    const [selectedPurchaseDetails, setSelectedPurchaseDetails] = useState(null);
+    const [loadingPurchaseDetails, setLoadingPurchaseDetails] = useState(false);
     const [submittingPurchase, setSubmittingPurchase] = useState(false);
     const [creatingSupplier, setCreatingSupplier] = useState(false);
     const [loadingPurchases, setLoadingPurchases] = useState(false);
@@ -118,8 +121,35 @@ export default function InventoryPanel() {
     useEffect(() => {
         if (showPurchasesModal) {
             fetchRecentPurchases();
+            setSelectedPurchaseId(null);
+            setSelectedPurchaseDetails(null);
         }
     }, [showPurchasesModal, fetchRecentPurchases]);
+
+    const handleViewPurchaseDetails = async (purchase) => {
+        const purchaseId = Number(purchase?.id || 0);
+        if (!purchaseId) return;
+
+        if (selectedPurchaseId === purchaseId) {
+            setSelectedPurchaseId(null);
+            setSelectedPurchaseDetails(null);
+            return;
+        }
+
+        try {
+            setLoadingPurchaseDetails(true);
+            setSelectedPurchaseId(purchaseId);
+            const res = await getPurchaseDetails(purchaseId);
+            const payload = res.data?.data || null;
+            setSelectedPurchaseDetails(payload);
+        } catch (e) {
+            setSelectedPurchaseId(null);
+            setSelectedPurchaseDetails(null);
+            toast.error(e.response?.data?.error || 'No se pudo cargar el detalle de la compra');
+        } finally {
+            setLoadingPurchaseDetails(false);
+        }
+    };
 
     useEffect(() => {
         if (showSuppliersModal) {
@@ -451,6 +481,10 @@ export default function InventoryPanel() {
                 onClose={() => setShowPurchasesModal(false)}
                 purchases={purchases}
                 loading={loadingPurchases}
+                selectedPurchaseId={selectedPurchaseId}
+                selectedPurchaseDetails={selectedPurchaseDetails}
+                loadingDetails={loadingPurchaseDetails}
+                onSelectPurchase={handleViewPurchaseDetails}
                 canPurchase={canPurchase}
                 onOpenPurchase={() => {
                     setShowPurchasesModal(false);

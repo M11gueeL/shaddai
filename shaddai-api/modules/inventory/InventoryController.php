@@ -99,6 +99,27 @@ class InventoryController {
         }
     }
 
+    public function getPurchaseDetails($id) {
+        try {
+            $purchaseId = (int)$id;
+            if ($purchaseId <= 0) {
+                throw new Exception('Compra invalida.');
+            }
+
+            $details = $this->purchaseModel->getPurchaseDetails($purchaseId);
+            if (!$details) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => 'La compra indicada no existe.']);
+                return;
+            }
+
+            http_response_code(200);
+            echo json_encode(['success' => true, 'data' => $details]);
+        } catch (Exception $e) {
+            $this->failFromException($e);
+        }
+    }
+
     public function createSupplier() {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;

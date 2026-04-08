@@ -11,6 +11,7 @@ class InventoryRoutes {
         $router->add('GET', 'inventory/reports', [$c, 'generateReport'], ['auth']);
         $router->add('GET', 'inventory/suppliers', [$c, 'getSuppliers'], ['auth']);
         $router->add('GET', 'inventory/purchases', [$c, 'getPurchases'], ['auth']);
+        $router->add('GET', 'inventory/purchases/{id}', [$c, 'getPurchaseDetails'], ['auth']);
         $router->add('PUT', 'inventory/suppliers/{id}', [$c, 'updateSupplier'], ['auth', 'role:admin']);
         $router->add('GET', 'inventory/{id}', [$c, 'get'], ['auth']);
         $router->add('GET', 'inventory/{id}/batches', [$c, 'getBatches'], ['auth']);
