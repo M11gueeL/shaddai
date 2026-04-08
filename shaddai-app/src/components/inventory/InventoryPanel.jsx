@@ -15,6 +15,7 @@ import BrandManagementModal from './BrandManagementModal';
 import ElegantHeader from '../common/ElegantHeader';
 import InventoryStats from './InventoryStats';
 import InventoryFilters from './InventoryFilters';
+import InventoryActionToolbar from './InventoryActionToolbar';
 import InventoryReportsModal from './InventoryReportsModal';
 import PurchaseRestockModal from './PurchaseRestockModal';
 import PurchasesRecentModal from './PurchasesRecentModal';
@@ -360,17 +361,8 @@ export default function InventoryPanel() {
                     <InventoryStats stats={stats} />
                 </ElegantHeader>
 
-                {/* Toolbar & Filters Section */}
-                <InventoryFilters
-                    search={search}
-                    setSearch={setSearch}
-                    showFilters={showFilters}
-                    setShowFilters={setShowFilters}
-                    lowStockOnly={lowStockOnly}
-                    setLowStockOnly={setLowStockOnly}
-                    filters={filters}
-                    setFilters={setFilters}
-                    brands={brands}
+                {/* Actions Section (separated for cleaner UX) */}
+                <InventoryActionToolbar
                     canEdit={canEdit}
                     canPurchase={canPurchase}
                     onShowBrandModal={() => setShowBrandModal(true)}
@@ -382,8 +374,22 @@ export default function InventoryPanel() {
                     onCreate={() => setCreating(true)}
                 />
 
-                {/* Content */}
-                <div className="rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full">
+                {/* Search + Filters + Table Section (unified block) */}
+                <div className="rounded-2xl shadow-sm border border-gray-200 overflow-hidden w-full bg-white">
+                    <div className="border-b border-gray-100 bg-gray-50/50 px-2 py-1">
+                        <InventoryFilters
+                            search={search}
+                            setSearch={setSearch}
+                            showFilters={showFilters}
+                            setShowFilters={setShowFilters}
+                            lowStockOnly={lowStockOnly}
+                            setLowStockOnly={setLowStockOnly}
+                            filters={filters}
+                            setFilters={setFilters}
+                            brands={brands}
+                        />
+                    </div>
+
                     <InventoryTable
                         items={items}
                         loading={loading}

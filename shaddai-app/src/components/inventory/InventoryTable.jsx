@@ -73,28 +73,28 @@ export default function InventoryTable({ items, onEdit, onDelete, onInternalCons
                 </div>
 
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-                    <button onClick={() => onMovements(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap">
+                  <button onClick={() => onMovements(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-all duration-300 whitespace-nowrap">
                         <History size={14} /> Historial
                     </button>
-                    <button onClick={() => onManageBatches(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-gray-200 text-gray-600 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors whitespace-nowrap">
-                        <Layers size={14} /> Lotes
+                  <button onClick={() => onManageBatches(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300 transition-all duration-300 whitespace-nowrap">
+                    <Layers size={14} /> Gestionar lotes
                     </button>
                     {canEdit && (
                         <>
-                            <button onClick={() => onInternalConsumption(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-amber-50 border border-amber-100 text-amber-700 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-colors whitespace-nowrap">
-                                <Briefcase size={14} /> Uso Int.
+                      <button onClick={() => onInternalConsumption(item)} className="flex-1 flex items-center justify-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-amber-100 transition-all duration-300 whitespace-nowrap">
+                        <Briefcase size={14} /> Uso interno
                             </button>
                         </>
                     )}
                 </div>
                 
                 {canEdit && (
-                    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
-                        <button onClick={() => onEdit(item)} className="flex-1 text-blue-600 text-xs font-medium py-1.5 hover:bg-blue-50 rounded-lg transition-colors">
-                            Editar
+                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
+                    <button onClick={() => onEdit(item)} className="flex-1 text-blue-700 text-xs font-semibold py-2 hover:bg-blue-50 rounded-lg transition-all duration-300">
+                      Editar producto
                         </button>
                         <div className="w-px h-4 bg-gray-200"></div>
-                        <button onClick={() => onDelete(item)} className="flex-1 text-red-600 text-xs font-medium py-1.5 hover:bg-red-50 rounded-lg transition-colors">
+                    <button onClick={() => onDelete(item)} className="flex-1 text-red-700 text-xs font-semibold py-2 hover:bg-red-50 rounded-lg transition-all duration-300">
                             Desactivar
                         </button>
                     </div>
@@ -158,56 +158,58 @@ export default function InventoryTable({ items, onEdit, onDelete, onInternalCons
                         {item.is_active ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
-                        {/* Grupo: Información / Gestión */}
-                        <div className="flex bg-gray-50 rounded-lg p-1 border border-gray-100 mr-2">
-                            <button 
-                                onClick={() => onMovements(item)} 
-                                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-white rounded-md transition-all shadow-sm hover:shadow"
-                                title="Ver Historial"
-                            >
-                                <History size={16} />
-                            </button>
-                            <button 
-                                onClick={() => onManageBatches(item)} 
-                                className="p-1.5 text-gray-500 hover:text-purple-600 hover:bg-white rounded-md transition-all shadow-sm hover:shadow"
-                                title="Gestionar Lotes"
-                            >
-                                <Layers size={16} />
-                            </button>
-                        </div>
-                        
-                        {canEdit && (
-                            <>
-                                {/* Grupo: Operativo */}
-                                <button 
-                                    onClick={() => onInternalConsumption(item)} 
-                                    className="p-2 text-amber-700 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors mr-2"
-                                    title="Registrar Uso Interno"
-                                >
-                                    <NotebookPen size={16} />
-                                </button>
+                    <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-95 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => onMovements(item)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-300 text-xs font-semibold"
+                        title="Ver historial"
+                      >
+                        <History size={14} />
+                        Historial
+                      </button>
 
-                                {/* Grupo: Admin */}
-                                <button 
-                                    onClick={() => onEdit(item)} 
-                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                    title="Editar"
-                                >
-                                    <Edit size={16} />
-                                </button>
-                                <button 
-                                    onClick={() => onDelete(item)} 
-                                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                    title="Desactivar"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </>
-                        )}
+                      <button
+                        onClick={() => onManageBatches(item)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-violet-700 hover:bg-violet-50 hover:border-violet-300 transition-all duration-300 text-xs font-semibold"
+                        title="Gestionar lotes"
+                      >
+                        <Layers size={14} />
+                        Lotes
+                      </button>
+
+                      {canEdit && (
+                        <>
+                          <button
+                            onClick={() => onInternalConsumption(item)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 transition-all duration-300 text-xs font-semibold"
+                            title="Registrar uso interno"
+                          >
+                            <NotebookPen size={14} />
+                            Uso interno
+                          </button>
+
+                          <button
+                            onClick={() => onEdit(item)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50/60 text-blue-700 hover:bg-blue-100 transition-all duration-300 text-xs font-semibold"
+                            title="Editar producto"
+                          >
+                            <Edit size={14} />
+                            Editar
+                          </button>
+
+                          <button
+                            onClick={() => onDelete(item)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50/60 text-rose-700 hover:bg-rose-100 transition-all duration-300 text-xs font-semibold"
+                            title="Desactivar producto"
+                          >
+                            <Trash2 size={14} />
+                            Borrar
+                          </button>
+                        </>
+                      )}
                     </div>
-                  </td>
+                    </td>
                 </tr>
               );
             })}

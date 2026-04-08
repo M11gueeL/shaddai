@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Filter, Tag, Plus, XCircle, FileText, Bookmark, Bell, Truck, ClipboardList, Building2 } from 'lucide-react';
+import { Search, Filter, Tag, XCircle } from 'lucide-react';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
 export default function InventoryFilters({
@@ -7,19 +7,10 @@ export default function InventoryFilters({
     showFilters, setShowFilters,
     lowStockOnly, setLowStockOnly,
     filters, setFilters,
-    brands,
-    canEdit,
-    canPurchase,
-    onShowBrandModal,
-    onShowAlerts,
-    onOpenReports,
-    onOpenPurchases,
-    onOpenSuppliers,
-    onOpenPurchase,
-    onCreate
+    brands
 }) {
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 transition-all duration-300 sticky top-4 z-30">
+        <div className="transition-all duration-300">
             <div className="p-2 flex flex-col lg:flex-row gap-3 items-center justify-between">
                 
                 {/* Search Bar */}
@@ -36,8 +27,8 @@ export default function InventoryFilters({
                     />
                 </div>
 
-                {/* Actions Toolbar */}
-                <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end p-1">
+                {/* Filter Trigger */}
+                <div className="flex items-center gap-2 w-full lg:w-auto justify-end p-1">
                     
                     <button 
                         onClick={() => setShowFilters(!showFilters)}
@@ -53,82 +44,6 @@ export default function InventoryFilters({
                             <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
                         )}
                     </button>
-
-                    <div className="h-6 w-px bg-gray-200 hidden sm:block mx-1"></div>
-
-                    {canEdit && (
-                        <>
-                            <button 
-                                onClick={onShowBrandModal}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 rounded-xl transition-all duration-300 shadow-sm"
-                                title="Gestionar Marcas"
-                            >
-                                <Bookmark size={18} />
-                                <span className="hidden sm:inline font-medium">Marcas</span>
-                            </button>
-
-                            <button 
-                                onClick={onShowAlerts}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 rounded-xl transition-all duration-300 shadow-sm"
-                                title="Alertas de Vencimiento"
-                            >
-                                <Bell size={18} />
-                                <span className="hidden sm:inline font-medium">Alertas</span>
-                            </button>
-                        </>
-                    )}
-
-                    <button 
-                        onClick={onOpenReports}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 rounded-xl transition-all duration-300 shadow-sm"
-                        title="Reportes y Análisis"
-                    >
-                        <FileText size={18} />
-                        <span className="hidden sm:inline font-medium">Reportes</span>
-                    </button>
-
-                    {canPurchase && (
-                        <button
-                            onClick={onOpenPurchases}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-sky-50 hover:text-sky-700 hover:border-sky-200 rounded-xl transition-all duration-300 shadow-sm"
-                            title="Compras recientes"
-                        >
-                            <ClipboardList size={18} />
-                            <span className="hidden sm:inline font-medium">Compras</span>
-                        </button>
-                    )}
-
-                    {canPurchase && (
-                        <button
-                            onClick={onOpenSuppliers}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-600 border border-transparent hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-200 rounded-xl transition-all duration-300 shadow-sm"
-                            title="Directorio de proveedores"
-                        >
-                            <Building2 size={18} />
-                            <span className="hidden sm:inline font-medium">Proveedores</span>
-                        </button>
-                    )}
-
-                    {canPurchase && (
-                        <button
-                            onClick={onOpenPurchase}
-                            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-200 hover:shadow-emerald-300 transition-all duration-300 transform hover:-translate-y-0.5 font-medium text-sm"
-                        >
-                            <Truck size={18} />
-                            <span className="hidden sm:inline">Registrar Abastecimiento</span>
-                            <span className="sm:hidden">Abastecer</span>
-                        </button>
-                    )}
-
-                    {canEdit && (
-                        <button
-                            onClick={onCreate}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all duration-300 transform hover:-translate-y-0.5 font-medium text-sm ml-2"
-                        >
-                            <Plus size={20} />
-                            <span className="hidden sm:inline">Nuevo</span>
-                        </button>
-                    )}
                 </div>
             </div>
 
