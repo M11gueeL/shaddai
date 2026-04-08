@@ -12,7 +12,6 @@ import {
   Edit3,
   CheckCircle,
   XCircle,
-  Trash2,
   Activity
 } from 'lucide-react';
 import PatientSearch from './PatientSearch';
@@ -21,7 +20,6 @@ import SpecialtySelector from './SpecialtySelector';
 import TimePicker from './TimePicker';
 import appointmentsAPI from '../../../api/appointments';
 import { useToast } from '../../../context/ToastContext';
-import { useConfirm } from '../../../context/ConfirmContext';
 
 const formatStatus = (status) => {
   const statusMap = {
@@ -35,9 +33,8 @@ const formatStatus = (status) => {
   return statusMap[status] || status;
 };
 
-const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => {
+const EditAppointmentModal = ({ appointment, onClose, onUpdate }) => {
   const toast = useToast();
-  const { confirm } = useConfirm();
   const { token } = useAuth(); // Get Token
   const [formData, setFormData] = useState({
     patient_id: '',
@@ -60,7 +57,6 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
   const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [availableSpecialties, setAvailableSpecialties] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'medical', 'status'
   const [history, setHistory] = useState([]);
@@ -291,33 +287,6 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
       toast.error('Error al cambiar el estado');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Eliminar cita
-  const handleDelete = async () => {
-    const confirmed = await confirm({
-      title: 'Eliminar cita',
-      message: '¿Estás seguro de que quieres eliminar esta cita? Esta acción no se puede deshacer.',
-      confirmText: 'Sí, eliminar',
-      cancelText: 'Cancelar',
-      tone: 'danger',
-    });
-    if (!confirmed) return;
-
-    setIsDeleting(true);
-    try {
-      const token = localStorage.getItem('token');
-      await appointmentsAPI.delete(appointment.id, token);
-      toast.success('Cita eliminada exitosamente');
-      onDeleted?.(appointment.id);
-      onClose();
-    } catch (error) {
-      console.error('Error deleting appointment:', error);
-      const msg = error.response?.data?.error || 'Error al eliminar la cita';
-      toast.error(msg);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -728,16 +697,7 @@ const EditAppointmentModal = ({ appointment, onClose, onUpdate, onDeleted }) => 
                 )}
                 
                 {/* Footer Buttons */}
-               <div className="flex justify-between items-center pt-2 border-t border-gray-100 mt-6">
-                    <button
-                        type="button"
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="px-5 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 border border-red-100 transition-all text-sm font-medium flex items-center gap-2"
-                    >
-                        {isDeleting ? 'Eliminando...' : <><Trash2 className="w-4 h-4" /> Eliminar Cita</>}
-                    </button>
-
+                 <div className="flex justify-end items-center pt-2 border-t border-gray-100 mt-6">
                     <div className="flex space-x-3">
                         <button
                             type="button"

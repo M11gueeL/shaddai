@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { useConfirm } from '../../context/ConfirmContext';
-import { listInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, updateSupplier as updateSupplierApi, storePurchase, getPurchases, getPurchaseDetails } from '../../api/inventoryApi';
+import { listInventory, createInventoryItem, updateInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, updateSupplier as updateSupplierApi, storePurchase, getPurchases, getPurchaseDetails } from '../../api/inventoryApi';
 import { Package } from 'lucide-react';
 import InventoryTable from './InventoryTable';
 import Modal from './Modal';
@@ -26,7 +25,6 @@ import EditSupplierModal from './EditSupplierModal';
 export default function InventoryPanel() {
     const { token, hasRole } = useAuth();
     const toast = useToast();
-    const { confirm } = useConfirm();
     const canEdit = hasRole(['admin']);
     const canPurchase = hasRole(['admin', 'farmacia']);
 
@@ -234,24 +232,6 @@ export default function InventoryPanel() {
         }
     };
 
-    const handleDelete = async (item) => {
-        const accepted = await confirm({
-            title: `Eliminar ${item.name}`,
-            message: 'Esta acción eliminará el insumo y podría afectar el historial. ¿Deseas continuar?',
-            confirmText: 'Eliminar',
-            cancelText: 'Cancelar',
-            tone: 'danger'
-        });
-        if (!accepted) return;
-        try {
-            await deleteInventoryItem(item.id, token);
-            toast.success('Insumo eliminado');
-            fetchInventory();
-        } catch (e) {
-            toast.error(e.response?.data?.error || 'Error al eliminar');
-        }
-    };
-
     const handleInternalConsumption = async (formData) => {
         try {
             const res = await registerInternalConsumption(formData, token);
@@ -424,7 +404,6 @@ export default function InventoryPanel() {
                         items={items}
                         loading={loading}
                         onEdit={setEditingItem}
-                        onDelete={handleDelete}
                         onInternalConsumption={setConsumptionItem}
                         onMovements={openMovements}
                         onManageBatches={setBatchItem}

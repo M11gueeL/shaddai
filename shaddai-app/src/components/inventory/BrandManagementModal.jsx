@@ -161,11 +161,6 @@ export default function BrandManagementModal({ onClose }) {
                     <button onClick={() => handleEdit(brand)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
                       <Edit2 size={18}/>
                     </button>
-                    {brand.is_active == 1 && (
-                      <button onClick={() => handleDelete(brand.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Desactivar">
-                        <Trash2 size={18}/>
-                      </button>
-                    )}
                   </div>
                 </div>
               ))}

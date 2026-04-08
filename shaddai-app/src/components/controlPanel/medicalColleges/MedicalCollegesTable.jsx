@@ -1,11 +1,10 @@
 import React from 'react';
-import { Edit2, Trash2, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function MedicalCollegesTable({ 
     data, 
     isLoading, 
     onEdit, 
-    onDelete,
     currentPage,
     totalPages,
     onPageChange,
@@ -58,13 +57,6 @@ export default function MedicalCollegesTable({
                                         title="Editar"
                                     >
                                         <Edit2 size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(item.id)}
-                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 size={18} />
                                     </button>
                                 </td>
                             </tr>

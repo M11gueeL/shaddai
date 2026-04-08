@@ -1,11 +1,11 @@
 import React from 'react';
 import { 
-    Package, Loader2, Edit, Trash2, 
+    Package, Loader2, Edit,
   History, Layers, AlertCircle, Briefcase,
     NotebookPen
 } from 'lucide-react';
 
-export default function InventoryTable({ items, onEdit, onDelete, onInternalConsumption, onMovements, onManageBatches, loading, canEdit }) {
+export default function InventoryTable({ items, onEdit, onInternalConsumption, onMovements, onManageBatches, loading, canEdit }) {
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center py-24">
@@ -92,10 +92,6 @@ export default function InventoryTable({ items, onEdit, onDelete, onInternalCons
                   <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100">
                     <button onClick={() => onEdit(item)} className="flex-1 text-blue-700 text-xs font-semibold py-2 hover:bg-blue-50 rounded-lg transition-all duration-300">
                       Editar producto
-                        </button>
-                        <div className="w-px h-4 bg-gray-200"></div>
-                    <button onClick={() => onDelete(item)} className="flex-1 text-red-700 text-xs font-semibold py-2 hover:bg-red-50 rounded-lg transition-all duration-300">
-                            Desactivar
                         </button>
                     </div>
                 )}
@@ -196,15 +192,6 @@ export default function InventoryTable({ items, onEdit, onDelete, onInternalCons
                           >
                             <Edit size={14} />
                             Editar
-                          </button>
-
-                          <button
-                            onClick={() => onDelete(item)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50/60 text-rose-700 hover:bg-rose-100 transition-all duration-300 text-xs font-semibold"
-                            title="Desactivar producto"
-                          >
-                            <Trash2 size={14} />
-                            Borrar
                           </button>
                         </>
                       )}

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Plus, Search } from 'lucide-react';
 import medicalCollegesApi from '../../../api/medicalColleges'; 
 import { useToast } from '../../../context/ToastContext';
-import { useConfirm } from '../../../context/ConfirmContext';
 import MedicalCollegesTable from './MedicalCollegesTable';
 import MedicalCollegeForm from './MedicalCollegeForm';
 
@@ -21,7 +20,6 @@ export default function MedicalCollegesPanel() {
     const [currentCollege, setCurrentCollege] = useState(null);
 
     const { show } = useToast();
-    const { confirm } = useConfirm();
 
     useEffect(() => {
         fetchData();
@@ -104,27 +102,6 @@ export default function MedicalCollegesPanel() {
         }
     };
 
-    const handleDelete = async (id) => {
-        const isConfirmed = await confirm({
-            title: 'Eliminar Colegio Médico',
-            message: '¿Está seguro de que desea eliminar este colegio médico? Esta acción no se puede deshacer.',
-            tone: 'danger',
-            confirmText: 'Eliminar',
-            cancelText: 'Cancelar'
-        });
-
-        if (isConfirmed) {
-            try {
-                await medicalCollegesApi.delete(id);
-                show('Colegio médico eliminado correctamente', { variant: 'success' });
-                fetchData();
-            } catch (error) {
-                console.error(error);
-                show('Error al eliminar el registro', { variant: 'error' });
-            }
-        }
-    };
-
     return (
         <div className="animate-in fade-in zoom-in-95 duration-300">
             {/* Header */}
@@ -168,7 +145,6 @@ export default function MedicalCollegesPanel() {
                 data={currentItems} 
                 isLoading={isLoading}
                 onEdit={handleOpenModal}
-                onDelete={handleDelete}
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}

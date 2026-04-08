@@ -1,12 +1,11 @@
 import React from 'react';
-import { Edit2, Trash2, Award, ChevronLeft, ChevronRight, Stethoscope } from 'lucide-react';
+import { Edit2, Award, ChevronLeft, ChevronRight, Stethoscope } from 'lucide-react';
 
 
 export default function SpecialtiesTable({ 
     data, 
     isLoading, 
     onEdit, 
-    onDelete,
     currentPage,
     totalPages,
     onPageChange,
@@ -54,13 +53,6 @@ export default function SpecialtiesTable({
                                         title="Editar"
                                     >
                                         <Edit2 size={18} />
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(item.id)}
-                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                        title="Eliminar"
-                                    >
-                                        <Trash2 size={18} />
                                     </button>
                                 </td>
                             </tr>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Award, Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import specialtiesApi from '../../../api/specialties';
 import { useToast } from '../../../context/ToastContext';
-import { useConfirm } from '../../../context/ConfirmContext';
 import SpecialtiesTable from './SpecialtiesTable';
 import SpecialtyForm from './SpecialtyForm';
 
@@ -21,7 +20,6 @@ export default function SpecialtiesPanel() {
     const [currentSpecialty, setCurrentSpecialty] = useState(null);
 
     const { show } = useToast();
-    const { confirm } = useConfirm();
 
 
     useEffect(() => {
@@ -97,27 +95,6 @@ export default function SpecialtiesPanel() {
         }
     };
 
-    const handleDelete = async (id) => {
-        const isConfirmed = await confirm({
-            title: 'Eliminar Especialidad',
-            message: '¿Está seguro de que desea eliminar esta especialidad? Esta acción no se puede deshacer.',
-            tone: 'danger', // Usar 'tone' en lugar de 'variant' según tu ConfirmContext
-            confirmText: 'Eliminar',
-            cancelText: 'Cancelar'
-        });
-
-        if (isConfirmed) {
-            try {
-                await specialtiesApi.delete(id);
-                show('Especialidad eliminada correctamente', { variant: 'success' });
-                fetchData();
-            } catch (error) {
-                console.error(error);
-                show('Error al eliminar la especialidad', { variant: 'error' });
-            }
-        }
-    };
-
     return (
         <div className="animate-in fade-in zoom-in-95 duration-300">
             {/* Header de Sección */}
@@ -161,7 +138,6 @@ export default function SpecialtiesPanel() {
                 data={currentItems} 
                 isLoading={isLoading}
                 onEdit={handleOpenModal}
-                onDelete={handleDelete}
                 // Props de paginación
                 currentPage={currentPage}
                 totalPages={totalPages}

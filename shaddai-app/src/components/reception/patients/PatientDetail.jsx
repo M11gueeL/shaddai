@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
 import PatientsApi from '../../../api/PatientsApi';
 import { useToast } from '../../../context/ToastContext';
-import { useConfirm } from '../../../context/ConfirmContext';
 import PatientReportModal from './PatientReportModal';
 import PatientSearch from '../appointments/PatientSearch';
 import { 
   FileText, User, CreditCard, Calendar, Users, Heart, 
-  Phone, MapPin, Mail, Edit2, Trash2, Save, X, Clock, Activity
+    Phone, MapPin, Mail, Edit2, Save, X, Clock, Activity
 } from 'lucide-react';
 
 export default function PatientDetail({ patient, onClose, onPatientUpdated, initialEditing = false }) {
   const toast = useToast();
-  const { confirm } = useConfirm();
   const [isEditing, setIsEditing] = useState(initialEditing);
   
   const hasCedula = patient.cedula !== null && patient.cedula !== '' && patient.cedula !== '-';
@@ -206,27 +204,6 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
       toast.error(errMsg);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    const isConfirmed = await confirm({
-      title: 'Eliminar Paciente',
-      message: `¿Estás seguro de que deseas eliminar a ${patient.full_name}? Esta acción no se puede deshacer.`,
-      confirmText: 'Eliminar',
-      cancelText: 'Cancelar',
-      tone: 'danger'
-    });
-
-    if (isConfirmed) {
-      try {
-        await PatientsApi.delete(patient.id);
-        toast.success('Paciente eliminado correctamente');
-        onPatientUpdated(); // Refresh list
-        onClose(); // Close modal
-      } catch (error) {
-        toast.error('Error al eliminar el paciente: ' + (error.response?.data?.message || error.message));
-      }
     }
   };
 
@@ -667,14 +644,6 @@ export default function PatientDetail({ patient, onClose, onPatientUpdated, init
             </>
         ) : (
             <>
-                <button
-                    onClick={handleDelete}
-                    className="px-4 py-2.5 text-red-600 hover:bg-red-50 rounded-xl font-medium flex items-center gap-2 transition-colors"
-                >
-                    <Trash2 className="w-4 h-4" />
-                    Eliminar
-                </button>
-                
                 <div className="flex gap-3">
                     <button
                         onClick={() => setIsReportModalOpen(true)}
