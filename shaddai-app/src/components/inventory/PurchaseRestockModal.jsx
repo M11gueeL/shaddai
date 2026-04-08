@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, PackagePlus, Plus, ReceiptText, Save, Trash2, Truck, UserPlus } from 'lucide-react';
 import Modal from './Modal';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
+import { useToast } from '../../context/ToastContext';
 
 const emptyLine = {
   item_id: '',
-  quantity: 0,
-  unit_cost: 0,
+  quantity: 1,
+  unit_cost: '',
   batch_number: '',
   expiration_date: ''
 };
@@ -26,6 +27,7 @@ export default function PurchaseRestockModal({
   submitting = false,
   creatingSupplier = false
 }) {
+  const toast = useToast();
   const [purchaseHeader, setPurchaseHeader] = useState({
     supplier_id: '',
     invoice_number: '',
@@ -34,7 +36,6 @@ export default function PurchaseRestockModal({
     notes: ''
   });
   const [lines, setLines] = useState([{ ...emptyLine }]);
-  const [errors, setErrors] = useState([]);
 
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
@@ -56,7 +57,6 @@ export default function PurchaseRestockModal({
       notes: ''
     });
     setLines([{ ...emptyLine }]);
-    setErrors([]);
     setShowQuickSupplier(false);
     setNewSupplier({
       name: '',
@@ -67,6 +67,14 @@ export default function PurchaseRestockModal({
       address: ''
     });
   }, [open]);
+
+  const notifyValidationErrors = (list) => {
+    if (!list.length) return;
+    toast.error(list[0]);
+    if (list.length > 1) {
+      toast.info(`Hay ${list.length - 1} validacion(es) adicional(es) por corregir.`);
+    }
+  };
 
   const linesWithTotals = useMemo(() => {
     return lines.map((line) => {
@@ -109,7 +117,7 @@ export default function PurchaseRestockModal({
     });
   };
 
-  const validate = () => {
+  const getValidationErrors = () => {
     const list = [];
     const seenLineKeys = new Set();
 
@@ -152,13 +160,16 @@ export default function PurchaseRestockModal({
       }
     });
 
-    setErrors(list);
-    return list.length === 0;
+    return list;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const validationList = getValidationErrors();
+    if (validationList.length > 0) {
+      notifyValidationErrors(validationList);
+      return;
+    }
 
     const payload = {
       supplier_id: Number(purchaseHeader.supplier_id),
@@ -189,17 +200,17 @@ export default function PurchaseRestockModal({
     const email = newSupplier.email.trim();
 
     if (rif && !rifRegex.test(rif)) {
-      setErrors(['El RIF/Cédula del proveedor tiene un formato inválido.']);
+      toast.error('El RIF/Cedula del proveedor tiene un formato invalido.');
       return;
     }
 
     if (phone && !phoneRegex.test(phone)) {
-      setErrors(['El teléfono del proveedor tiene un formato inválido.']);
+      toast.error('El telefono del proveedor tiene un formato invalido.');
       return;
     }
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrors(['El correo del proveedor no tiene un formato válido.']);
+      toast.error('El correo del proveedor no tiene un formato valido.');
       return;
     }
 
@@ -219,24 +230,23 @@ export default function PurchaseRestockModal({
       email: '',
       address: ''
     });
-    setErrors([]);
+    toast.success('Proveedor agregado al selector de compra.');
   };
 
   return (
     <Modal open={open} title="Registrar abastecimiento" onClose={onClose} maxWidth="max-w-4xl">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-white p-4">
+        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/40 p-4 shadow-sm">
           <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-900">
             <PackagePlus className="h-4 w-4" />
             Registro de compra y lotes
           </div>
           <div className="flex flex-col gap-2 text-xs text-emerald-700 sm:flex-row sm:items-center sm:justify-between">
             <p>Carga la factura, distribuye los productos por lote y procesa todo en una sola operación.</p>
-            <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-800">Flujo integrado de compra</span>
           </div>
         </div>
 
-        <section className="rounded-2xl border border-gray-200 bg-white p-4">
+        <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="mb-4 text-sm font-semibold text-gray-800">Datos de cabecera</div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="md:col-span-1">
@@ -248,7 +258,7 @@ export default function PurchaseRestockModal({
                   required
                   value={purchaseHeader.supplier_id}
                   onChange={(e) => setHeaderValue('supplier_id', e.target.value)}
-                  className="block w-full rounded-xl border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                  className="block w-full rounded-xl border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm transition-all duration-300 focus:border-emerald-500 focus:ring-emerald-500"
                 >
                   <option value="">Selecciona proveedor</option>
                   {suppliers.map((s) => (
@@ -261,7 +271,7 @@ export default function PurchaseRestockModal({
               <button
                 type="button"
                 onClick={() => setShowQuickSupplier((v) => !v)}
-                className="rounded-xl border border-gray-300 px-3 text-gray-600 hover:bg-gray-50"
+                className="rounded-xl border border-gray-300 px-3 text-gray-600 transition-all duration-300 hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-700"
                 title="Agregar proveedor rápido"
               >
                 <UserPlus className="h-4 w-4" />
@@ -277,7 +287,7 @@ export default function PurchaseRestockModal({
                 type="text"
                 value={purchaseHeader.invoice_number}
                 onChange={(e) => setHeaderValue('invoice_number', e.target.value)}
-                className="block w-full rounded-xl border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                className="block w-full rounded-xl border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm transition-all duration-300 focus:border-emerald-500 focus:ring-emerald-500"
                 placeholder="Ej. FAC-000123"
               />
             </div>
@@ -292,7 +302,7 @@ export default function PurchaseRestockModal({
                 required
                 value={purchaseHeader.purchase_date}
                 onChange={(e) => setHeaderValue('purchase_date', e.target.value)}
-                className="block w-full rounded-xl border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm focus:border-emerald-500 focus:ring-emerald-500"
+                className="block w-full rounded-xl border-gray-300 py-2.5 pl-9 pr-3 text-sm shadow-sm transition-all duration-300 focus:border-emerald-500 focus:ring-emerald-500"
               />
             </div>
             </div>
@@ -300,7 +310,7 @@ export default function PurchaseRestockModal({
         </section>
 
         {showQuickSupplier && (
-          <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-4">
+          <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-2">
               <div className="text-sm font-semibold text-indigo-900">Registro rápido de proveedor</div>
               <span className="text-xs text-indigo-700">Se agrega al selector al guardar</span>
@@ -355,7 +365,7 @@ export default function PurchaseRestockModal({
                 type="button"
                 disabled={creatingSupplier || !newSupplier.name.trim()}
                 onClick={handleQuickCreateSupplier}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-indigo-700 disabled:opacity-60"
               >
                 {creatingSupplier ? 'Guardando...' : 'Guardar proveedor'}
               </button>
@@ -363,7 +373,7 @@ export default function PurchaseRestockModal({
           </div>
         )}
 
-        <section className="rounded-2xl border border-gray-200 overflow-hidden">
+        <section className="rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50 px-4 py-3">
             <div className="text-sm font-semibold text-gray-700">Detalle de productos</div>
             <div className="text-xs text-gray-500">{lines.length} línea(s)</div>
@@ -401,11 +411,11 @@ export default function PurchaseRestockModal({
                   <td className="px-3 py-2">
                     <input
                       type="number"
-                      min="0"
+                      min="1"
                       onKeyDown={preventNegativeInput}
                       onPaste={preventNegativePaste}
                       value={line.quantity}
-                      onChange={(e) => setLineValue(index, 'quantity', Number(e.target.value || 0))}
+                      onChange={(e) => setLineValue(index, 'quantity', Number(e.target.value || 1))}
                       className="w-28 rounded-lg border-gray-300 px-3 py-2 text-sm"
                     />
                   </td>
@@ -462,7 +472,7 @@ export default function PurchaseRestockModal({
           <button
             type="button"
             onClick={addLine}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-300 hover:bg-gray-50 hover:border-emerald-300 hover:text-emerald-700"
           >
             <Plus className="h-4 w-4" />
             Agregar producto
@@ -485,28 +495,18 @@ export default function PurchaseRestockModal({
           />
         </div>
 
-        {errors.length > 0 && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            <ul className="list-disc pl-5">
-              {errors.map((err, idx) => (
-                <li key={idx}>{err}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         <div className="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition-all duration-300 hover:bg-gray-50"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all duration-300 hover:bg-emerald-700 disabled:opacity-60"
           >
             {submitting ? <Save className="h-4 w-4 animate-pulse" /> : <PackagePlus className="h-4 w-4" />}
             {submitting ? 'Procesando...' : 'Procesar Compra'}
