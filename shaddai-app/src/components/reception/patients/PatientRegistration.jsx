@@ -270,7 +270,7 @@ export default function PatientRegistration({ onClose, onPatientCreated, initial
                                 className="form-checkbox h-4 w-4 text-blue-600 rounded focus:ring-blue-500/20 border-gray-300"
                             />
                             <span className="ml-2 text-sm text-gray-600 font-medium">
-                                El paciente es menor de edad / No posee cédula
+                                El paciente no posee cédula
                             </span>
                         </label>
                     </div>
