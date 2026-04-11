@@ -539,14 +539,8 @@ class InventoryModel {
                 throw new Exception("El ajuste resulta en una cantidad negativa.");
             }
 
-            // Si es una corrección y la nueva cantidad supera la inicial registrada, actualizamos la inicial
-            // para evitar porcentajes > 100% (asumiendo que fue un error de ingreso inicial)
-            if ($type === 'correction' && $newQty > $batch['initial_quantity']) {
-                $this->db->execute("UPDATE inventory_batches SET initial_quantity = :iq, updated_at = NOW() WHERE id = :id", [
-                    ':iq' => $newQty,
-                    ':id' => $batchId
-                ]);
-            }
+            // initial_quantity es histórico (cantidad comprada originalmente) y no debe alterarse
+            // por consumos ni por ajustes de inventario.
 
             // Determinar estado
             $status = ($newQty === 0) ? 'empty' : 'active';

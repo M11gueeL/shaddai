@@ -136,7 +136,8 @@ class PurchaseModel {
 
         $batches = $this->db->query(
             'SELECT b.id, b.purchase_id, b.item_id, i.name AS item_name, b.batch_number,
-                    b.quantity, b.initial_quantity, b.expiration_date, b.status
+                    b.quantity, COALESCE(b.initial_quantity, b.quantity) AS initial_quantity,
+                    b.expiration_date, b.status
              FROM inventory_batches b
              INNER JOIN inventory_items i ON i.id = b.item_id
              WHERE b.purchase_id = :purchase_id

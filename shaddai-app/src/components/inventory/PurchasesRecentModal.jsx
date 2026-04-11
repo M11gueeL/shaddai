@@ -14,6 +14,12 @@ function formatearMonto(monto, moneda = 'USD') {
   return `${moneda} ${valor.toFixed(2)}`;
 }
 
+function formatearCantidad(valor) {
+  const cantidad = Number(valor || 0);
+  if (!Number.isFinite(cantidad)) return '0';
+  return cantidad.toLocaleString('es-VE');
+}
+
 function traducirEstado(estado) {
   if (!estado) return 'Recibida';
   const mapa = {
@@ -34,6 +40,52 @@ function getStatusPillClass(estado) {
     default:
       return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
   }
+}
+
+function getBatchAvailabilityMeta(batch) {
+  const purchasedRaw = Number(batch?.initial_quantity ?? batch?.quantity ?? 0);
+  const availableRaw = Number(batch?.quantity ?? 0);
+
+  const purchased = Number.isFinite(purchasedRaw) && purchasedRaw > 0 ? purchasedRaw : 0;
+  const available = Number.isFinite(availableRaw) && availableRaw > 0 ? availableRaw : 0;
+
+  const reference = purchased > 0 ? purchased : Math.max(available, 1);
+  const consumed = Math.max(reference - available, 0);
+  const ratio = Math.max(0, Math.min(100, Math.round((available / reference) * 100)));
+
+  if (available === 0) {
+    return {
+      purchased: reference,
+      available,
+      consumed,
+      ratio,
+      label: 'Agotado',
+      badgeClass: 'bg-rose-100 text-rose-700 border border-rose-200',
+      barClass: 'bg-rose-500'
+    };
+  }
+
+  if (available < reference) {
+    return {
+      purchased: reference,
+      available,
+      consumed,
+      ratio,
+      label: 'Parcial',
+      badgeClass: 'bg-amber-100 text-amber-700 border border-amber-200',
+      barClass: 'bg-amber-500'
+    };
+  }
+
+  return {
+    purchased: reference,
+    available,
+    consumed,
+    ratio,
+    label: 'Intacto',
+    badgeClass: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+    barClass: 'bg-emerald-500'
+  };
 }
 
 export default function PurchasesRecentModal({
@@ -148,7 +200,7 @@ export default function PurchasesRecentModal({
         open={!!selectedPurchaseId}
         onClose={() => onSelectPurchase({ id: selectedPurchaseId })}
         title="Detalle de compra"
-        maxWidth="max-w-2xl"
+        maxWidth="max-w-4xl"
       >
         {loadingDetails ? (
           <div className="py-12 text-center text-sm text-gray-500">
@@ -182,43 +234,61 @@ export default function PurchasesRecentModal({
                 <span>Insumos y lotes registrados</span>
                 <span>{selectedPurchaseDetails.batches?.length || 0} ítems</span>
               </div>
-              <div className="max-h-[240px] overflow-auto">
-                <table className="w-full text-sm whitespace-nowrap">
-                  <thead className="bg-white border-b border-gray-100 text-[11px] uppercase tracking-wide text-gray-400">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-semibold">Producto / Insumo</th>
-                      <th className="px-4 py-2 text-left font-semibold">Lote</th>
-                      <th className="px-4 py-2 text-right font-semibold">Cantidad</th>
-                      <th className="px-4 py-2 text-left font-semibold">Vencimiento</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.isArray(selectedPurchaseDetails.batches) && selectedPurchaseDetails.batches.length > 0 ? (
-                      selectedPurchaseDetails.batches.map((batch) => (
-                        <tr key={batch.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                          <td className="px-4 py-2.5 text-gray-800 font-medium">
-                            {batch.item_name || '-'}
-                          </td>
-                          <td className="px-4 py-2.5 text-gray-600 font-mono text-xs">
-                            {batch.batch_number || '-'}
-                          </td>
-                          <td className="px-4 py-2.5 text-right text-gray-700 font-semibold">
-                            {Number(batch.quantity || 0)}
-                          </td>
-                          <td className="px-4 py-2.5 text-gray-600 text-xs">
-                            {formatearFecha(batch.expiration_date)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
-                          Esta compra no tiene lotes ingresados al stock.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="max-h-[320px] overflow-auto">
+                {Array.isArray(selectedPurchaseDetails.batches) && selectedPurchaseDetails.batches.length > 0 ? (
+                  <div className="divide-y divide-gray-100">
+                    {selectedPurchaseDetails.batches.map((batch) => {
+                      const availability = getBatchAvailabilityMeta(batch);
+
+                      return (
+                        <article key={batch.id} className="space-y-3 p-4 transition-colors hover:bg-gray-50/60">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">{batch.item_name || '-'}</div>
+                              <div className="text-xs text-gray-500">
+                                Lote {batch.batch_number || 'S/N'} • Vence {formatearFecha(batch.expiration_date)}
+                              </div>
+                            </div>
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${availability.badgeClass}`}>
+                              {availability.label}
+                            </span>
+                          </div>
+
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <div className="rounded-lg border border-sky-100 bg-sky-50 p-2.5">
+                              <div className="text-[11px] uppercase tracking-wide text-sky-700">Cantidad comprada</div>
+                              <div className="text-base font-bold text-sky-800">{formatearCantidad(availability.purchased)}</div>
+                            </div>
+                            <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2.5">
+                              <div className="text-[11px] uppercase tracking-wide text-emerald-700">Stock restante / disponible</div>
+                              <div className="text-base font-bold text-emerald-800">{formatearCantidad(availability.available)}</div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] text-gray-500">
+                              <span>Disponibilidad del lote</span>
+                              <span>{availability.ratio}%</span>
+                            </div>
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${availability.barClass}`}
+                                style={{ width: `${availability.ratio}%` }}
+                              />
+                            </div>
+                            <div className="text-[11px] text-gray-500">
+                              Consumido: {formatearCantidad(availability.consumed)}
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="px-4 py-6 text-center text-sm text-gray-500">
+                    Esta compra no tiene lotes ingresados al stock.
+                  </div>
+                )}
               </div>
             </section>
           </div>
