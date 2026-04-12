@@ -1,25 +1,33 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Edit2, Trash2, Save, Loader2, Tag } from 'lucide-react';
+import { X, Plus, Edit2, Save, Loader2, Tag, ChevronLeft, Building2, AlertTriangle, Search, Activity } from 'lucide-react';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '../../api/inventoryApi';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
 
-export default function BrandManagementModal({ onClose }) {
+export default function BrandManagementModal({ isOpen = true, onClose }) {
   const { token } = useAuth();
   const toast = useToast();
   const { confirm } = useConfirm();
+  
   const [brands, setBrands] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState('list'); // 'list' | 'form'
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchBrands();
-  }, [token]);
+    if (isOpen) {
+      fetchBrands();
+      setView('list');
+      setSearchTerm('');
+    }
+  }, [token, isOpen]);
 
   const fetchBrands = async () => {
+    setLoading(true);
     try {
       const res = await getBrands({}, token);
       setBrands(res.data || []);
@@ -30,6 +38,23 @@ export default function BrandManagementModal({ onClose }) {
     }
   };
 
+  const handleOpenForm = (brand = null) => {
+    if (brand) {
+      setEditingId(brand.id);
+      setFormData({ name: brand.name, description: brand.description || '' });
+    } else {
+      setEditingId(null);
+      setFormData({ name: '', description: '' });
+    }
+    setView('form');
+  };
+
+  const handleCloseForm = () => {
+    setView('list');
+    setEditingId(null);
+    setFormData({ name: '', description: '' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
@@ -38,138 +63,261 @@ export default function BrandManagementModal({ onClose }) {
     try {
       if (editingId) {
         await updateBrand(editingId, formData, token);
-        toast.success("Marca actualizada");
+        toast.success("Marca actualizada exitosamente");
       } else {
         await createBrand(formData, token);
-        toast.success("Marca creada");
+        toast.success("Marca registrada exitosamente");
       }
-      setFormData({ name: '', description: '' });
-      setEditingId(null);
       fetchBrands();
+      handleCloseForm();
     } catch (error) {
-      toast.error("Error guardando marca");
+      toast.error(error.response?.data?.message || "Error al procesar la marca");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEdit = (brand) => {
-    setEditingId(brand.id);
-    setFormData({ name: brand.name, description: brand.description || '' });
-  };
-
-  const handleDelete = async (id) => {
+  const handleToggleStatus = async (brand) => {
+    const isDeactivating = brand.is_active;
+    const actionText = isDeactivating ? 'desactivar' : 'activar';
+    
     const isConfirmed = await confirm({
-      title: 'Desactivar Marca',
-      message: '¿Seguro que deseas desactivar esta marca?',
-      confirmText: 'Sí, desactivar',
-      tone: 'danger'
+      title: `${isDeactivating ? 'Desactivar' : 'Activar'} Marca`,
+      message: `¿Estás seguro que deseas ${actionText} la marca "${brand.name}"? ${isDeactivating ? 'No aparecerá en los selectores de nuevos ingresos.' : ''}`,
+      confirmText: `Sí, ${actionText}`,
+      tone: isDeactivating ? 'danger' : 'primary'
     });
 
     if (!isConfirmed) return;
 
     try {
-      await deleteBrand(id, token);
-      toast.success("Marca desactivada");
+        if(isDeactivating){
+            await deleteBrand(brand.id, token);
+        } else {
+            // Asumiendo que el updateBrand permite actualizar el estado is_active o hay un endpoint específico
+            await updateBrand(brand.id, { is_active: true }, token);
+        }
+      toast.success(`Marca ${isDeactivating ? 'desactivada' : 'activada'} correctamente`);
       fetchBrands();
     } catch (error) {
-      toast.error("Error eliminando marca");
+      toast.error(`Error al ${actionText} la marca`);
     }
   };
 
-  const handleCancel = () => {
-    setEditingId(null);
-    setFormData({ name: '', description: '' });
-  };
+  const filteredBrands = brands.filter(b => 
+    b.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (b.description && b.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div 
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={(e) => { e.stopPropagation(); onClose(); }} />
+      
+      <div 
+        className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <Tag className="text-indigo-600" /> Gestión de Marcas / Laboratorios
-          </h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition text-gray-400 hover:text-gray-600">
-            <X size={24} />
-          </button>
+        {/* Header Dinámico */}
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start z-10 relative">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              {view === 'form' ? (
+                <button 
+                  onClick={handleCloseForm}
+                  className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors mr-1"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              ) : (
+                <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                    <Tag size={20} />
+                </div>
+              )}
+              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                {view === 'form' ? (editingId ? 'Editar Marca' : 'Nueva Marca') : 'Marcas y Laboratorios'}
+              </h2>
+            </div>
+            {view === 'list' && (
+              <p className="text-sm text-gray-500 ml-11">
+                Gestiona los fabricantes o laboratorios de tus insumos.
+              </p>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-3">
+             {view === 'list' && (
+                 <button 
+                  onClick={() => handleOpenForm()}
+                  className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-all flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  <span>Registrar</span>
+                </button>
+             )}
+             <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/50">
-          
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm mb-6">
-            <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-              {editingId ? <Edit2 size={18} className="text-indigo-600"/> : <Plus size={18} className="text-indigo-600"/>}
-              {editingId ? 'Editar Marca' : 'Registrar Nueva Marca'}
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Nombre de la Marca *</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej. La Santé" 
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Descripción (Opcional)</label>
-                <input 
-                  type="text" 
-                  placeholder="Breve descripción..." 
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5 text-sm transition-all px-4"
-                />
-              </div>
+        {/* Header Toolbar (Search) - Only in List View */}
+        {view === 'list' && (
+            <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100">
+                <div className="relative max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input 
+                        type="text"
+                        placeholder="Buscar marca por nombre o descripción..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                    />
+                </div>
             </div>
-            <div className="flex justify-end gap-3 mt-4 pt-2 border-t border-gray-50">
-              {editingId && (
-                <button type="button" onClick={handleCancel} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">
-                  Cancelar
-                </button>
-              )}
-              <button 
-                type="submit" 
-                disabled={submitting}
-                className="px-5 py-2 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-50"
-              >
-                {submitting ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>}
-                {editingId ? 'Actualizar Marca' : 'Guardar Marca'}
-              </button>
-            </div>
-          </form>
+        )}
 
-          {/* Lista */}
-          {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="animate-spin text-indigo-600 w-8 h-8"/></div>
-          ) : (
-            <div className="space-y-3">
-              {brands.map(brand => (
-                <div key={brand.id} className={`flex items-center justify-between p-4 bg-white border rounded-xl hover:shadow-md transition-all ${brand.is_active ? 'border-gray-100' : 'border-red-100 bg-red-50/50'}`}>
-                  <div>
-                    <div className="font-bold text-gray-800 flex items-center gap-2 text-sm">
-                      {brand.name}
-                      {!brand.is_active && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">Inactivo</span>}
-                    </div>
-                    {brand.description && <div className="text-xs text-gray-500 mt-1">{brand.description}</div>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => handleEdit(brand)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Editar">
-                      <Edit2 size={18}/>
-                    </button>
-                  </div>
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-50/30">
+          {view === 'list' ? (
+            <div className="p-6">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 space-y-3">
+                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500 font-medium">Cargando marcas...</p>
                 </div>
-              ))}
-              {brands.length === 0 && (
-                <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-                    <Tag className="mx-auto h-10 w-10 text-gray-300 mb-2" />
-                    <p className="text-gray-500 font-medium">No hay marcas registradas.</p>
+              ) : filteredBrands.length === 0 ? (
+                <div className="text-center py-16 px-4 border-2 border-dashed border-gray-200 rounded-2xl bg-white">
+                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Tag className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-gray-900 font-semibold text-lg">No se encontraron marcas</h3>
+                  <p className="text-gray-500 text-sm mt-1 max-w-sm mx-auto">
+                    {searchTerm ? 'Intenta ajustando los términos de búsqueda.' : 'Aún no has registrado ninguna marca. Comienza registrando la primera.'}
+                  </p>
+                  {!searchTerm && (
+                    <button 
+                        onClick={() => handleOpenForm()}
+                        className="mt-6 px-5 py-2.5 bg-indigo-50 text-indigo-700 text-sm font-semibold rounded-xl hover:bg-indigo-100 transition-colors inline-flex items-center gap-2"
+                    >
+                        <Plus size={18} /> Registrar Primera Marca
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredBrands.map(brand => (
+                    <div 
+                        key={brand.id} 
+                        className={`group bg-white border rounded-2xl p-5 hover:shadow-lg transition-all duration-300 relative overflow-hidden ${
+                            brand.is_active ? 'border-gray-200 hover:border-indigo-300' : 'border-red-100 bg-red-50/30'
+                        }`}
+                    >
+                        {!brand.is_active && (
+                            <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden">
+                                <div className="absolute top-4 -right-6 px-6 py-1 bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider transform rotate-45">
+                                    Inactivo
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div className="flex justify-between items-start mb-3 pr-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl ${brand.is_active ? 'bg-indigo-50 text-indigo-600' : 'bg-red-100 text-red-500'}`}>
+                                    <Building2 size={20} />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900 text-base line-clamp-1">{brand.name}</h4>
+                                    <p className="text-xs text-gray-500 font-medium">ID: {brand.id.toString().padStart(4, '0')}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 line-clamp-2 h-10 mb-5">
+                            {brand.description || <span className="italic text-gray-400">Sin descripción adicional</span>}
+                        </p>
+                        
+                        <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
+                            <button 
+                                onClick={() => handleOpenForm(brand)} 
+                                className="flex-1 py-2 px-3 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-indigo-600 rounded-xl transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Edit2 size={16}/> Editar
+                            </button>
+                            <button 
+                                onClick={() => handleToggleStatus(brand)} 
+                                className={`flex-1 py-2 px-3 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2 ${
+                                    brand.is_active 
+                                        ? 'text-red-600 bg-red-50 hover:bg-red-100' 
+                                        : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                                }`}
+                            >
+                                <Activity size={16}/>
+                                {brand.is_active ? 'Desactivar' : 'Activar'}
+                            </button>
+                        </div>
+                    </div>
+                  ))}
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="p-6 max-w-2xl mx-auto animate-in slide-in-from-right-8 duration-300">
+              <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                        Nombre de la Marca u Laboratorio <span className="text-red-500">*</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej. La Santé, Bayer..." 
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-sm transition-all px-4 bg-gray-50 focus:bg-white"
+                      required
+                      autoFocus
+                    />
+                    <p className="text-xs text-gray-500 mt-2">Este nombre aparecerá en las opciones al registrar nuevos insumos.</p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                        Descripción <span className="text-gray-400 font-normal">(Opcional)</span>
+                    </label>
+                    <textarea 
+                      placeholder="Detalles adicionales, líneas de productos que maneja..." 
+                      value={formData.description}
+                      onChange={e => setFormData({...formData, description: e.target.value})}
+                      rows={3}
+                      className="block w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-sm transition-all px-4 bg-gray-50 focus:bg-white resize-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+                  <button 
+                    type="button" 
+                    onClick={handleCloseForm} 
+                    className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={submitting}
+                    className="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {submitting ? <Loader2 size={18} className="animate-spin"/> : <Save size={18}/>}
+                    {editingId ? 'Guardar Cambios' : 'Registrar Marca'}
+                  </button>
+                </div>
+              </form>
             </div>
           )}
         </div>

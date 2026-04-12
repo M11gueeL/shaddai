@@ -40,7 +40,8 @@ export default function PurchaseRestockModal({
   const [showQuickSupplier, setShowQuickSupplier] = useState(false);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
-    tax_id: '',
+    doc_type: 'J',
+    doc_number: '',
     contact_name: '',
     phone: '',
     email: '',
@@ -60,7 +61,8 @@ export default function PurchaseRestockModal({
     setShowQuickSupplier(false);
     setNewSupplier({
       name: '',
-      tax_id: '',
+      doc_type: 'J',
+      doc_number: '',
       contact_name: '',
       phone: '',
       email: '',
@@ -195,7 +197,10 @@ export default function PurchaseRestockModal({
     e.preventDefault();
     if (!newSupplier.name.trim()) return;
 
-    const rif = newSupplier.tax_id.trim();
+    let rif = '';
+    if (newSupplier.doc_number.trim()) {
+        rif = `${newSupplier.doc_type}-${newSupplier.doc_number.trim()}`;
+    }
     const phone = newSupplier.phone.trim();
     const email = newSupplier.email.trim();
 
@@ -213,8 +218,17 @@ export default function PurchaseRestockModal({
       toast.error('El correo del proveedor no tiene un formato valido.');
       return;
     }
+    
+    const supplierToSave = {
+        ...newSupplier,
+        tax_id: rif,
+        address: newSupplier.address.trim() || null,
+        contact_name: newSupplier.contact_name.trim() || null,
+        phone: phone || null,
+        email: email || null
+    };
 
-    const created = await onCreateSupplier?.(newSupplier);
+    const created = await onCreateSupplier?.(supplierToSave);
     if (!created) return;
 
     if (created.id || created.supplier_id) {
@@ -224,7 +238,8 @@ export default function PurchaseRestockModal({
     setShowQuickSupplier(false);
     setNewSupplier({
       name: '',
-      tax_id: '',
+      doc_type: 'J',
+      doc_number: '',
       contact_name: '',
       phone: '',
       email: '',
@@ -234,17 +249,17 @@ export default function PurchaseRestockModal({
   };
 
   return (
-    <Modal open={open} title="Registrar abastecimiento" onClose={onClose} maxWidth="max-w-6xl">
+    <Modal 
+      open={open} 
+      title="Registrar abastecimiento" 
+      description="Carga la factura, distribuye los productos por lote y procesa todo en una sola operación."
+      icon={PackagePlus}
+      iconColor="emerald"
+      onClose={onClose} 
+      maxWidth="max-w-6xl" 
+      hideCloseButton={true}
+    >
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50/40 p-4 shadow-sm">
-          <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-900">
-            <PackagePlus className="h-4 w-4" />
-            Registro de compra y lotes
-          </div>
-          <div className="flex flex-col gap-2 text-xs text-emerald-700 sm:flex-row sm:items-center sm:justify-between">
-            <p>Carga la factura, distribuye los productos por lote y procesa todo en una sola operación.</p>
-          </div>
-        </div>
 
         <section className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="mb-4 text-sm font-semibold text-gray-800">Datos de cabecera</div>
@@ -316,48 +331,79 @@ export default function PurchaseRestockModal({
               <span className="text-xs text-indigo-700">Se agrega al selector al guardar</span>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <input
-                type="text"
-                required
-                value={newSupplier.name}
-                onChange={(e) => setNewSupplier((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Nombre *"
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm"
-              />
-              <input
-                type="text"
-                value={newSupplier.tax_id}
-                onChange={(e) => setNewSupplier((p) => ({ ...p, tax_id: e.target.value }))}
-                placeholder="RIF"
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm"
-              />
-              <input
-                type="text"
-                value={newSupplier.contact_name}
-                onChange={(e) => setNewSupplier((p) => ({ ...p, contact_name: e.target.value }))}
-                placeholder="Contacto"
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm"
-              />
-              <input
-                type="text"
-                value={newSupplier.phone}
-                onChange={(e) => setNewSupplier((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="Teléfono"
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm"
-              />
-              <input
-                type="email"
-                value={newSupplier.email}
-                onChange={(e) => setNewSupplier((p) => ({ ...p, email: e.target.value }))}
-                placeholder="Correo"
-                className="rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm md:col-span-2"
-              />
+              <div className="md:col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Nombre o Razón Social *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newSupplier.name}
+                    onChange={(e) => setNewSupplier((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="Empresa C.A."
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+              </div>
+              <div className="flex gap-2">
+                  <div className="w-1/3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tipo</label>
+                    <select
+                        value={newSupplier.doc_type}
+                        onChange={(e) => setNewSupplier((p) => ({ ...p, doc_type: e.target.value }))}
+                        className="w-full rounded-xl border-gray-300 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="J">J</option>
+                        <option value="V">V</option>
+                        <option value="E">E</option>
+                        <option value="G">G</option>
+                        <option value="P">P</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Identif. / RIF</label>
+                    <input
+                      type="text"
+                      value={newSupplier.doc_number}
+                      onChange={(e) => setNewSupplier((p) => ({ ...p, doc_number: e.target.value }))}
+                      placeholder="12345678"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    />
+                  </div>
+              </div>
+              <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Contacto</label>
+                  <input
+                    type="text"
+                    value={newSupplier.contact_name}
+                    onChange={(e) => setNewSupplier((p) => ({ ...p, contact_name: e.target.value }))}
+                    placeholder="Nombre Persona"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+              </div>
+              <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Teléfono</label>
+                  <input
+                    type="text"
+                    value={newSupplier.phone}
+                    onChange={(e) => setNewSupplier((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="+58 ..."
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+              </div>
+              <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Correo</label>
+                  <input
+                    type="email"
+                    value={newSupplier.email}
+                    onChange={(e) => setNewSupplier((p) => ({ ...p, email: e.target.value }))}
+                    placeholder="correo@ejemplo.com"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+              </div>
             </div>
-            <div className="mt-3 flex justify-end gap-2">
+            <div className="mt-3 flex justify-end gap-3 pt-3 border-t border-indigo-100">
               <button
                 type="button"
                 onClick={() => setShowQuickSupplier(false)}
-                className="rounded-xl border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-white"
+                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-colors"
               >
                 Cancelar
               </button>
@@ -365,7 +411,7 @@ export default function PurchaseRestockModal({
                 type="button"
                 disabled={creatingSupplier || !newSupplier.name.trim()}
                 onClick={handleQuickCreateSupplier}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:bg-indigo-700 disabled:opacity-60"
+                className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-all duration-300 hover:bg-indigo-700 disabled:opacity-60"
               >
                 {creatingSupplier ? 'Guardando...' : 'Guardar proveedor'}
               </button>
@@ -398,7 +444,7 @@ export default function PurchaseRestockModal({
                     <select
                       value={line.item_id}
                       onChange={(e) => setLineValue(index, 'item_id', e.target.value)}
-                      className="w-full rounded-lg border-gray-300 px-3 py-2 text-sm"
+                      className="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     >
                       <option value="">Selecciona producto</option>
                       {products.map((p) => (
@@ -416,7 +462,7 @@ export default function PurchaseRestockModal({
                       onPaste={preventNegativePaste}
                       value={line.quantity}
                       onChange={(e) => setLineValue(index, 'quantity', Number(e.target.value || 1))}
-                      className="w-28 rounded-lg border-gray-300 px-3 py-2 text-sm"
+                      className="w-28 rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -428,7 +474,7 @@ export default function PurchaseRestockModal({
                       onPaste={preventNegativePaste}
                       value={line.unit_cost}
                       onChange={(e) => setLineValue(index, 'unit_cost', Number(e.target.value || 0))}
-                      className="w-32 rounded-lg border-gray-300 px-3 py-2 text-sm"
+                      className="w-32 rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -436,7 +482,7 @@ export default function PurchaseRestockModal({
                       type="text"
                       value={line.batch_number}
                       onChange={(e) => setLineValue(index, 'batch_number', e.target.value)}
-                      className="w-44 rounded-lg border-gray-300 px-3 py-2 text-sm"
+                      className="w-44 rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                       placeholder="Ej. L-2026-AB"
                     />
                   </td>
@@ -445,7 +491,7 @@ export default function PurchaseRestockModal({
                       type="date"
                       value={line.expiration_date}
                       onChange={(e) => setLineValue(index, 'expiration_date', e.target.value)}
-                      className="w-40 rounded-lg border-gray-300 px-3 py-2 text-sm"
+                      className="w-40 rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </td>
                   <td className="px-3 py-2 text-right font-semibold text-gray-800">
@@ -455,7 +501,7 @@ export default function PurchaseRestockModal({
                     <button
                       type="button"
                       onClick={() => removeLine(index)}
-                      className="rounded-lg p-2 text-red-600 hover:bg-red-50"
+                      className="rounded-lg p-2 text-red-600 hover:bg-red-50 transition-colors"
                       title="Eliminar línea"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -490,7 +536,7 @@ export default function PurchaseRestockModal({
             rows={2}
             value={purchaseHeader.notes}
             onChange={(e) => setHeaderValue('notes', e.target.value)}
-            className="block w-full rounded-xl border-gray-300 px-3 py-2.5 text-sm"
+            className="block w-full rounded-xl border-gray-300 px-3 py-2.5 text-sm focus:border-emerald-500 focus:ring-emerald-500 shadow-sm"
             placeholder="Observaciones de la compra"
           />
         </div>
@@ -499,7 +545,7 @@ export default function PurchaseRestockModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 transition-all duration-300 hover:bg-gray-50"
+            className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
           >
             Cancelar
           </button>

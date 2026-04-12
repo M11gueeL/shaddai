@@ -150,17 +150,27 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
   const CurrentIcon = currentReport?.icon || ClipboardList;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={(e) => { e.stopPropagation(); onClose(); }} />
+      
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         
-        {/* Header del Modal */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 rounded-t-2xl flex-shrink-0">
-          <div className="text-white">
-            <h3 className="font-bold text-lg">Reportes de Inventario</h3>
-            <p className="text-blue-100 text-xs opacity-90">Generación de reportes y análisis</p>
+        {/* Header del Modal Dinámico */}
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start z-10 relative">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                <FileSpreadsheet size={20} />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                Reportes y Análisis
+              </h2>
+            </div>
+            <p className="text-sm text-gray-500 ml-11">Centro de reportes del inventario</p>
           </div>
-          <button onClick={onClose} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-full transition-colors">
-            <X className="w-5 h-5" />
+          
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
+            <X size={20} />
           </button>
         </div>
         
@@ -284,15 +294,15 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
                 className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded-xl transition-all group shadow-sm hover:shadow-md"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 text-red-600 rounded-lg group-hover:bg-red-200 transition-colors">
-                    <FileText className="w-5 h-5" />
+                  <div className="p-2 bg-red-50 text-red-500 rounded-xl group-hover:bg-red-100 group-hover:text-red-600 transition-colors">
+                    <FileText className="w-6 h-6" />
                   </div>
                   <div className="text-left">
-                    <span className="block text-sm font-bold text-gray-800 group-hover:text-red-700">Documento PDF</span>
-                    <span className="block text-xs text-gray-500">Ideal para imprimir y reportes oficiales</span>
+                    <span className="block text-sm font-bold text-gray-900 group-hover:text-red-700">Documento PDF</span>
+                    <span className="block text-[11px] text-gray-500">Ideal para imprimir y reportes oficiales</span>
                   </div>
                 </div>
-                {loadingFormat === 'pdf' ? <span className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-red-500" />}
+                {loadingFormat === 'pdf' ? <span className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-red-500" />}
               </button>
 
               <button
@@ -301,15 +311,15 @@ export default function InventoryReportsModal({ isOpen, onClose }) {
                 className="flex items-center justify-between w-full px-4 py-3 bg-white border border-gray-200 hover:border-emerald-200 hover:bg-emerald-50 rounded-xl transition-all group shadow-sm hover:shadow-md"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg group-hover:bg-emerald-200 transition-colors">
-                    <FileSpreadsheet className="w-5 h-5" />
+                  <div className="p-2 bg-emerald-50 text-emerald-500 rounded-xl group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">
+                    <FileSpreadsheet className="w-6 h-6" />
                   </div>
                   <div className="text-left">
-                    <span className="block text-sm font-bold text-gray-800 group-hover:text-emerald-700">Excel (.xlsx)</span>
-                    <span className="block text-xs text-gray-500">Para análisis de datos y contabilidad</span>
+                    <span className="block text-sm font-bold text-gray-900 group-hover:text-emerald-700">Excel (.xlsx)</span>
+                    <span className="block text-[11px] text-gray-500">Para análisis de datos y contabilidad</span>
                   </div>
                 </div>
-                {loadingFormat === 'excel' ? <span className="animate-spin h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-emerald-500" />}
+                {loadingFormat === 'excel' ? <span className="animate-spin h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full"/> : <Download className="w-5 h-5 text-gray-300 group-hover:text-emerald-500" />}
               </button>
             </div>
           </div>

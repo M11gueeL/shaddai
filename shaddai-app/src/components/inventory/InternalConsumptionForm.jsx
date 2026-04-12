@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Briefcase } from 'lucide-react';
 import { preventNegativeInput, preventNegativePaste } from '../../utils/formUtils';
 
-export default function InternalConsumptionForm({ item, onSubmit, loading }) {
+export default function InternalConsumptionForm({ item, onSubmit, loading, onCancel }) {
   const [quantity, setQuantity] = useState(0);
   const [notes, setNotes] = useState('');
 
@@ -17,21 +17,9 @@ export default function InternalConsumptionForm({ item, onSubmit, loading }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 mb-6">
-        <div className="flex items-center gap-2 mb-1">
-            <Briefcase className="w-4 h-4 text-amber-700" />
-            <h3 className="text-sm font-bold text-amber-900">Registro de Uso Interno</h3>
-        </div>
-        <p className="text-xs text-amber-700">
-            Registrando salida para: <span className="font-bold">{item.name}</span> (Stock Actual: {item.stock_quantity})
-        </p>
-        <p className="text-xs text-amber-600 mt-1">
-            Este movimiento se registrará como gasto operativo del consultorio.
-        </p>
-      </div>
       
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">Cantidad a Retirar *</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1.5">Cantidad a Retirar * (Stock Actual: {item.stock_quantity})</label>
         <input 
           type="number" 
           min="1"
@@ -59,7 +47,16 @@ export default function InternalConsumptionForm({ item, onSubmit, loading }) {
         />
       </div>
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium text-sm"
+          >
+            Cancelar
+          </button>
+        )}
         <button
           type="submit"
           disabled={loading || quantity <= 0 || quantity > item.stock_quantity || !notes.trim()}

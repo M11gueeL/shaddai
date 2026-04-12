@@ -95,21 +95,34 @@ export default function BatchManagementModal({ item, onClose, onUpdate }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] relative">
+    <div 
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={(e) => { e.stopPropagation(); onClose(); }} />
+      
+      <div 
+        className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start z-10 relative">
           <div>
-            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <Package className="text-indigo-600" /> Gestión de Lotes
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                <Package size={20} />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                Gestión de Lotes
+              </h2>
+            </div>
+            <p className="text-sm text-gray-500 ml-11">
               Producto: <span className="font-medium text-gray-900">{item.name}</span> | Stock Total: {item.stock_quantity}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-full transition text-gray-400 hover:text-gray-600">
-            <X size={24} />
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
+            <X size={20} />
           </button>
         </div>
 

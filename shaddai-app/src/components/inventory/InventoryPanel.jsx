@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { listInventory, createInventoryItem, updateInventoryItem, registerInternalConsumption, listInventoryMovements, getExpiringItems, getBrands, getInventoryStats, getSuppliers, createSupplier as createSupplierApi, updateSupplier as updateSupplierApi, storePurchase, getPurchases, getPurchaseDetails } from '../../api/inventoryApi';
-import { Package } from 'lucide-react';
+import { Package, Edit2, Briefcase } from 'lucide-react';
 import InventoryTable from './InventoryTable';
 import Modal from './Modal';
 import ItemForm from './ItemForm';
@@ -413,14 +413,14 @@ export default function InventoryPanel() {
             </div>
 
             {/* Modals */}
-            <Modal open={creating} title="Registrar Nuevo Insumo" onClose={() => setCreating(false)} maxWidth="max-w-md lg:max-w-xl">
-                <ItemForm loading={false} onSubmit={handleCreate} />
+            <Modal open={creating} title="Registrar Insumo" description="Crea un nuevo producto en el catálogo" icon={Package} iconColor="indigo" onClose={() => setCreating(false)} maxWidth="max-w-md lg:max-w-xl" hideCloseButton={true}>
+                <ItemForm loading={false} onSubmit={handleCreate} onCancel={() => setCreating(false)} />
             </Modal>
-            <Modal open={!!editingItem} title={`Editar: ${editingItem?.name || ''}`} onClose={() => setEditingItem(null)} maxWidth="max-w-md lg:max-w-xl">
-                {editingItem && <ItemForm initial={editingItem} loading={false} onSubmit={handleUpdate} />}
+            <Modal open={!!editingItem} title={`Editar Insumo`} description={editingItem?.name || ''} icon={Edit2} iconColor="blue" onClose={() => setEditingItem(null)} maxWidth="max-w-md lg:max-w-xl" hideCloseButton={true}>
+                {editingItem && <ItemForm initial={editingItem} loading={false} onSubmit={handleUpdate} onCancel={() => setEditingItem(null)} />}
             </Modal>
-            <Modal open={!!consumptionItem} title={`Uso Interno: ${consumptionItem?.name || ''}`} onClose={() => setConsumptionItem(null)} maxWidth="max-w-sm md:max-w-md">
-                {consumptionItem && <InternalConsumptionForm item={consumptionItem} loading={false} onSubmit={handleInternalConsumption} />}
+            <Modal open={!!consumptionItem} title={`Uso Interno`} description={consumptionItem?.name || ''} icon={Briefcase} iconColor="amber" onClose={() => setConsumptionItem(null)} maxWidth="max-w-sm md:max-w-md" hideCloseButton={true}>
+                {consumptionItem && <InternalConsumptionForm item={consumptionItem} loading={false} onSubmit={handleInternalConsumption} onCancel={() => setConsumptionItem(null)} />}
             </Modal>
 
             <MovementsDrawer

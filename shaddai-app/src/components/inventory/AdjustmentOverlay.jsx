@@ -53,14 +53,32 @@ export default function AdjustmentOverlay({ batch, type, onClose, onSuccess, tok
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all scale-100">
-        <div className={`px-6 py-5 border-b flex justify-between items-center ${isDiscard ? 'bg-red-50 border-red-100' : 'bg-indigo-50 border-indigo-100'}`}>
-          <h4 className={`font-bold text-lg flex items-center gap-2 ${isDiscard ? 'text-red-800' : 'text-indigo-800'}`}>
-            {isDiscard ? <Trash2 size={22}/> : <Edit2 size={22}/>}
-            {isDiscard ? 'Dar de Baja / Desechar' : 'Ajustar Stock'}
-          </h4>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 text-gray-500 transition-colors"><X size={20}/></button>
+    <div 
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 animate-in fade-in duration-200"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={(e) => { e.stopPropagation(); onClose(); }} />
+      <div 
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden transform transition-all scale-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start z-10 relative">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`p-2 rounded-lg ${isDiscard ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                {isDiscard ? <Trash2 size={20}/> : <Edit2 size={20}/>}
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                {isDiscard ? 'Dar de Baja / Desechar' : 'Ajustar Stock'}
+              </h2>
+            </div>
+            <p className="text-sm text-gray-500 ml-11">
+              {isDiscard ? 'Registra un desperdicio o retiro justificado.' : 'Corrige la cantidad real disponible.'}
+            </p>
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+            <X size={20}/>
+          </button>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-6">

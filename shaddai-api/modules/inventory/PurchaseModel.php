@@ -69,7 +69,22 @@ class PurchaseModel {
 
     public function getAll($filters = []) {
         $sql = 'SELECT p.id, p.supplier_id, s.name AS supplier_name, p.invoice_number, p.purchase_date,
-                       p.total_amount, p.currency, p.status, p.notes, p.created_by, p.created_at
+                       p.total_amount, p.currency, p.status, p.notes, p.created_by, p.created_at,
+                       (
+                           SELECT COUNT(DISTINCT d.item_id)
+                           FROM inventory_purchase_details d
+                           WHERE d.purchase_id = p.id
+                       ) AS product_count,
+                       (
+                           SELECT SUBSTRING_INDEX(
+                               GROUP_CONCAT(DISTINCT i.name ORDER BY i.name SEPARATOR "||"),
+                               "||",
+                               3
+                           )
+                           FROM inventory_purchase_details d
+                           INNER JOIN inventory_items i ON i.id = d.item_id
+                           WHERE d.purchase_id = p.id
+                       ) AS product_preview
                 FROM inventory_purchases p
                 INNER JOIN inventory_suppliers s ON p.supplier_id = s.id';
 

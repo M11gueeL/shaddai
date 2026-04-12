@@ -1,6 +1,5 @@
-import React from 'react';
-import { CalendarDays, ClipboardList, Truck } from 'lucide-react';
-import Modal from './Modal';
+import React, { useMemo, useState } from 'react';
+import { CalendarDays, ClipboardList, Search, Truck, X, Eye, PackageOpen, Tag, Banknote, Clock, ArrowLeft } from 'lucide-react';
 
 function formatearFecha(valor) {
   if (!valor) return '-';
@@ -30,16 +29,42 @@ function traducirEstado(estado) {
   return mapa[estado] || estado;
 }
 
-function getStatusPillClass(estado) {
-  switch (estado) {
-    case 'cancelled':
-      return 'bg-rose-100 text-rose-700 border border-rose-200';
-    case 'pending':
-      return 'bg-amber-100 text-amber-700 border border-amber-200';
-    case 'received':
-    default:
-      return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+function getStatusPillClass(estado, variant = 'solid') {
+  if (variant === 'solid') {
+    switch (estado) {
+      case 'cancelled': return 'bg-rose-100 text-rose-700 border border-rose-200';
+      case 'pending': return 'bg-amber-100 text-amber-700 border border-amber-200';
+      case 'received': default: return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+    }
+  } else {
+    // subtle
+    switch (estado) {
+      case 'cancelled': return 'bg-white text-rose-600 border border-rose-200 shadow-sm';
+      case 'pending': return 'bg-white text-amber-600 border border-amber-200 shadow-sm';
+      case 'received': default: return 'bg-white text-emerald-600 border border-emerald-200 shadow-sm';
+    }
   }
+}
+
+function getProductMeta(purchase) {
+  const previewRaw = String(purchase?.product_preview || '');
+  const previewList = previewRaw
+    .split('||')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const productCountRaw = Number(purchase?.product_count ?? 0);
+  const productCount = Number.isFinite(productCountRaw) && productCountRaw > 0
+    ? productCountRaw
+    : previewList.length;
+
+  const hiddenCount = Math.max(productCount - previewList.length, 0);
+
+  return {
+    previewList,
+    productCount,
+    hiddenCount
+  };
 }
 
 function getBatchAvailabilityMeta(batch) {
@@ -60,7 +85,7 @@ function getBatchAvailabilityMeta(batch) {
       consumed,
       ratio,
       label: 'Agotado',
-      badgeClass: 'bg-rose-100 text-rose-700 border border-rose-200',
+      badgeClass: 'bg-rose-100 text-rose-700',
       barClass: 'bg-rose-500'
     };
   }
@@ -72,7 +97,7 @@ function getBatchAvailabilityMeta(batch) {
       consumed,
       ratio,
       label: 'Parcial',
-      badgeClass: 'bg-amber-100 text-amber-700 border border-amber-200',
+      badgeClass: 'bg-amber-100 text-amber-700',
       barClass: 'bg-amber-500'
     };
   }
@@ -83,7 +108,7 @@ function getBatchAvailabilityMeta(batch) {
     consumed,
     ratio,
     label: 'Intacto',
-    badgeClass: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+    badgeClass: 'bg-emerald-100 text-emerald-700',
     barClass: 'bg-emerald-500'
   };
 }
@@ -100,201 +125,353 @@ export default function PurchasesRecentModal({
   canPurchase = false,
   onOpenPurchase
 }) {
+  const [quickSearch, setQuickSearch] = useState('');
+
+  const filteredPurchases = useMemo(() => {
+    const term = quickSearch.trim().toLowerCase();
+    if (!term) return purchases;
+
+    return purchases.filter((purchase) => {
+      const searchable = [
+        purchase?.supplier_name,
+        purchase?.invoice_number,
+        purchase?.purchase_date,
+        purchase?.product_preview,
+        purchase?.status
+      ]
+        .map((value) => String(value || '').toLowerCase())
+        .join(' ');
+
+      return searchable.includes(term);
+    });
+  }, [purchases, quickSearch]);
+
+  const view = selectedPurchaseId ? 'detail' : 'list';
+
+  if (!open) return null;
+
   return (
-    <>
-      {/* Modal Principal: Lista de compras */}
-      <Modal open={open} onClose={onClose} title="Compras recientes" maxWidth="max-w-3xl">
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-4">
-            <div className="mb-1 flex items-center gap-2 text-sm font-bold text-emerald-900">
-              <ClipboardList className="h-4 w-4" />
-              Historial de compras
+    <div 
+      className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={(e) => { e.stopPropagation(); onClose(); }} />
+      
+      <div 
+        className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        
+        {/* Header Dinámico */}
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start z-10 relative">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              {view === 'detail' ? (
+                <button 
+                  onClick={() => onSelectPurchase({ id: null })}
+                  className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors mr-1"
+                  title="Volver a la lista"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+              ) : (
+                <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                    <ClipboardList size={20} />
+                </div>
+              )}
+              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                {view === 'detail' 
+                    ? `Detalle de Compra ${selectedPurchaseDetails?.purchase?.invoice_number ? '#' + selectedPurchaseDetails.purchase.invoice_number : ''}` 
+                    : 'Historial y Compras Recientes'}
+              </h2>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-emerald-700">
-                Selecciona una compra para abrir su detalle en una vista dedicada.
-              </p>
-              <span className="rounded-full border border-emerald-200 bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                {purchases.length} registros
-              </span>
-            </div>
+            
+            <p className="text-sm text-gray-500 ml-11">
+              {view === 'detail' ? 'Información detallada de la adquisición y sus lotes ingresados.' : 'Listado de insumos que han ingresado al inventario.'}
+            </p>
           </div>
-
-          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="max-h-[400px] overflow-auto">
-              <table className="w-full text-sm whitespace-nowrap">
-                <thead className="sticky top-0 bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
-                  <tr>
-                    <th className="px-4 py-2.5 text-left font-semibold">Fecha</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Proveedor</th>
-                    <th className="px-4 py-2.5 text-left font-semibold">Factura</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Total</th>
-                    <th className="px-4 py-2.5 text-center font-semibold">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td className="px-4 py-8 text-center text-gray-500" colSpan={5}>Cargando compras...</td>
-                    </tr>
-                  ) : purchases.length === 0 ? (
-                    <tr>
-                      <td className="px-4 py-8 text-center text-gray-500" colSpan={5}>No hay compras registradas.</td>
-                    </tr>
-                  ) : (
-                    purchases.map((purchase) => (
-                      <tr
-                        key={purchase.id}
-                        onClick={() => onSelectPurchase?.(purchase)}
-                        className="cursor-pointer border-b border-gray-50 transition-colors hover:bg-emerald-50/50"
-                      >
-                        <td className="px-4 py-3 text-gray-700">
-                          <span className="inline-flex items-center gap-1.5">
-                            <CalendarDays className="h-3.5 w-3.5 text-gray-400" />
-                            {formatearFecha(purchase.purchase_date)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-700 font-medium">
-                          {purchase.supplier_name || '-'}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 text-xs font-mono">
-                          {purchase.invoice_number || '-'}
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold text-emerald-700">
-                          {formatearMonto(purchase.total_amount, purchase.currency || 'USD')}
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-medium ${getStatusPillClass(purchase.status)}`}>
-                            {traducirEstado(purchase.status)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="border-t border-gray-100 bg-gray-50 px-4 py-2 flex items-center justify-between text-xs text-gray-500">
-              <span>Mostrando compras recientes.</span>
-              <span>Haz clic en una fila para ver el detalle</span>
-            </div>
-          </section>
-
-          <div className="flex justify-end pt-1">
-            {canPurchase && (
-              <button
-                type="button"
-                onClick={onOpenPurchase}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
-              >
-                <Truck className="h-4 w-4" />
-                Registrar compra
-              </button>
-            )}
+          
+          <div className="flex items-center gap-3">
+             {view === 'list' && canPurchase && (
+                 <button 
+                  onClick={onOpenPurchase}
+                  className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 shadow-sm shadow-emerald-200 transition-all flex items-center gap-2"
+                >
+                  <Truck size={16} />
+                  <span className="hidden sm:inline">Nueva Compra</span>
+                </button>
+             )}
+            <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
+              <X size={20} />
+            </button>
           </div>
         </div>
-      </Modal>
 
-      {/* Modal Secundario: Detalles de la compra */}
-      <Modal
-        open={!!selectedPurchaseId}
-        onClose={() => onSelectPurchase({ id: selectedPurchaseId })}
-        title="Detalle de compra"
-        maxWidth="max-w-4xl"
-      >
-        {loadingDetails ? (
-          <div className="py-12 text-center text-sm text-gray-500">
-            Cargando información detallada...
-          </div>
-        ) : !selectedPurchaseDetails ? (
-          <div className="py-12 text-center text-sm text-gray-500">
-            No se encontraron datos para esta operación.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-3">
-                <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">Proveedor</div>
-                <div className="text-sm font-semibold text-gray-800">{selectedPurchaseDetails.purchase?.supplier_name || '-'}</div>
-              </div>
-              <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-3">
-                <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-1">N° de Factura</div>
-                <div className="text-sm font-mono font-medium text-gray-700">{selectedPurchaseDetails.purchase?.invoice_number || '-'}</div>
-              </div>
-              <div className="rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-3">
-                <div className="text-[11px] uppercase tracking-wide text-emerald-600 mb-1">Monto Total</div>
-                <div className="text-sm font-bold text-emerald-700">
-                  {formatearMonto(selectedPurchaseDetails.purchase?.total_amount, selectedPurchaseDetails.purchase?.currency || 'USD')}
+        {view === 'list' && (
+             <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="relative max-w-md w-full animate-in fade-in slide-in-from-right-4 duration-300">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input 
+                        type="text"
+                        placeholder="Buscar por proveedor, N° factura, producto..."
+                        value={quickSearch}
+                        onChange={(e) => setQuickSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                    />
                 </div>
-              </div>
             </div>
-
-            <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-              <div className="bg-gray-50 px-4 py-2 border-b border-gray-100 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gray-600">
-                <span>Insumos y lotes registrados</span>
-                <span>{selectedPurchaseDetails.batches?.length || 0} ítems</span>
-              </div>
-              <div className="max-h-[320px] overflow-auto">
-                {Array.isArray(selectedPurchaseDetails.batches) && selectedPurchaseDetails.batches.length > 0 ? (
-                  <div className="divide-y divide-gray-100">
-                    {selectedPurchaseDetails.batches.map((batch) => {
-                      const availability = getBatchAvailabilityMeta(batch);
-
-                      return (
-                        <article key={batch.id} className="space-y-3 p-4 transition-colors hover:bg-gray-50/60">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <div className="text-sm font-semibold text-gray-900">{batch.item_name || '-'}</div>
-                              <div className="text-xs text-gray-500">
-                                Lote {batch.batch_number || 'S/N'} • Vence {formatearFecha(batch.expiration_date)}
-                              </div>
-                            </div>
-                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${availability.badgeClass}`}>
-                              {availability.label}
-                            </span>
-                          </div>
-
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <div className="rounded-lg border border-sky-100 bg-sky-50 p-2.5">
-                              <div className="text-[11px] uppercase tracking-wide text-sky-700">Cantidad comprada</div>
-                              <div className="text-base font-bold text-sky-800">{formatearCantidad(availability.purchased)}</div>
-                            </div>
-                            <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2.5">
-                              <div className="text-[11px] uppercase tracking-wide text-emerald-700">Stock restante / disponible</div>
-                              <div className="text-base font-bold text-emerald-800">{formatearCantidad(availability.available)}</div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <div className="flex items-center justify-between text-[11px] text-gray-500">
-                              <span>Disponibilidad del lote</span>
-                              <span>{availability.ratio}%</span>
-                            </div>
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${availability.barClass}`}
-                                style={{ width: `${availability.ratio}%` }}
-                              />
-                            </div>
-                            <div className="text-[11px] text-gray-500">
-                              Consumido: {formatearCantidad(availability.consumed)}
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="px-4 py-6 text-center text-sm text-gray-500">
-                    Esta compra no tiene lotes ingresados al stock.
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
         )}
-      </Modal>
-    </>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto bg-gray-50/30 p-0 relative">
+          {view === 'list' ? (
+            loading ? (
+                <div className="flex flex-col items-center justify-center py-24 space-y-3">
+                  <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500 font-medium">Cargando historial de compras...</p>
+                </div>
+            ) : filteredPurchases.length === 0 ? (
+                <div className="text-center py-16 px-4">
+                  <div className="w-16 h-16 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <ClipboardList className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-gray-900 font-semibold text-lg">No hay compras registradas</h3>
+                  <p className="text-gray-500 text-sm mt-1 max-w-sm mx-auto">
+                    {quickSearch ? 'Ajusta tu búsqueda para encontrar resultados.' : 'Acá aparecerán todas las compras y recepciones en el almacén.'}
+                  </p>
+                </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm whitespace-nowrap min-w-[800px]">
+                  <thead className="sticky top-0 bg-white shadow-sm border-b border-gray-200 text-xs font-bold uppercase tracking-wider text-gray-500 z-10">
+                    <tr>
+                      <th className="px-6 py-4 text-left">Fecha</th>
+                      <th className="px-6 py-4 text-left">Proveedor</th>
+                      <th className="px-6 py-4 text-left">Productos Ingresados</th>
+                      <th className="px-6 py-4 text-left">Factura</th>
+                      <th className="px-6 py-4 text-right">Monto Total</th>
+                      <th className="px-6 py-4 text-center">Estado</th>
+                      <th className="px-6 py-4 text-center"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredPurchases.map((purchase) => {
+                        const productMeta = getProductMeta(purchase);
+                        return (
+                            <tr
+                                key={purchase.id}
+                                className="group cursor-pointer bg-white hover:bg-emerald-50/40 transition-colors"
+                                onClick={() => onSelectPurchase?.(purchase)}
+                            >
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2 text-gray-700 font-medium">
+                                        <CalendarDays className="h-4 w-4 text-emerald-500" />
+                                        {formatearFecha(purchase.purchase_date)}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 text-gray-800 font-semibold truncate max-w-[200px]">
+                                    {purchase.supplier_name || <span className="text-gray-400 font-normal italic">Sin proveedor</span>}
+                                </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex -space-x-2">
+                                            {productMeta.previewList.slice(0, 3).map((name, i) => (
+                                                <div 
+                                                    key={i} 
+                                                    className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center shadow-sm relative z-0"
+                                                    title={name}
+                                                >
+                                                    <PackageOpen size={14} className="text-gray-500"/>
+                                                </div>
+                                            ))}
+                                            {productMeta.hiddenCount > 0 && (
+                                                <div className="w-8 h-8 rounded-full bg-gray-50 border-2 border-white flex items-center justify-center text-[10px] font-bold text-gray-500 shadow-sm relative z-10">
+                                                    +{productMeta.hiddenCount}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-gray-500 font-medium ml-2">
+                                            {productMeta.productCount} ítem{productMeta.productCount !== 1 ? 's' : ''}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 text-gray-600 font-mono text-xs font-semibold">
+                                    {purchase.invoice_number || '-'}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <span className="font-bold text-emerald-700">
+                                        {formatearMonto(purchase.total_amount, purchase.currency || 'USD')}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <span className={`inline-flex items-center justify-center min-w-[90px] rounded-lg px-2.5 py-1 text-xs font-bold leading-tight ${getStatusPillClass(purchase.status)}`}>
+                                        {traducirEstado(purchase.status)}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button className="p-1.5 bg-white border border-gray-200 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200">
+                                            <Eye size={16} />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : (
+            /* DETAIL VIEW */
+            <div className="p-6 animate-in slide-in-from-right-8 duration-300">
+                 {loadingDetails ? (
+                    <div className="flex flex-col items-center justify-center py-20 space-y-3">
+                        <div className="w-8 h-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                        <p className="text-sm text-gray-500 font-medium">Cargando detalle completo...</p>
+                    </div>
+                 ) : !selectedPurchaseDetails ? (
+                    <div className="py-12 text-center text-sm text-gray-500">
+                        No se encontraron datos detallados para esta compra.
+                    </div>
+                 ) : (
+                     <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-start gap-4">
+                                <div className="p-3 bg-gray-50 rounded-xl text-gray-600 shrink-0">
+                                    <Truck size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Proveedor</div>
+                                    <div className="text-sm font-semibold text-gray-900 leading-snug">
+                                        {selectedPurchaseDetails.purchase?.supplier_name || <span className="text-gray-400 italic">Sin especificar</span>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-start gap-4">
+                                <div className="p-3 bg-blue-50 rounded-xl text-blue-600 shrink-0">
+                                    <Tag size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Factura Recibida</div>
+                                    <div className="text-sm font-semibold font-mono text-gray-900 leading-snug">
+                                        {selectedPurchaseDetails.purchase?.invoice_number || <span className="text-gray-400 italic">Sin N°</span>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-start gap-4">
+                                <div className="p-3 bg-orange-50 rounded-xl text-orange-600 shrink-0">
+                                    <Clock size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Fecha Ingreso</div>
+                                    <div className="text-sm font-semibold text-gray-900 leading-snug">
+                                        {formatearFecha(selectedPurchaseDetails.purchase?.purchase_date)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 shadow-md text-white flex items-start gap-4">
+                                <div className="p-3 bg-white/20 rounded-xl text-white shrink-0 backdrop-blur-sm">
+                                    <Banknote size={20} />
+                                </div>
+                                <div>
+                                    <div className="text-xs uppercase tracking-wider text-emerald-100 font-bold mb-1">Total Pagado</div>
+                                    <div className="text-lg font-bold leading-snug tracking-tight">
+                                        {formatearMonto(selectedPurchaseDetails.purchase?.total_amount, selectedPurchaseDetails.purchase?.currency || 'USD')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Detalle de Productos/Lotes en formato Grid Card o Lista elegante */}
+                        <div>
+                            <div className="flex items-center justify-between mb-4 mt-2 px-1">
+                                <h3 className="text-base font-bold text-gray-900">Insumos Adquiridos (Lotes)</h3>
+                                <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
+                                    {selectedPurchaseDetails.batches?.length || 0} ingresados
+                                </span>
+                            </div>
+
+                            {Array.isArray(selectedPurchaseDetails.batches) && selectedPurchaseDetails.batches.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-4">
+                                    {selectedPurchaseDetails.batches.map((batch) => {
+                                        const availability = getBatchAvailabilityMeta(batch);
+                                        return (
+                                            <div key={batch.id} className="bg-white border text-gray-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 font-bold text-xl border border-emerald-100 flex-shrink-0">
+                                                            {batch.item_name?.charAt(0) || 'P'}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-gray-900 text-lg mb-1 leading-tight">{batch.item_name}</h4>
+                                                            <div className="flex items-center gap-3 text-xs font-semibold text-gray-500">
+                                                                <span>Lote: <span className="font-mono text-gray-700 bg-gray-100 px-2 py-0.5 rounded ml-1">{batch.batch_number || 'S/N'}</span></span>
+                                                                <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                                                                <span className="flex items-center gap-1 text-orange-600">
+                                                                    <CalendarDays size={12}/> Vence {formatearFecha(batch.expiration_date)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-start sm:items-end">
+                                                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${availability.badgeClass}`}>
+                                                            {availability.label}
+                                                         </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 bg-gray-50/50 rounded-xl p-4 border border-gray-100">
+                                                    <div>
+                                                        <div className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-1">Stock Adquirido</div>
+                                                        <div className="text-lg font-bold text-gray-900">
+                                                            {formatearCantidad(availability.purchased)} <span className="text-xs font-normal text-gray-500">unids.</span>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs uppercase tracking-wider text-emerald-600 font-bold mb-1">Stock Actual</div>
+                                                        <div className="text-lg font-bold text-emerald-700">
+                                                            {formatearCantidad(availability.available)} <span className="text-xs font-normal text-emerald-600/70">unids.</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="col-span-2 mt-2">
+                                                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider mb-2">
+                                                            <span className="text-gray-400">Consumo de este lote</span>
+                                                            <span className={availability.ratio < 30 ? 'text-rose-500' : 'text-emerald-500'}>{availability.ratio}% disponible</span>
+                                                        </div>
+                                                        <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                                                            <div 
+                                                                className={`h-full rounded-full transition-all duration-700 ${availability.barClass}`}
+                                                                style={{ width: `${availability.ratio}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 bg-white border border-dashed border-gray-200 rounded-2xl">
+                                    <PackageOpen className="mx-auto h-10 w-10 text-gray-300 mb-2"/>
+                                    <p className="text-sm font-semibold text-gray-600">No hay lotes asociados a esta compra.</p>
+                                </div>
+                            )}
+                        </div>
+                     </div>
+                 )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {view === 'list' && (
+            <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200 z-10 text-xs font-medium text-gray-500 font-mono">
+                {filteredPurchases.length} documentos encontrados.
+            </div>
+        )}
+      </div>
+    </div>
   );
 }
-

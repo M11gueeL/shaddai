@@ -74,13 +74,13 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={(e) => { e.stopPropagation(); onClose(); }} />
       
-      <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+      <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         
         {/* Header */}
-        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start">
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex justify-between items-start z-10 relative">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <div className="p-2 bg-red-50 rounded-lg text-red-600">
@@ -90,7 +90,7 @@ export default function ExpiringModal({ isOpen, onClose, items, loading }) {
             </div>
             <p className="text-sm text-gray-500 ml-11">Gestión de insumos vencidos y próximos a caducar (por Lote).</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
+          <button onClick={(e) => { e.stopPropagation(); onClose(); }} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition">
             <X size={20} />
           </button>
         </div>
