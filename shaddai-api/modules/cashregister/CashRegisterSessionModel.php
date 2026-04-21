@@ -17,9 +17,30 @@ class CashRegisterSessionModel {
     }
 
     public function close($sessionId, $calcUsd, $realUsd, $calcBs, $realBs, $notes = null) {
-        $sql = 'UPDATE cash_register_sessions SET end_time = NOW(), calculated_end_balance_usd = :cUsd, real_end_balance_usd = :rUsd, calculated_end_balance_bs = :cBs, real_end_balance_bs = :rBs, notes = :notes, status = "closed" WHERE id = :id';
+        $diffUsd = $realUsd - $calcUsd;
+        $diffBs = $realBs - $calcBs;
+
+        $sql = 'UPDATE cash_register_sessions 
+                SET end_time = NOW(), 
+                    calculated_end_balance_usd = :cUsd, 
+                    real_end_balance_usd = :rUsd, 
+                    difference_usd = :dUsd,
+                    calculated_end_balance_bs = :cBs, 
+                    real_end_balance_bs = :rBs, 
+                    difference_bs = :dBs,
+                    notes = :notes, 
+                    status = "closed" 
+                WHERE id = :id';
+                
         return $this->db->execute($sql, [
-            ':cUsd'=>$calcUsd, ':rUsd'=>$realUsd, ':cBs'=>$calcBs, ':rBs'=>$realBs, ':notes'=>$notes, ':id'=>$sessionId
+            ':cUsd' => $calcUsd,
+            ':rUsd' => $realUsd,
+            ':dUsd' => $diffUsd,
+            ':cBs'  => $calcBs,
+            ':rBs'  => $realBs,
+            ':dBs'  => $diffBs,
+            ':notes'=> $notes,
+            ':id'   => $sessionId
         ]);
     }
 

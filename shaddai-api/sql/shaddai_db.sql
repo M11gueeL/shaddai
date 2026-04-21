@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 07-04-2026 a las 23:12:26
+-- Tiempo de generación: 21-04-2026 a las 16:28:42
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -52,9 +52,10 @@ INSERT INTO `appointments` (`id`, `patient_id`, `doctor_id`, `appointment_date`,
 (2, 35, 11, '2026-04-06', '08:30:00', 1, 1, 30, 'completada', 'primera_vez', 8, '2026-04-05 22:37:18', '2026-04-06 13:21:28'),
 (3, 13, 11, '2026-04-06', '09:00:00', 1, 1, 30, 'completada', 'primera_vez', 8, '2026-04-06 00:10:14', '2026-04-06 13:21:40'),
 (4, 43, 11, '2026-04-07', '07:15:00', 1, 1, 30, 'completada', 'primera_vez', 8, '2026-04-06 13:38:20', '2026-04-07 15:39:35'),
-(5, 43, 11, '2026-04-08', '10:30:00', 1, 1, 30, 'programada', 'primera_vez', 8, '2026-04-06 14:11:34', '2026-04-06 14:11:34'),
+(5, 43, 11, '2026-04-08', '10:30:00', 1, 1, 30, 'cancelada', 'primera_vez', 8, '2026-04-06 14:11:34', '2026-04-08 17:02:18'),
 (6, 49, 11, '2026-04-08', '15:00:00', 1, 1, 30, 'programada', 'control', 8, '2026-04-06 19:19:57', '2026-04-06 19:19:57'),
-(7, 51, 11, '2026-04-07', '16:30:00', 1, 1, 30, 'completada', 'primera_vez', 8, '2026-04-06 19:21:22', '2026-04-07 20:59:55');
+(7, 51, 11, '2026-04-07', '16:30:00', 1, 1, 30, 'completada', 'primera_vez', 8, '2026-04-06 19:21:22', '2026-04-07 20:59:55'),
+(8, 8, 11, '2026-04-13', '08:30:00', 1, 1, 30, 'programada', 'primera_vez', 8, '2026-04-09 20:36:18', '2026-04-09 20:36:18');
 
 -- --------------------------------------------------------
 
@@ -81,7 +82,8 @@ INSERT INTO `appointment_medical_info` (`id`, `appointment_id`, `chief_complaint
 (2, 2, '', '', '', '2026-04-06 13:21:28', '2026-04-06 13:21:28'),
 (3, 3, '', '', '', '2026-04-06 13:21:40', '2026-04-06 13:21:40'),
 (4, 4, '', '', '', '2026-04-07 15:39:35', '2026-04-07 15:39:35'),
-(5, 7, '', '', '', '2026-04-07 20:59:55', '2026-04-07 20:59:55');
+(5, 7, '', '', '', '2026-04-07 20:59:55', '2026-04-07 20:59:55'),
+(6, 5, '', '', '', '2026-04-08 17:02:18', '2026-04-08 17:02:18');
 
 -- --------------------------------------------------------
 
@@ -121,7 +123,8 @@ INSERT INTO `appointment_status_history` (`id`, `appointment_id`, `previous_stat
 (2, 2, 'programada', 'completada', 8, 'Actualización de cita', '2026-04-06 13:21:28'),
 (3, 3, 'programada', 'completada', 8, 'Actualización de cita', '2026-04-06 13:21:40'),
 (4, 4, 'programada', 'completada', 8, 'Actualización de cita', '2026-04-07 15:39:35'),
-(5, 7, 'programada', 'completada', 8, 'Actualización de cita', '2026-04-07 20:59:55');
+(5, 7, 'programada', 'completada', 8, 'Actualización de cita', '2026-04-07 20:59:55'),
+(6, 5, 'programada', 'cancelada', 8, 'Actualización de cita', '2026-04-08 17:02:18');
 
 -- --------------------------------------------------------
 
@@ -142,6 +145,13 @@ CREATE TABLE `billing_accounts` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Fecha de creación de la cuenta',
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Cuentas por cobrar (facturas no fiscales) por paciente';
+
+--
+-- Volcado de datos para la tabla `billing_accounts`
+--
+
+INSERT INTO `billing_accounts` (`id`, `patient_id`, `payer_patient_id`, `appointment_id`, `status`, `total_usd`, `total_bs`, `exchange_rate_id`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 13, 13, NULL, 'paid', 49.50, 23583.25, 2, 8, '2026-04-10 21:05:22', '2026-04-10 21:06:38');
 
 -- --------------------------------------------------------
 
@@ -178,6 +188,14 @@ CREATE TABLE `billing_account_supplies` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Insumos cargados a la cuenta del paciente';
 
+--
+-- Volcado de datos para la tabla `billing_account_supplies`
+--
+
+INSERT INTO `billing_account_supplies` (`id`, `account_id`, `item_id`, `description`, `quantity`, `price_usd`, `total_price_usd`, `price_bs`, `total_price_bs`, `created_at`) VALUES
+(1, 1, 1, 'Solución Cloruro de Sodio 0,90%', 15, 2.80, 42.00, 1334.00, 20010.00, '2026-04-10 21:05:43'),
+(2, 1, 5, 'Diclofenac Potásico 50mg', 5, 1.50, 7.50, 714.65, 3573.25, '2026-04-10 21:06:04');
+
 -- --------------------------------------------------------
 
 --
@@ -190,6 +208,15 @@ CREATE TABLE `billing_account_supply_batches` (
   `batch_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `billing_account_supply_batches`
+--
+
+INSERT INTO `billing_account_supply_batches` (`id`, `supply_id`, `batch_id`, `quantity`) VALUES
+(1, 1, 1, 12),
+(2, 1, 3, 3),
+(3, 2, 2, 5);
 
 -- --------------------------------------------------------
 
@@ -209,6 +236,13 @@ CREATE TABLE `cash_register_movements` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Movimientos de efectivo (entradas/salidas) en una sesión';
 
+--
+-- Volcado de datos para la tabla `cash_register_movements`
+--
+
+INSERT INTO `cash_register_movements` (`id`, `session_id`, `payment_id`, `movement_type`, `amount`, `currency`, `description`, `created_by`, `created_at`) VALUES
+(1, 1, 1, 'payment_in', 40.00, 'USD', 'Pago cuenta #1', 8, '2026-04-10 21:06:14');
+
 -- --------------------------------------------------------
 
 --
@@ -224,11 +258,20 @@ CREATE TABLE `cash_register_sessions` (
   `start_balance_bs` decimal(12,2) NOT NULL COMMENT 'Fondo de caja inicial en Bs',
   `calculated_end_balance_usd` decimal(10,2) DEFAULT NULL COMMENT 'Monto USD que DEBERÍA haber al cierre',
   `real_end_balance_usd` decimal(10,2) DEFAULT NULL COMMENT 'Monto USD que se CONTÓ realmente al cierre',
+  `difference_usd` decimal(10,2) DEFAULT 0.00,
   `calculated_end_balance_bs` decimal(12,2) DEFAULT NULL,
   `real_end_balance_bs` decimal(12,2) DEFAULT NULL,
-  `status` enum('open','closed') NOT NULL DEFAULT 'open',
+  `difference_bs` decimal(12,2) DEFAULT 0.00,
+  `status` enum('open','closed','flagged') NOT NULL DEFAULT 'open' COMMENT 'flagged se puede usar para sesiones que cerraron con diferencias graves',
   `notes` text DEFAULT NULL COMMENT 'Notas sobre el cierre (ej. faltante/sobrante)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Sesiones de apertura y cierre de caja por usuario';
+
+--
+-- Volcado de datos para la tabla `cash_register_sessions`
+--
+
+INSERT INTO `cash_register_sessions` (`id`, `user_id`, `start_time`, `end_time`, `start_balance_usd`, `start_balance_bs`, `calculated_end_balance_usd`, `real_end_balance_usd`, `difference_usd`, `calculated_end_balance_bs`, `real_end_balance_bs`, `difference_bs`, `status`, `notes`) VALUES
+(1, 8, '2026-04-10 17:05:11', '2026-04-10 17:08:30', 0.00, 0.00, 40.00, NULL, 0.00, 4526.09, NULL, 0.00, 'closed', NULL);
 
 -- --------------------------------------------------------
 
@@ -297,6 +340,14 @@ CREATE TABLE `daily_exchange_rates` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Registro de la tasa BCV usada por día';
 
+--
+-- Volcado de datos para la tabla `daily_exchange_rates`
+--
+
+INSERT INTO `daily_exchange_rates` (`id`, `rate_date`, `rate_bcv`, `created_by`, `created_at`) VALUES
+(1, '2026-04-09', 475.9500, 8, '2026-04-09 16:07:54'),
+(2, '2026-04-10', 476.4300, 8, '2026-04-10 21:05:01');
+
 -- --------------------------------------------------------
 
 --
@@ -332,6 +383,17 @@ CREATE TABLE `inventory_batches` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
+--
+-- Volcado de datos para la tabla `inventory_batches`
+--
+
+INSERT INTO `inventory_batches` (`id`, `item_id`, `purchase_id`, `batch_number`, `quantity`, `initial_quantity`, `expiration_date`, `created_at`, `status`, `updated_at`) VALUES
+(1, 1, 1, 'L-2026-S09', 0, 15, '2029-11-12', '2026-04-08 00:43:34', 'empty', '2026-04-10 21:05:43'),
+(2, 5, 2, 'L-2026-04', 17, 25, '2028-10-10', '2026-04-09 20:44:59', 'active', '2026-04-10 21:09:31'),
+(3, 1, 3, 'L-2026-04', 3, 6, '2030-10-21', '2026-04-09 22:11:08', 'active', '2026-04-10 21:05:43'),
+(5, 6, 5, 'L-2026-04', 8, 10, '2028-10-17', '2026-04-11 23:34:39', 'active', '2026-04-12 01:17:05'),
+(6, 1, 5, 'L-2026-04-002', 8, 8, '2030-05-15', '2026-04-11 23:34:39', 'active', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -347,6 +409,16 @@ CREATE TABLE `inventory_brands` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `inventory_brands`
+--
+
+INSERT INTO `inventory_brands` (`id`, `name`, `description`, `is_active`, `is_deleted`, `created_at`, `updated_at`) VALUES
+(1, 'JL PHARMA', '', 1, 0, '2026-04-07 21:39:08', '2026-04-07 21:39:08'),
+(2, 'La Santé', '', 1, 0, '2026-04-11 23:15:04', '2026-04-11 23:15:04'),
+(3, 'Genven', '', 1, 0, '2026-04-11 23:15:08', '2026-04-11 23:15:08'),
+(4, 'Calox', '', 1, 0, '2026-04-11 23:15:11', '2026-04-11 23:15:11');
 
 -- --------------------------------------------------------
 
@@ -370,6 +442,16 @@ CREATE TABLE `inventory_items` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Catálogo de insumos médicos';
 
+--
+-- Volcado de datos para la tabla `inventory_items`
+--
+
+INSERT INTO `inventory_items` (`id`, `code`, `name`, `brand_id`, `description`, `stock_quantity`, `unit_of_measure`, `reorder_level`, `price_usd`, `is_active`, `is_deleted`, `created_at`, `updated_at`) VALUES
+(1, 'SOL-001', 'Solución Cloruro de Sodio 0,90%', 1, '', 11, 'Frasco 500 ml', 5, 2.80, 1, 0, '2026-04-07 21:40:13', '2026-04-11 23:34:39'),
+(4, 'PCL-500', 'Paracetamol 500 MG', 1, '', 0, 'Blíster ', 5, 1.50, 1, 0, '2026-04-09 20:40:24', '2026-04-09 20:42:24'),
+(5, 'DCP-LST-02', 'Diclofenac Potásico 50mg', 1, '', 17, 'Blíster ', 5, 1.50, 1, 0, '2026-04-09 20:40:54', '2026-04-10 21:09:31'),
+(6, 'ACT-500', 'Acetaminofén 500 mg La Santé Caja x 20 Tabletas', 2, '', 8, 'Caja 20 Tabletas', 5, 2.00, 1, 0, '2026-04-11 23:31:30', '2026-04-12 01:17:05');
+
 -- --------------------------------------------------------
 
 --
@@ -386,6 +468,25 @@ CREATE TABLE `inventory_movements` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `batch_id` int(11) DEFAULT NULL COMMENT 'Lote afectado, si aplica'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Historial de entradas y salidas manuales de stock';
+
+--
+-- Volcado de datos para la tabla `inventory_movements`
+--
+
+INSERT INTO `inventory_movements` (`id`, `item_id`, `movement_type`, `quantity`, `notes`, `created_by`, `created_at`, `batch_id`) VALUES
+(1, 1, 'in_purchase', 15, 'Ingreso por compra #1 (Factura: 0003489)', 8, '2026-04-08 00:43:34', 1),
+(2, 5, 'in_purchase', 25, 'Ingreso por compra #2 (Factura: 0009123)', 8, '2026-04-09 20:44:59', 2),
+(3, 1, 'in_purchase', 6, 'Ingreso por compra #3 (Factura: 0009124)', 8, '2026-04-09 22:11:08', 3),
+(4, 1, 'out_consumption', 3, 'Se utilizaron 3 frascos para tratamiento médico Dr Andres (Del Lote: L-2026-S09)', 8, '2026-04-10 21:04:28', 1),
+(5, 1, '', 12, 'Consumo facturado en cuenta #1 (Del Lote: L-2026-S09)', 8, '2026-04-10 21:05:43', 1),
+(6, 1, '', 3, 'Consumo facturado en cuenta #1 (Del Lote: L-2026-04)', 8, '2026-04-10 21:05:43', 3),
+(7, 5, '', 5, 'Consumo facturado en cuenta #1 (Del Lote: L-2026-04)', 8, '2026-04-10 21:06:04', 2),
+(8, 5, 'out_adjustment', 3, 'AJUSTE Lote: L-2026-04. Razón: Blíster dañados', 8, '2026-04-10 21:09:31', 2),
+(10, 6, 'in_purchase', 10, 'Ingreso por compra #5 (Factura: 000345)', 8, '2026-04-11 23:34:39', 5),
+(11, 1, 'in_purchase', 8, 'Ingreso por compra #5 (Factura: 000345)', 8, '2026-04-11 23:34:39', 6),
+(12, 6, 'out_adjustment', 2, 'AJUSTE Lote: L-2026-04. Razón: Se dañaron dos cajas', 8, '2026-04-12 01:16:06', 5),
+(13, 6, 'in_adjustment', 1, 'AJUSTE Lote: L-2026-04. Razón: prueba de ajuste positivo', 8, '2026-04-12 01:16:48', 5),
+(14, 6, 'out_consumption', 1, 'donación (Del Lote: L-2026-04)', 8, '2026-04-12 01:17:05', 5);
 
 -- --------------------------------------------------------
 
@@ -406,6 +507,16 @@ CREATE TABLE `inventory_purchases` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 
+--
+-- Volcado de datos para la tabla `inventory_purchases`
+--
+
+INSERT INTO `inventory_purchases` (`id`, `supplier_id`, `invoice_number`, `purchase_date`, `total_amount`, `currency`, `status`, `notes`, `created_by`, `created_at`) VALUES
+(1, 1, '0003489', '2026-04-06', 30.00, 'USD', 'received', NULL, 8, '2026-04-08 00:43:34'),
+(2, 1, '0009123', '2026-04-08', 30.00, 'USD', 'received', NULL, 8, '2026-04-09 20:44:59'),
+(3, 1, '0009124', '2026-04-08', 13.80, 'USD', 'received', NULL, 8, '2026-04-09 22:11:08'),
+(5, 2, '000345', '2026-04-11', 41.40, 'USD', 'received', NULL, 8, '2026-04-11 23:34:39');
+
 -- --------------------------------------------------------
 
 --
@@ -420,6 +531,17 @@ CREATE TABLE `inventory_purchase_details` (
   `unit_cost` decimal(12,2) NOT NULL COMMENT 'Costo unitario de adquisición',
   `subtotal` decimal(12,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `inventory_purchase_details`
+--
+
+INSERT INTO `inventory_purchase_details` (`id`, `purchase_id`, `item_id`, `quantity`, `unit_cost`, `subtotal`) VALUES
+(1, 1, 1, 15, 2.00, 30.00),
+(2, 2, 5, 25, 1.20, 30.00),
+(3, 3, 1, 6, 2.30, 13.80),
+(5, 5, 6, 10, 1.62, 16.20),
+(6, 5, 1, 8, 3.15, 25.20);
 
 -- --------------------------------------------------------
 
@@ -439,6 +561,16 @@ CREATE TABLE `inventory_suppliers` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+
+--
+-- Volcado de datos para la tabla `inventory_suppliers`
+--
+
+INSERT INTO `inventory_suppliers` (`id`, `name`, `tax_id`, `contact_name`, `phone`, `email`, `address`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Farmacia SAAS', 'J-07000750-8', '0261-3003500', NULL, NULL, NULL, 1, '2026-04-08 00:41:53', '2026-04-08 02:40:31'),
+(2, 'Farmatodo Av. Bermudez', 'J-00020200-1', NULL, '02432157912', NULL, 'Av. Bermudez, Maracay 2103, Aragua', 1, '2026-04-11 23:09:18', '2026-04-11 23:09:18'),
+(3, 'FarmaVital Palo Negro', 'J-29396399-0', NULL, '04243087835', NULL, 'número 1 y 2, cruce Miranda, Local 34 C. Gran Democrata, Palo Negro 2117, Aragua', 1, '2026-04-11 23:12:59', '2026-04-11 23:12:59'),
+(4, 'prueba', 'J-12312314', NULL, NULL, NULL, NULL, 1, '2026-04-12 01:03:56', '2026-04-12 01:03:56');
 
 -- --------------------------------------------------------
 
@@ -769,7 +901,10 @@ INSERT INTO `patients` (`id`, `full_name`, `cedula`, `birth_date`, `gender`, `ma
 (49, 'antonio banderas', 'V-23129471', NULL, NULL, NULL, NULL, '04128912375', NULL, '2026-04-06 19:19:25', '2026-04-06 19:19:25', 8, NULL, NULL),
 (50, 'Maria Fernandez', 'V-12823912', NULL, NULL, NULL, NULL, '04128913498', NULL, '2026-04-06 19:20:43', '2026-04-06 19:20:43', 8, NULL, NULL),
 (51, 'luis lopez', NULL, '2025-07-16', NULL, NULL, NULL, NULL, NULL, '2026-04-06 19:21:01', '2026-04-06 19:21:01', 8, 50, 'Madre'),
-(53, 'adsadsd', 'V-111222333', NULL, NULL, NULL, NULL, '04121234565', NULL, '2026-04-06 20:34:15', '2026-04-06 20:34:15', 8, NULL, NULL);
+(53, 'adsadsd', 'V-111222333', NULL, NULL, NULL, NULL, '04121234565', NULL, '2026-04-06 20:34:15', '2026-04-06 20:34:15', 8, NULL, NULL),
+(54, 'maria juana', 'V-27345981', NULL, NULL, NULL, NULL, '04121238912', NULL, '2026-04-09 20:38:37', '2026-04-09 20:38:37', 8, NULL, NULL),
+(55, 'mario', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-09 20:39:01', '2026-04-09 20:39:01', 8, 54, 'Madre'),
+(56, 'felipe', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-04-09 22:07:35', '2026-04-09 22:07:35', 8, 13, 'Madre');
 
 -- --------------------------------------------------------
 
@@ -799,6 +934,14 @@ CREATE TABLE `payments` (
   `attachment_data` longblob DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Pagos y abonos recibidos por cuentas';
 
+--
+-- Volcado de datos para la tabla `payments`
+--
+
+INSERT INTO `payments` (`id`, `account_id`, `payment_date`, `payment_method`, `amount`, `currency`, `exchange_rate_id`, `amount_usd_equivalent`, `reference_number`, `attachment_path`, `status`, `deleted_at`, `notes`, `registered_by`, `verified_by`, `created_at`, `attachment_name`, `attachment_mime`, `attachment_data`) VALUES
+(1, 1, '2026-04-10 17:06:14', 'cash_usd', 40.00, 'USD', 2, 40.00, NULL, NULL, 'verified', NULL, NULL, 8, NULL, '2026-04-10 21:06:14', NULL, NULL, NULL),
+(2, 1, '2026-04-10 17:06:31', 'transfer_bs', 4526.09, 'BS', 2, 9.50, '09128547', NULL, 'pending_verification', NULL, NULL, 8, NULL, '2026-04-10 21:06:31', NULL, NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -818,6 +961,13 @@ CREATE TABLE `payment_receipts` (
   `annulled_by` int(11) DEFAULT NULL,
   `pdf_path` varchar(512) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci COMMENT='Registro de recibos de pago (no fiscales) emitidos';
+
+--
+-- Volcado de datos para la tabla `payment_receipts`
+--
+
+INSERT INTO `payment_receipts` (`id`, `receipt_number`, `account_id`, `payment_id`, `issued_by`, `issued_at`, `status`, `annulled_reason`, `annulled_at`, `annulled_by`, `pdf_path`) VALUES
+(1, '2026-04-0000001', 1, NULL, 8, '2026-04-10 21:06:38', 'active', NULL, NULL, NULL, '/uploads/receipts/202604/receipt_1_2026-04-0000001.pdf');
 
 -- --------------------------------------------------------
 
@@ -1453,8 +1603,10 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('2dc5606b2e1a0bc2ade162aa59699610a418df37826ac73b26e08a298300083e', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-09 05:20:08', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY3OTkzNjA4LCJleHAiOjE3NjgwODAwMDh9.0O-3YZ0HrwGG-5xaXYzTbQUtsm_JJmjPM3GTpKLm0I0', '2026-01-09 08:56:58'),
 ('2e7bfa090cb660ad7fe9ccc6485450446fcee8d6e76b72f4dae3764c2047f58c', 24, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-02 02:44:21', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjI0LCJlbWFpbCI6InRoZW1pZ3VlbW9uYXN0ZXJpb0BnbWFpbC5jb20iLCJyb2xlcyI6WyJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc2NzM3OTQ2MSwiZXhwIjoxNzY3NDY1ODYxfQ.1rRcvSVauUQx7dmaNIK4hOZEO1C4ujBflpQdHhPpOYc', '2026-01-02 02:45:27'),
 ('2f8702d20396fb169259da9b7ba394227bf2bc7892539d46c886dfeccac00466', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-22 09:14:19', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2NDUyNDU5LCJleHAiOjE3NjY1Mzg4NTl9.ozVZO19QMlUmwFDQfBPm5UQK9h0OfB8rb1Pm_GuiBcE', '2025-12-22 09:14:46'),
+('3021609609fedfaa16f79d6a86cec7c7d85d18ea45e7c2c53eae58f5e40f95fa', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 16:05:12', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTc1MDcxMiwiZXhwIjoxNzc1ODM3MTEyfQ.xlVwZQKTpsh8b8A0D-vToHLnHLviMVXeSez2FLQ7w7w', '2026-04-09 16:10:13'),
 ('311b9e0f881fcc435f86f6d0231b2d9c4c9689a0f59809fc6271fdea24823ec2', 11, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-09 01:52:16', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjExLCJlbWFpbCI6Implc3Npcm5hY2FyeWJyYXZvQGdtYWlsLmNvbSIsInJvbGVzIjpbIm1lZGljbyJdLCJpYXQiOjE3Njc5ODExMzYsImV4cCI6MTc2ODA2NzUzNn0.7vq0Q--VPAiXE75Pp48tIOMZyr5T5cP3ul0LS4fLUiE', '2026-01-09 01:52:29'),
 ('328ad261e5e9f39453853aad06c3fbd9cf34de8ecc25ac41fad6121f3825a778', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-26 23:47:34', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2ODUwNDU0LCJleHAiOjE3NjY5MzY4NTR9.DKl0sayt72lB71hbbHbJgvOXTToAJ9EBbAwH6-2ZK08', '2025-12-27 11:27:19'),
+('3298e6d3fb66d2ec58c4501e8416d411147f1ecc69f7adf9c795cd4781d072be', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-11 22:52:26', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTk0Nzk0NiwiZXhwIjoxNzc2MDM0MzQ2fQ.SAGOIIIJQWlB1YMMnY-EWP9il3aTb-ZvSGm73nrYQ9E', '2026-04-12 01:18:29'),
 ('32a1ca8477fc0c6bd83e20464d26e932a167ed34770ee2349579a3fe497a9f69', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 07:11:55', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzI3NTE1LCJleHAiOjE3NTQzMzExMTV9.K8I2cCPcpzL0-sSby72Ed85EYJa6pA-baHbWRamlhBE', '2025-08-04 01:12:39'),
 ('32a6c256eb88de106bcb0f06d233a1f782c11253989e58e557f38cde62c2badb', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-09 01:45:47', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY3OTgwNzQ3LCJleHAiOjE3NjgwNjcxNDd9.Bl_rkGU6RoAEp7WP02as1MX9gnkIIoTBV8HYQ8X3mpM', '2026-01-09 01:51:22'),
 ('33e465f1ae702b591c72f24b069097e585922b816f20eb24ec71b79d3dedf5f0', 8, '::1', 'PostmanRuntime/7.49.0', '2025-10-23 09:47:58', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMjQ4ODc4LCJleHAiOjE3NjEzMzUyNzh9.8lLOuoaf8acy7VYwtW1mssK83KeWfAXLkgJ3HlE2vk4', '2025-10-23 07:12:32'),
@@ -1489,6 +1641,7 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('3e55aace2722175abea5a0e5ec63af26b172770dfd16ee66ef9fce1e9f176725', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-02 06:25:53', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzcwMDcxMTUzLCJleHAiOjE3NzAxNTc1NTN9.pqsFglFAoEKR06PllhhVbFl2MHeyVTyr_oMixHjeWpc', '2026-02-06 20:14:41'),
 ('3ecc9ed6015ce22f2e583b3614ae537abcaf696e989ec8785a54a49c8456691b', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-06 10:38:00', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyNDgzMDgwLCJleHAiOjE3NjI1Njk0ODB9.bMNOvb_Grde0hg3w5rNhnq0TEKuhDzG6r4BNmmJ59Mw', '2026-02-02 06:04:32'),
 ('3f8b5de15fd497be7e1d93102a6ba23d22fb97ea6aff64a978a2b1e11e1680c5', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 10:58:04', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzQxMDg0LCJleHAiOjE3NTQzNDQ2ODR9.jnQ9Dc6qOeLe6mPc80hvoxQGgpVN7l2mMSZRMqliR7I', '2026-02-02 06:04:32'),
+('41c7367d78e16c239d60cb7c7c48ae5c8c03bff5d765c9efaff2447d72f6665e', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-15 12:42:06', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NjI1NjkyNiwiZXhwIjoxNzc2MzQzMzI2fQ.CF-hfv4ElaDZtqFhc4J7oahbjmWAlaVqkb2Xd8TxpnE', '2026-04-15 12:42:17'),
 ('42e6bf07b05f3888b093df2f3ddcc7efb7a7ae6cdebd5256619c6045ebab2c10', 26, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-07 01:34:44', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjI2LCJlbWFpbCI6ImFkbWluQGFkbWluLmNvbSIsInJvbGVzIjpbImFkbWluIl0sImlhdCI6MTc3NTUyNTY4NCwiZXhwIjoxNzc1NjEyMDg0fQ.Q6ayNupxvG1kkhEPY7llUI21qpkwQP8sr2RDP2-Z0NM', '2026-04-07 01:34:57'),
 ('43e40398aef356700713164bf06e587bc52f919c3105ee53793481478ca68186', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-14 23:28:26', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzcxMTY5MzA2LCJleHAiOjE3NzEyNTU3MDZ9.LtB4Lo8vOeQsihmX8EPpXkl2aVLpG76GtXOeAoZbqqI', '2026-02-14 23:34:30'),
 ('44af854132d8a3c494d9cf084696c73977d1b05d6c0880d9d97cd40aa84e049d', 23, '::1', 'PostmanRuntime/7.49.0', '2025-10-25 04:15:40', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjIzLCJlbWFpbCI6Im1pZ3VlMTFtb25hc3RlcmlvMjRAZ21haWwuY29tIiwicm9sZXMiOlsibWVkaWNvIl0sImlhdCI6MTc2MTQyMzM0MCwiZXhwIjoxNzYxNTA5NzQwfQ.C3jDoEavR-nuMdstzaNGzgheDeODlTbvkQxGy4E3lZI', '2025-10-25 05:43:34'),
@@ -1502,12 +1655,13 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('491c65ce1ed7acf9d2577514cc67f09c61ae98b8da05b4ea7b6791e5dcb1967a', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-06 11:19:36', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTE1MTc2LCJleHAiOjE3NTQ1MTg3NzZ9.NJDZ2CwKiSvdfzJvy-RthpsIRKA6i7bRaQU29GNdvlQ', '2026-02-02 06:04:32'),
 ('4992659c3577000aa3d5922e2b050ba65fc597cd17b9804a7b2ab43913c99931', 33, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-15 23:42:52', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjMzLCJlbWFpbCI6Im1pZ3VlbG1vbmFzdGVyaW8yNDExQGdtYWlsLmNvbSIsInJvbGVzIjpbInJlY2VwY2lvbmlzdGEiXSwiaWF0IjoxNzY4NTc4MTcyLCJleHAiOjE3Njg2NjQ1NzJ9.yb55LyoLfcwnVXvlHKgTdANn20FgbZVNlapCeIgo63A', '2026-01-15 23:43:03'),
 ('4a20761eaa2825b1b402a6dcdbbb66600d337ed3627e5cfbfbe5266a920cf9c5', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-27 02:10:14', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNTg4NjE0LCJleHAiOjE3NjE2NzUwMTR9.ywCL7_htU1cFxYwbgWrda_1nFu2JSftxq8WtqIEAB04', '2025-10-27 04:24:53'),
-('4a263432b5f68dd296210aea9089c2c0c0d7e2becf20106ac8c9ca975cf3a242', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-22 23:12:59', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2NTAyNzc5LCJleHAiOjE3NjY1ODkxNzl9.DmQI7L4wFryGq0uXL2X3pr0OD37EYmDc-6iL_brR1W8', '2025-12-23 01:17:41'),
+('4a263432b5f68dd296210aea9089c2c0c0d7e2becf20106ac8c9ca975cf3a242', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-22 23:12:59', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2NTAyNzc5LCJleHAiOjE3NjY1ODkxNzl9.DmQI7L4wFryGq0uXL2X3pr0OD37EYmDc-6iL_brR1W8', '2025-12-23 01:17:41');
+INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
 ('4a8352a2cec8dfc030c3d0dd7545643ad29b9a917ebcbaf65f0ee89030d7f69c', 24, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-14 23:50:59', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjI0LCJlbWFpbCI6ImVkdWFyZG9AZ21haWwuY29tIiwicm9sZXMiOlsicmVjZXBjaW9uaXN0YSJdLCJpYXQiOjE3NzExNzA2NTksImV4cCI6MTc3MTI1NzA1OX0.3I5PsksBZaMF4r-EYW7WrLyqb-Q7OAP809kenY9kj3E', '2026-02-14 23:51:06'),
+('4abee4e5e091e5b685051c215280cd9148563b06b91cf868ce0a4309bab2e443', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-08 15:47:06', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTY2MzIyNiwiZXhwIjoxNzc1NzQ5NjI2fQ.ofCfQodXxkrrqHgtQEaIGfKjXCNZ_8olRXMicmhddOU', '2026-04-08 17:06:55'),
 ('4b79cc176296eec289c8277f24d8a294423676eac2952c9526fdbf2e6f04bf3b', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-23 07:51:26', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY5MjEyMjg2LCJleHAiOjE3NjkyOTg2ODZ9.RpuqztwOsE9Cb7rlYSUPSf08QnyLGg4w79yGBUlhVFw', '2026-01-23 08:02:41'),
 ('4c33c092e19c2d0d3bc876ea6f96153b35db1a46019decdbfa206b53c1f68261', 8, '::1', 'PostmanRuntime/7.44.1', '2025-07-31 14:30:04', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MDA4MjA0LCJleHAiOjE3NTQwMTE4MDR9.xDM5GJZM4aRB2eM7AEGZnpncIk_Q9sZrC0_IiGKACfA', '2025-07-31 08:38:37'),
-('4cf8ba7b225d55585dee794c5147b4c6496d7fea831dd38269cd5ddae778d438', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-07 08:34:51', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTkxNjkxLCJleHAiOjE3NTQ1OTUyOTF9.lkA8kQc11RF2W5SXsWhF6S5M-f0FLzItTZ5kFS87s6k', '2025-08-07 03:34:28');
-INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
+('4cf8ba7b225d55585dee794c5147b4c6496d7fea831dd38269cd5ddae778d438', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-07 08:34:51', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTkxNjkxLCJleHAiOjE3NTQ1OTUyOTF9.lkA8kQc11RF2W5SXsWhF6S5M-f0FLzItTZ5kFS87s6k', '2025-08-07 03:34:28'),
 ('4d62483b6e66291235607f0fc6a865a17e4e191a800c8e87eb4e817320ad3054', 8, '::1', 'PostmanRuntime/7.44.1', '2025-08-01 05:10:05', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MDYxMDA1LCJleHAiOjE3NTQwNjQ2MDV9.X08QpkkVpiWCdkU0H4EtcJfdRYNdCCxGQUDJ83FtaTI', '2025-07-31 23:10:59'),
 ('4d657148488e317a4f6c5087d84cad8784900e25a7c0e137fc796e5d31fc059b', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 10:56:28', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzQwOTg4LCJleHAiOjE3NTQzNDQ1ODh9.VRRJ1Eu6qd6EjELDz5rcj4mXnuNl_5uV_7_Lk5cYxd8', '2026-02-02 06:04:32'),
 ('4dc217f8ebfdbd154b0aa9c563aa3da952724f9c8a1f6f8d0422bdb7dc549bd5', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-09 21:55:23', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyNzgyOTIzLCJleHAiOjE3NjI4NjkzMjN9.s2n16cuIF0SRzf_AOxztDlchNMSVeSAnb1VVlKImoUg', '2025-11-09 22:06:40'),
@@ -1568,7 +1722,7 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('712fc062a3fa0c55a9d737440a9d7d2e5d84a268e3ceba2829b1c2c6069b892d', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-10 07:04:06', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyODE1ODQ2LCJleHAiOjE3NjI5MDIyNDZ9.cv8orSOxIPRu9z-TOWGRFW_vG80toVzGhfI8_zfZVhA', '2025-11-10 07:05:59'),
 ('71bc52eb74c3c5cd4a0781928f128f4efb84b7c09c9ebce5fd2ad4116a0754fb', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 05:40:41', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDI4NDQxLCJleHAiOjE3NjE1MTQ4NDF9.eDyHm9OSLQHfKYS6jeqx6QD8asQfKy9m44_MpJ3wS88', '2025-10-25 05:40:46'),
 ('71cc5e7a9546b22046d496aed518ba8fc3684e84b92885912aaca4437c838d2b', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-23 05:49:13', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMjM0NTUzLCJleHAiOjE3NjEyMzgxNTN9.I9nwvJPHgxUiw1ZqujHdjFzeP1I26hD03nO3lC2vyQY', '2025-10-22 23:54:29'),
-('72bb52af5247cd0c528dc9cfc49d51fd41592d2a276a459e88c4d20385900bef', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-07 20:57:48', 'active', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTU5NTQ2OCwiZXhwIjoxNzc1NjgxODY4fQ.KeG_UYnwwJHAtjYZi0zrmNSmF4aPOsXIPADzor2QUyU', NULL),
+('72bb52af5247cd0c528dc9cfc49d51fd41592d2a276a459e88c4d20385900bef', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-07 20:57:48', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTU5NTQ2OCwiZXhwIjoxNzc1NjgxODY4fQ.KeG_UYnwwJHAtjYZi0zrmNSmF4aPOsXIPADzor2QUyU', '2026-04-08 02:44:17'),
 ('75029a3214921cbc30f26b2b7a39048cd97aeab569bd79858493d5803bfa780f', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 05:40:56', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDI4NDU2LCJleHAiOjE3NjE1MTQ4NTZ9.jJAy9AG-ABDYemdPELRjYVe2aVBLTjQv39LHw3I62fw', '2025-10-25 05:40:59'),
 ('751fa242bc2141022df701773b8b74488c8015d962d3a85ca4f66d04ee8fc0ae', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-05 04:57:18', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY0OTY4MjM4LCJleHAiOjE3NjUwNTQ2Mzh9.zCo-HHxzsw3P-woEx3SYMCODIXTIh1Dc0xTyzHaJa9E', '2025-12-05 05:16:30'),
 ('753a80cecfd65a43e476b420f81f6658ad4d15e8aeb1983a306f11f89509d2c2', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-23 13:41:39', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMjYyODk5LCJleHAiOjE3NjEzNDkyOTl9.NfvTTpDCo76pFgF5A5xiLTF6m-hkUXdo5ADeFX3wA0g', '2025-10-23 08:51:24'),
@@ -1602,13 +1756,16 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('83930c24e8b01ef1df8162f375a1dd7433d03cf7e6ccca62fae091354362906d', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-31 02:53:12', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY3MjA3MTkxLCJleHAiOjE3NjcyOTM1OTF9.ZZMZZTg5TPh5Lgn9TX9XcrRFBnX4LjVxyLs2udgv5gs', '2025-12-31 04:59:49'),
 ('8398fdd6511ac1791f8af30d1f37b4cd5d8fc223bf7fa0eb75ea7ade092c2adc', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 05:41:40', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDI4NTAwLCJleHAiOjE3NjE1MTQ5MDB9.bozLFSBbYXiGxtAI45nznRhql9jtCwN61WNtQrZ-m7Q', '2025-10-25 05:42:28'),
 ('8469d7a8f364d9762d35e9d69a678963801a4e6643516add4c90a9575850291f', 24, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 00:10:18', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjI0LCJlbWFpbCI6InRoZW1pZ3VlbW9uYXN0ZXJpb0BnbWFpbC5jb20iLCJyb2xlcyI6WyJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc2MTQwODYxOCwiZXhwIjoxNzYxNDk1MDE4fQ.W2OAW-vG5tZC3XEZGxJUbqn3TMoVJBXx1Rkx66ZDuLE', '2025-10-25 00:13:33'),
+('85a9220d729757168b4ec28390af9414b7b0530a4109cdb50245c8893af515ad', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 16:12:32', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTc1MTE1MiwiZXhwIjoxNzc1ODM3NTUyfQ.HkuxtQw3nGYn30NlpA6As2uzzWMYNJZCA8cpZBXSgN4', '2026-04-10 21:00:30'),
 ('86435772d8449ab5e0a76e86ac1cbb590c3b19892e865826d07ebf3c415f7bd1', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-09 00:13:14', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyNzA0Nzk0LCJleHAiOjE3NjI3OTExOTR9.s1iCiZF1RBBE0q57RAaxWHw5WLBvxwes6Y3auRwtfhU', '2026-02-02 06:04:32'),
 ('86df8f2d3210933540e553f3445954880f49ea9c08a372555e0848e5509cdd6f', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 05:40:50', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDI4NDUwLCJleHAiOjE3NjE1MTQ4NTB9.s9_EyQWYVuV-PEJGgAr8aeUAN2f0jd9hV8sYrH-2DlE', '2025-10-25 05:40:52'),
 ('87fdfe8f5c8558017c2460a9a5bd11a827d232a3ee494d5d0f6da3274595f943', 11, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-17 00:15:08', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjExLCJlbWFpbCI6Implc3Npcm5hY2FyeWJyYXZvQGdtYWlsLmNvbSIsInJvbGVzIjpbIm1lZGljbyJdLCJpYXQiOjE3NjMzOTYxMDgsImV4cCI6MTc2MzQ4MjUwOH0.CX5B6GBS4dZsXw4icJ_ykM3h_IyNT3hTV_QSqDQreZ8', '2025-11-17 00:16:48'),
 ('88adae52c0b6a9582fcc2d01ca7ffbf15c9fbd1be9e45737a99790aa3efe6c70', 8, '::1', 'PostmanRuntime/7.49.0', '2025-10-21 12:56:43', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMDg3NDAzLCJleHAiOjE3NjEwOTEwMDN9.asrCfEFU-Uy1p3CRdVpzUbVnoy-KnBbwC_wIk-UGPCM', '2026-02-02 06:04:32'),
 ('88d0c77fe5a67dcca4b0ca6d8dc649ca3396ff10064a5cae2da537441def58a3', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-20 09:01:40', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYzNjg2OTAwLCJleHAiOjE3NjM3NzMzMDB9.pvrzndFVQpJgIa-cLNCO5EB0CgKPBg9L0MvgYq9Q5mQ', '2025-11-20 09:02:33'),
 ('88dfeb93fae572748ac458f86ce4af5d1f2c53fc768bb1fb53a4e3eaa15393cf', 8, '::1', 'PostmanRuntime/7.44.1', '2025-07-31 15:22:19', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MDExMzM5LCJleHAiOjE3NTQwMTQ5Mzl9.Rhvb7UhcXpFowXZ0MBWBBbD6SAybDOHxzEbT0G3cJeE', '2025-07-31 09:32:15'),
-('8977a2d691e2b84d5452a711f670e54984d0075ac9a4f6a5fd82b49d6e6ef35f', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 07:04:10', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzI3MDUwLCJleHAiOjE3NTQzMzA2NTB9.jtUPGcOLeQE-OTkWuGYh7H1SDQbBdffCc12PMuy4zHo', '2026-02-02 06:04:32'),
+('895ea794b3d107f35379c5d5b14d295b3ca8641d12f2685f18ae95c9c8d4efbe', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-10 21:00:30', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTg1NDgzMCwiZXhwIjoxNzc1OTQxMjMwfQ.vuOcXvVFBZGFunSjUarsc7XKkZMCaLli1PHm9avunjE', '2026-04-11 22:52:26'),
+('8977a2d691e2b84d5452a711f670e54984d0075ac9a4f6a5fd82b49d6e6ef35f', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 07:04:10', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzI3MDUwLCJleHAiOjE3NTQzMzA2NTB9.jtUPGcOLeQE-OTkWuGYh7H1SDQbBdffCc12PMuy4zHo', '2026-02-02 06:04:32');
+INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
 ('89a94e08d30b20156c2532e40573ba2a0f02a3661644fa09d763e7aa17a0e21b', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-06 16:14:58', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTMyODk4LCJleHAiOjE3NTQ1MzY0OTh9.zWkQ-G3f4gi-HpCUIbgrnyHKTvVdGfTwd_qtdKn3sq8', '2025-08-06 10:56:21'),
 ('89ab06cb68173478e7fffc830468a0053efaf519eaec5018362c2f7a3f46ffcf', 8, '::1', 'PostmanRuntime/7.44.1', '2025-08-01 05:12:16', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MDYxMTM2LCJleHAiOjE3NTQwNjQ3MzZ9.poYdj8Ml3WCizDf9yJZ3bnXsn1OiUP38XVIpwbnOEcE', '2025-07-31 23:13:08'),
 ('89b285a267ad911b37cbbe83e59b12c35023649a747e6ad41c1f3827497d2cba', 8, '::1', 'PostmanRuntime/7.49.0', '2025-10-23 04:52:04', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxMjMxMTI0LCJleHAiOjE3NjEyMzQ3MjR9.9tjUwgl422Vpkg1LFK0gq1PlzrEiedGZkkeXu8As2kU', '2026-02-02 06:04:32'),
@@ -1616,8 +1773,7 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('8ad3b94ddc2e12061f565695d054b7ffdb7dfad9c38d836f14adff03be7a2f7d', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-09 05:57:18', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyNzI1NDM4LCJleHAiOjE3NjI4MTE4Mzh9.ClaYfwXRtQChQWzgBeXSlFBP34XgzdTrfgEdN13sBRM', '2025-11-09 06:50:32'),
 ('8b312d50d9fa2a5931d18c016b78c69bd23d2806095842a6257beb4e802f3ddb', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-09 00:09:54', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyNzA0NTk0LCJleHAiOjE3NjI3OTA5OTR9.OJaCGIR8Ozqjpy01IxFA7VOJ5isvfe3XsShpvVucYas', '2026-02-02 06:04:32'),
 ('8b5e9940990f0bcdae5d376c74127af234ccff8b2bd8d6e972deccd8682e8483', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-17 00:05:31', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYzMzk1NTMxLCJleHAiOjE3NjM0ODE5MzF9.kIEHlGKN-8xAWhLHsz1DmIJ54MfPHvNkMv6rQnCGAy8', '2025-11-17 00:14:57'),
-('8bd38a0688235a126a55cbaca6fba12f9716a760d928dc83761cb6f1d36cca11', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 04:57:38', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDI1ODU4LCJleHAiOjE3NjE1MTIyNTh9.4e7FoZS00DO9EowY-7zVzz4o4WwqHFqHhlj5JKm-sS0', '2025-10-25 05:21:12');
-INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
+('8bd38a0688235a126a55cbaca6fba12f9716a760d928dc83761cb6f1d36cca11', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-25 04:57:38', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNDI1ODU4LCJleHAiOjE3NjE1MTIyNTh9.4e7FoZS00DO9EowY-7zVzz4o4WwqHFqHhlj5JKm-sS0', '2025-10-25 05:21:12'),
 ('8c4a5af30c4d399ec0ee089dd44d94a1140dbd6d0ebdc4e2a9b83c8ba15170db', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-06 13:20:56', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTQ4MTY1NiwiZXhwIjoxNzc1NTY4MDU2fQ.YT3sQSILcNo9z8JSyYCOtTjS8cyCs2rXCkTaaTOUBes', '2026-04-06 14:22:46'),
 ('8c4bee6e31007018c00ce02e70dfeedd2f0230c3d8af583e5f46f05a9797d54d', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-09 00:13:12', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYyNzA0NzkyLCJleHAiOjE3NjI3OTExOTJ9.ymhSh1-yRPqKvqhhlaGQPIlj3adqyaauz0lc2YuKWrk', '2026-02-02 06:04:32'),
 ('8cf28dae5cbbf72ff667bd100a556141ab17c8e9cdcee8e8b8b0a4bab39e59b1', 23, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-24 10:04:42', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjIzLCJlbWFpbCI6Im1pZ3VlMTFtb25hc3RlcmlvMjRAZ21haWwuY29tIiwicm9sZXMiOlsibWVkaWNvIl0sImlhdCI6MTc2MTM1Nzg4MiwiZXhwIjoxNzYxNDQ0MjgyfQ.KV017Bb-r5BCo3p13vfOMloH0h81ZM3wTvEDH_7kuEI', '2025-10-24 10:04:46'),
@@ -1716,7 +1872,8 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('cd2671953df5199644d4679dfdebfc38d3c29d293a499ae78687eba98b19f8a9', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 07:05:04', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzI3MTA0LCJleHAiOjE3NTQzMzA3MDR9.yOCLpux3rjH2lAC75f6zGdNewPosVNJAxP7AksIo9DA', '2025-08-04 01:06:45'),
 ('cd66f502eac082bcb6567b7d0eb58421b8bb4b48f245401ad8df3c1c837e6ac1', 8, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 14:51:50', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzU1MTEwLCJleHAiOjE3NTQzNTg3MTB9.RW5xCW6mW77mBO_D_5qQlPwVXJG0QFod245b-WUPbX8', '2025-08-04 09:45:18'),
 ('ce0a809be84732bb68fdfce5932128677c8e5c543e839be1d8ef28e185acb9f1', 24, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-09 08:57:40', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjI0LCJlbWFpbCI6ImVkdWFyZG9AZ21haWwuY29tIiwicm9sZXMiOlsicmVjZXBjaW9uaXN0YSJdLCJpYXQiOjE3NjgwMDY2NjAsImV4cCI6MTc2ODA5MzA2MH0.SSpca5i9JF9LWMNCEQ1cdA2LC6vNa7LWXLtJx9pR3X0', '2026-01-09 08:57:56'),
-('cea29cbb78a596c76949d4f394fb44d1b8859a55eda8611022603781cc6b7ab3', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 04:57:47', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NDA1ODY3LCJleHAiOjE3NTQ0MDk0Njd9.ZtbNDq59HA7XBjooMbxQ7rYRDcliECMDeUiuHnBtp_g', '2025-08-04 23:02:55'),
+('cea29cbb78a596c76949d4f394fb44d1b8859a55eda8611022603781cc6b7ab3', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 04:57:47', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NDA1ODY3LCJleHAiOjE3NTQ0MDk0Njd9.ZtbNDq59HA7XBjooMbxQ7rYRDcliECMDeUiuHnBtp_g', '2025-08-04 23:02:55');
+INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
 ('cf4ab04d9715e040273ca14b12dcc320f851351d2d798cca328e06686e0d5586', 11, '::1', 'PostmanRuntime/7.45.0', '2025-08-04 07:13:13', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjExLCJlbWFpbCI6Implc3Npcm5hY2FyeWJyYXZvQGdtYWlsLmNvbSIsInJvbGVzIjpbIm1lZGljbyJdLCJpYXQiOjE3NTQzMjc1OTMsImV4cCI6MTc1NDMzMTE5M30.EJ5OH01ShAnMJ9ZkM9ShQE8lOq1Mx9lTV6cMIEgD64A', '2025-08-04 01:27:23'),
 ('cf7ced66968a2fc753650e664b40de15e818148ecd0ee838692c5aca31e3d7cb', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-04 08:54:10', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MzMzNjUwLCJleHAiOjE3NTQzMzcyNTB9.AvCur8QPMg8RFEp0Kl68a-2JscdrK39PqjcfFtYQ19I', '2025-08-04 02:58:34'),
 ('d1aa0c8afc3445efcd536570ec8cfb9631625b177c8c5b39d2b86933b4594c32', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-07 03:57:32', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NTc1MDUyLCJleHAiOjE3NTQ1Nzg2NTJ9.mw2jEXZFOgwSGPoIsyKSDhelR2OU8Wdh0SbOdbvt3zE', '2025-08-06 21:58:46'),
@@ -1724,8 +1881,7 @@ INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `logi
 ('d2e6e2ef2dbdd42f7826fcb6e8619369c49482151289e766deaa81848b7dda8c', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-28 04:58:41', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY2OTU1NTIxLCJleHAiOjE3NjcwNDE5MjF9.6nDeaH4ixp-GOUKsRsTMe0pO7BNaMRpxrS7J3yWKA9A', '2025-12-28 09:24:25'),
 ('d3244ddf502d76d74a99903abf72f1360e2bc6fafb892be842ae38e8f7828709', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-01-20 23:22:13', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzY5MDA4OTMzLCJleHAiOjE3NjkwOTUzMzN9.uuOML_c5Dd7-lu54n_zlNrVos_CaJexcV0729w-1I8o', '2026-01-20 23:25:27'),
 ('d32c0f712574f26d02f64775ae37f51aa818c18cc0deb632f6765de5240344d5', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36', '2025-08-05 05:03:02', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0NDA2MTgyLCJleHAiOjE3NTQ0MDk3ODJ9.k4H6yCp33z8rAuXFIrbOzQGqT_pIn4Cq3qeH6pyX0GY', '2025-08-04 23:03:05'),
-('d3fdaaf92d74cae7e8551c267b1f205cbd8c3c9aa4a4531801bdc2ac16d64126', 11, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-27 09:35:58', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjExLCJlbWFpbCI6Implc3Npcm5hY2FyeWJyYXZvQGdtYWlsLmNvbSIsInJvbGVzIjpbIm1lZGljbyJdLCJpYXQiOjE3NjQyOTM3NTgsImV4cCI6MTc2NDM4MDE1OH0.kor3mGrObdKs3JspOCzodsoziurzH5ymbZyyWHS9VDw', '2025-11-27 09:36:31');
-INSERT INTO `user_sessions` (`id`, `user_id`, `ip_address`, `device_info`, `login_time`, `session_status`, `token`, `logout_time`) VALUES
+('d3fdaaf92d74cae7e8551c267b1f205cbd8c3c9aa4a4531801bdc2ac16d64126', 11, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '2025-11-27 09:35:58', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjExLCJlbWFpbCI6Implc3Npcm5hY2FyeWJyYXZvQGdtYWlsLmNvbSIsInJvbGVzIjpbIm1lZGljbyJdLCJpYXQiOjE3NjQyOTM3NTgsImV4cCI6MTc2NDM4MDE1OH0.kor3mGrObdKs3JspOCzodsoziurzH5ymbZyyWHS9VDw', '2025-11-27 09:36:31'),
 ('d4d587da193e48445b2130c92912b33d3da8d78b5f7d4b0c49989d8c381767b0', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', '2025-10-26 05:36:17', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzYxNTE0NTc3LCJleHAiOjE3NjE2MDA5Nzd9.c1ma_k4tBmXmkjZRDv6YEZIavphsObpKdF7WvUvHPVA', '2025-10-26 07:35:42'),
 ('d56377e41efb34c912541492696219a6512c01bb8ddab6c3cedc80ff5c2dbd01', 8, '::1', 'PostmanRuntime/7.44.1', '2025-08-01 06:13:03', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iXSwiaWF0IjoxNzU0MDY0NzgzLCJleHAiOjE3NTQwNjgzODN9.GCt7PH1zos2Vton2LD3QmUlTTeDEkOBKWrtxbc3Ym0g', '2025-08-01 00:13:51'),
 ('d5b4155998ec1bffd85af9639ddc850d38da3696569f589579a18996e7c50183', 8, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 19:54:05', 'closed', 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjgsImVtYWlsIjoibW9uYXN0ZXJpb21pZ3VlbGFuZ2VsODFAZ21haWwuY29tIiwicm9sZXMiOlsiYWRtaW4iLCJyZWNlcGNpb25pc3RhIl0sImlhdCI6MTc3NTQxODg0NSwiZXhwIjoxNzc1NTA1MjQ1fQ.Jzg9BHxD3vPwsv5-NW8fy9bG27VE40tMChI6WZKnY-I', '2026-04-06 00:54:54'),
@@ -2239,13 +2395,13 @@ ALTER TABLE `vital_signs`
 -- AUTO_INCREMENT de la tabla `appointments`
 --
 ALTER TABLE `appointments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `appointment_medical_info`
 --
 ALTER TABLE `appointment_medical_info`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `appointment_notifications_log`
@@ -2257,13 +2413,13 @@ ALTER TABLE `appointment_notifications_log`
 -- AUTO_INCREMENT de la tabla `appointment_status_history`
 --
 ALTER TABLE `appointment_status_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `billing_accounts`
 --
 ALTER TABLE `billing_accounts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `billing_account_details`
@@ -2275,25 +2431,25 @@ ALTER TABLE `billing_account_details`
 -- AUTO_INCREMENT de la tabla `billing_account_supplies`
 --
 ALTER TABLE `billing_account_supplies`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `billing_account_supply_batches`
 --
 ALTER TABLE `billing_account_supply_batches`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `cash_register_movements`
 --
 ALTER TABLE `cash_register_movements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `cash_register_sessions`
 --
 ALTER TABLE `cash_register_sessions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `clinical_encounters`
@@ -2311,7 +2467,7 @@ ALTER TABLE `consulting_rooms`
 -- AUTO_INCREMENT de la tabla `daily_exchange_rates`
 --
 ALTER TABLE `daily_exchange_rates`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `diagnoses`
@@ -2323,43 +2479,43 @@ ALTER TABLE `diagnoses`
 -- AUTO_INCREMENT de la tabla `inventory_batches`
 --
 ALTER TABLE `inventory_batches`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `inventory_brands`
 --
 ALTER TABLE `inventory_brands`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `inventory_items`
 --
 ALTER TABLE `inventory_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `inventory_movements`
 --
 ALTER TABLE `inventory_movements`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de la tabla `inventory_purchases`
 --
 ALTER TABLE `inventory_purchases`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `inventory_purchase_details`
 --
 ALTER TABLE `inventory_purchase_details`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `inventory_suppliers`
 --
 ALTER TABLE `inventory_suppliers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `medical_colleges`
@@ -2413,19 +2569,19 @@ ALTER TABLE `password_resets`
 -- AUTO_INCREMENT de la tabla `patients`
 --
 ALTER TABLE `patients`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
 
 --
 -- AUTO_INCREMENT de la tabla `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `payment_receipts`
 --
 ALTER TABLE `payment_receipts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT de la tabla `physical_exams`

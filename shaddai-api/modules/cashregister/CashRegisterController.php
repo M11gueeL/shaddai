@@ -128,27 +128,58 @@ class CashRegisterController {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;
             if (!$payload) throw new Exception('No autorizado');
+            
             $userId = $payload->sub;
             $open = $this->sessionModel->findOpenByUser($userId);
-            if (!$open) { http_response_code(400); echo json_encode(['error'=>'No hay sesión abierta']); return; }
             
-            // compute calculated balances from movements (Physical)
-            $calcUsd = $this->movementModel->sumBySessionAndCurrency($open['id'], 'USD');
-            $calcBs = $this->movementModel->sumBySessionAndCurrency($open['id'], 'BS');
-
-            // Add Digital Payments to Calculated Balance
-            $digitals = $this->getDigitalPayments($userId, $open['start_time']);
-            foreach ($digitals as $d) {
-                if ($d['currency'] === 'USD') $calcUsd += (float)$d['amount'];
-                else $calcBs += (float)$d['amount'];
+            if (!$open) { 
+                http_response_code(404); 
+                echo json_encode(['error' => 'No hay sesión abierta']); 
+                return; 
+            }
+            
+            // Cálculo del Sistema (Esperado)
+            $calcUsd = (float)$open['start_balance_usd'];
+            $calcBs = (float)$open['start_balance_bs'];
+            
+            // Consultar movimientos de la sesión
+            $movements = $this->movementModel->listBySession($open['id']);
+            
+            foreach ($movements as $mov) {
+                $type = $mov['movement_type'] ?? '';
+                $currency = $mov['currency'] ?? '';
+                $amount = (float)$mov['amount'];
+                
+                if (in_array($type, ['payment_in', 'adjustment_in'])) {
+                    if ($currency === 'USD') $calcUsd += $amount;
+                    else if ($currency === 'BS') $calcBs += $amount;
+                } else if (in_array($type, ['expense_out', 'adjustment_out', 'reversal'])) {
+                    if ($currency === 'USD') $calcUsd -= $amount;
+                    else if ($currency === 'BS') $calcBs -= $amount;
+                }
             }
 
-            $realUsd = isset($_POST['real_end_balance_usd']) ? (float)$_POST['real_end_balance_usd'] : null;
-            $realBs = isset($_POST['real_end_balance_bs']) ? (float)$_POST['real_end_balance_bs'] : null;
-            $notes = $_POST['notes'] ?? null;
+            // Captura de lo Declarado
+            $input = json_decode(file_get_contents('php://input'), true);
+            $realUsd = isset($_POST['declared_usd']) ? (float)$_POST['declared_usd'] : (isset($input['declared_usd']) ? (float)$input['declared_usd'] : 0);
+            $realBs = isset($_POST['declared_bs']) ? (float)$_POST['declared_bs'] : (isset($input['declared_bs']) ? (float)$input['declared_bs'] : 0);
+            $notes = isset($_POST['notes']) ? $_POST['notes'] : (isset($input['notes']) ? $input['notes'] : null);
+            
+            // Cierre y actualización en el modelo
             $this->sessionModel->close($open['id'], $calcUsd, $realUsd, $calcBs, $realBs, $notes);
-            echo json_encode(['closed'=>true, 'calculated'=>['USD'=>$calcUsd,'BS'=>$calcBs]]);
-        } catch (Exception $e) { http_response_code(400); echo json_encode(['error'=>$e->getMessage()]); }
+            
+            echo json_encode([
+                'message' => 'Caja cerrada y conciliada exitosamente.',
+                'calculated_usd' => $calcUsd,
+                'calculated_bs' => $calcBs,
+                'declared_usd' => $realUsd,
+                'declared_bs' => $realBs
+            ]);
+            
+        } catch (Exception $e) { 
+            http_response_code(400); 
+            echo json_encode(['error' => $e->getMessage()]); 
+        }
     }
 
     public function adminListSessions() {
