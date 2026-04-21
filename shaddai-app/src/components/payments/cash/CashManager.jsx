@@ -388,7 +388,7 @@ export default function CashManager(){
       {/* Modal de Cierre de Sesión / Arqueo de Caja */}
       {isCloseModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-gray-900/20 transition-all">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-6 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl p-5 sm:p-6 max-h-[88vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <Wallet className="w-5 h-5 text-indigo-500" />
