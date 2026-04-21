@@ -317,54 +317,138 @@ class CashRegisterController {
 
 
             // 3. Prepare View Data (Calculated Totals from Details)
+            $session = $details['session'];
             $totals = [
+                'opening_usd' => (float)($session['start_balance_usd'] ?? 0),
+                'opening_bs' => (float)($session['start_balance_bs'] ?? 0),
                 'cash_in_usd' => 0,
                 'cash_in_bs' => 0,
+                'zelle_usd' => 0,
+                'other_usd' => 0,
                 'mobile_bs' => 0,
                 'transfer_bs' => 0,
-                'total_usd_movements' => 0,
-                'total_bs_movements' => 0
+                'card_bs' => 0,
+                'movement_in_usd' => 0,
+                'movement_in_bs' => 0,
+                'movement_out_usd' => 0,
+                'movement_out_bs' => 0,
+                'net_usd_movements' => 0,
+                'net_bs_movements' => 0,
+                'expected_usd' => isset($session['calculated_end_balance_usd']) ? (float)$session['calculated_end_balance_usd'] : null,
+                'expected_bs' => isset($session['calculated_end_balance_bs']) ? (float)$session['calculated_end_balance_bs'] : null,
+                'declared_usd' => isset($session['real_end_balance_usd']) ? (float)$session['real_end_balance_usd'] : null,
+                'declared_bs' => isset($session['real_end_balance_bs']) ? (float)$session['real_end_balance_bs'] : null,
+                'difference_usd' => isset($session['difference_usd']) ? (float)$session['difference_usd'] : 0,
+                'difference_bs' => isset($session['difference_bs']) ? (float)$session['difference_bs'] : 0,
+                'is_balanced' => false,
+                'has_shortage' => false,
+                'has_surplus' => false
             ];
 
+            $movementTypeLabels = [
+                'payment_in' => 'Ingreso por cobro',
+                'expense_out' => 'Gasto / salida de caja',
+                'adjustment_in' => 'Ajuste de entrada',
+                'adjustment_out' => 'Ajuste de salida',
+                'reversal' => 'Reverso de operación',
+                'initial_balance' => 'Fondo inicial'
+            ];
+
+            $methodLabels = [
+                'cash_usd' => 'Efectivo USD',
+                'cash_bs' => 'Efectivo Bs',
+                'transfer_bs' => 'Transferencia',
+                'mobile_payment_bs' => 'Pago móvil',
+                'zelle' => 'Zelle'
+            ];
+
+            $inTypes = ['payment_in', 'adjustment_in', 'initial_balance'];
+            $outTypes = ['expense_out', 'adjustment_out', 'reversal'];
+
+            $movementsForReport = [];
             $electronicPayments = [];
             $reversedMovements = [];
 
-            // Re-scan movements in details to sum up
+            // Re-scan movements in details to sum up and normalize for report
             foreach ($details['movements'] as $m) {
-                // If it's a payment income
                 $mType = $m['movement_type'] ?? ($m['type'] ?? '');
-                
-                if ($mType === 'payment_in') {
-                    $amt = (float)$m['amount'];
-                    $method = $m['payment_method'] ?? 'cash_bs';
+                $currency = strtoupper((string)($m['currency'] ?? ''));
+                $amt = (float)($m['amount'] ?? 0);
+                $method = $m['payment_method'] ?? null;
 
-                    if ($m['currency'] === 'USD') {
-                        $totals['cash_in_usd'] += $amt;
-                        $totals['total_usd_movements'] += $amt;
-                    } else {
-                        // Check methods for BS
+                if (in_array($mType, $inTypes, true)) {
+                    if ($currency === 'USD') $totals['movement_in_usd'] += $amt;
+                    if ($currency === 'BS') $totals['movement_in_bs'] += $amt;
+                }
+                if (in_array($mType, $outTypes, true)) {
+                    if ($currency === 'USD') $totals['movement_out_usd'] += $amt;
+                    if ($currency === 'BS') $totals['movement_out_bs'] += $amt;
+                }
+
+                if ($mType === 'payment_in') {
+                    if ($currency === 'USD') {
+                        if ($method === 'zelle') $totals['zelle_usd'] += $amt;
+                        elseif ($method === null || $method === 'cash_usd' || $method === 'cash') $totals['cash_in_usd'] += $amt;
+                        else $totals['other_usd'] += $amt;
+                    } elseif ($currency === 'BS') {
                         if ($method === 'mobile_payment_bs') {
-                           $totals['mobile_bs'] += $amt;
-                           $electronicPayments[] = $m;
+                            $totals['mobile_bs'] += $amt;
+                            $electronicPayments[] = $m;
                         }
                         elseif ($method === 'transfer_bs') {
-                           $totals['transfer_bs'] += $amt;
-                           $electronicPayments[] = $m;
+                            $totals['transfer_bs'] += $amt;
+                            $electronicPayments[] = $m;
                         }
-                        elseif ($method === 'cash_bs') {
-                           $totals['cash_in_bs'] += $amt;
+                        elseif ($method === null || $method === 'cash_bs' || $method === 'cash') {
+                            $totals['cash_in_bs'] += $amt;
                         }
-                        
-                        $totals['total_bs_movements'] += $amt;
+                        else {
+                            $totals['card_bs'] += $amt;
+                        }
                     }
-                } elseif ($mType === 'reversal') {
+                }
+
+                if ($mType === 'reversal') {
                     $reversedMovements[] = $m;
                 }
+
+                $direction = in_array($mType, $outTypes, true) ? 'out' : (in_array($mType, $inTypes, true) ? 'in' : 'neutral');
+                $movementsForReport[] = [
+                    'created_at' => $m['created_at'] ?? null,
+                    'movement_type' => $mType,
+                    'movement_label' => $movementTypeLabels[$mType] ?? 'Movimiento de caja',
+                    'direction' => $direction,
+                    'amount' => $amt,
+                    'currency' => $currency,
+                    'description' => $m['description'] ?? '',
+                    'payment_method_label' => $method ? ($methodLabels[$method] ?? 'Método no especificado') : null,
+                    'reference_number' => $m['reference_number'] ?? null,
+                    'account_id' => $m['account_id'] ?? null
+                ];
             }
 
+            $totals['net_usd_movements'] = $totals['movement_in_usd'] - $totals['movement_out_usd'];
+            $totals['net_bs_movements'] = $totals['movement_in_bs'] - $totals['movement_out_bs'];
+
+            // Backward compatibility keys used by current report sections
+            $totals['total_usd_movements'] = $totals['movement_in_usd'];
+            $totals['total_bs_movements'] = $totals['movement_in_bs'];
+
+            if ($totals['expected_usd'] === null) {
+                $totals['expected_usd'] = $totals['opening_usd'] + $totals['net_usd_movements'];
+            }
+            if ($totals['expected_bs'] === null) {
+                $totals['expected_bs'] = $totals['opening_bs'] + $totals['net_bs_movements'];
+            }
+
+            $totals['is_balanced'] = (abs($totals['difference_usd']) < 0.01 && abs($totals['difference_bs']) < 0.01);
+            $totals['has_shortage'] = ($totals['difference_usd'] < -0.009 || $totals['difference_bs'] < -0.009);
+            $totals['has_surplus'] = ($totals['difference_usd'] > 0.009 || $totals['difference_bs'] > 0.009);
+
             $reportData = [
-                'session' => $details['session'],
+                'session' => $session,
                 'totals' => $totals,
+                'movements' => $movementsForReport,
                 'accounts_created' => $details['opened_accounts'] ?? [],
                 'accounts_billed' => $details['billed_accounts'] ?? [],
                 'cancelled_receipts' => $reversedMovements,

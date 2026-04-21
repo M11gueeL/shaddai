@@ -64,7 +64,7 @@
     </table>
 
     <!-- TOTALS SUMMARY -->
-    <div class="section-title">RESUMEN FINANCIERO</div>
+    <div class="section-title">RESUMEN FINANCIERO Y CONCILIACIÓN</div>
     <table class="data-table">
         <thead>
             <tr>
@@ -76,13 +76,33 @@
         <tbody>
             <tr>
                 <td>Fondo Inicial (Caja)</td>
-                <td style="text-align:right" class="money"><?= number_format($session['start_balance_usd'], 2) ?></td>
-                <td style="text-align:right" class="money"><?= number_format($session['start_balance_bs'], 2) ?></td>
+                <td style="text-align:right" class="money"><?= number_format($totals['opening_usd'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money"><?= number_format($totals['opening_bs'] ?? 0, 2) ?></td>
             </tr>
             <tr>
-                <td>Ingresos Efectivo (Recaudado)</td>
+                <td>Entradas de Caja (Efectivo y Ajustes +)</td>
+                <td style="text-align:right" class="money"><?= number_format($totals['movement_in_usd'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money"><?= number_format($totals['movement_in_bs'] ?? 0, 2) ?></td>
+            </tr>
+            <tr>
+                <td>Salidas de Caja (Gastos, Ajustes -, Reversos)</td>
+                <td style="text-align:right" class="money"><?= number_format($totals['movement_out_usd'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money"><?= number_format($totals['movement_out_bs'] ?? 0, 2) ?></td>
+            </tr>
+            <tr>
+                <td>Flujo Neto de Movimientos</td>
+                <td style="text-align:right" class="money"><?= number_format($totals['net_usd_movements'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money"><?= number_format($totals['net_bs_movements'] ?? 0, 2) ?></td>
+            </tr>
+            <tr>
+                <td>Ingresos en Efectivo por Cobros</td>
                 <td style="text-align:right" class="money"><?= number_format($totals['cash_in_usd'], 2) ?></td>
                 <td style="text-align:right" class="money"><?= number_format($totals['cash_in_bs'], 2) ?></td>
+            </tr>
+            <tr>
+                <td>Ingresos Zelle (USD)</td>
+                <td style="text-align:right" class="money"><?= number_format($totals['zelle_usd'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money">-</td>
             </tr>
             <tr>
                 <td>Pago Móvil (Periodo Sesión)</td>
@@ -95,15 +115,40 @@
                 <td style="text-align:right" class="money"><?= number_format($totals['transfer_bs'], 2) ?></td>
             </tr>
             <tr style="background:#eee; font-weight:bold;">
-                <td>TOTAL GENERAL MOVIMIENTOS</td>
-                <td style="text-align:right" class="money">$<?= number_format($totals['total_usd_movements'], 2) ?></td>
-                <td style="text-align:right" class="money">Bs <?= number_format($totals['total_bs_movements'], 2) ?></td>
+                <td>Saldo Esperado al Cierre</td>
+                <td style="text-align:right" class="money">$<?= number_format($totals['expected_usd'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money">Bs <?= number_format($totals['expected_bs'] ?? 0, 2) ?></td>
+            </tr>
+            <tr style="background:#f8f8f8; font-weight:bold;">
+                <td>Saldo Declarado por Cajero</td>
+                <td style="text-align:right" class="money">
+                    <?= isset($totals['declared_usd']) ? ('$' . number_format((float)$totals['declared_usd'], 2)) : '-' ?>
+                </td>
+                <td style="text-align:right" class="money">
+                    <?= isset($totals['declared_bs']) ? ('Bs ' . number_format((float)$totals['declared_bs'], 2)) : '-' ?>
+                </td>
+            </tr>
+            <tr style="font-weight:bold;">
+                <td>Diferencia de Arqueo (Declarado - Esperado)</td>
+                <td style="text-align:right" class="money"><?= number_format($totals['difference_usd'] ?? 0, 2) ?></td>
+                <td style="text-align:right" class="money"><?= number_format($totals['difference_bs'] ?? 0, 2) ?></td>
             </tr>
             <tr>
                 <td colspan="3" style="font-size:10px; color:#666;">
-                    * El Total General incluye Efectivo ingesado + Electrónicos. No incluye fondo inicial.
+                    * Entradas y salidas incluyen movimientos manuales de caja y cobros registrados durante la sesión.
                     <br>
-                    * Efectivo en Cierre Declarado: $<?= number_format($session['real_end_balance_usd'] ?? 0, 2) ?> / Bs <?= number_format($session['real_end_balance_bs'] ?? 0, 2) ?>
+                    * Estado de conciliación:
+                    <?php if (($totals['is_balanced'] ?? false)): ?>
+                        CUADRADA (sin diferencias)
+                    <?php elseif (($totals['has_shortage'] ?? false)): ?>
+                        FALTANTE DETECTADO
+                    <?php elseif (($totals['has_surplus'] ?? false)): ?>
+                        SOBRANTE DETECTADO
+                    <?php else: ?>
+                        SESIÓN ABIERTA / SIN CONCILIACIÓN FINAL
+                    <?php endif; ?>
+                    <br>
+                    * Nota del cierre: <?= !empty($session['notes']) ? htmlspecialchars($session['notes']) : 'Sin observaciones registradas.' ?>
                 </td>
             </tr>
         </tbody>
@@ -146,6 +191,48 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+    <?php endif; ?>
+
+    <!-- CASH MOVEMENTS DETAIL -->
+    <div class="section-title">DETALLE DE MOVIMIENTOS DE CAJA (<?= count($movements ?? []) ?>)</div>
+    <?php if (empty($movements)): ?>
+        <p style="font-style:italic; color:#666; margin-left:10px;">No se registraron movimientos para esta sesión.</p>
+    <?php else: ?>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th>Método</th>
+                    <th>Cuenta</th>
+                    <th style="text-align:right">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($movements as $mv): ?>
+                    <?php
+                        $direction = $mv['direction'] ?? 'neutral';
+                        $sign = $direction === 'out' ? '-' : ($direction === 'in' ? '+' : '');
+                        $currency = $mv['currency'] ?? '';
+                        $amount = number_format((float)($mv['amount'] ?? 0), 2);
+                    ?>
+                    <tr>
+                        <td><?= !empty($mv['created_at']) ? date('d/m H:i', strtotime($mv['created_at'])) : '-' ?></td>
+                        <td><?= htmlspecialchars($mv['movement_label'] ?? 'Movimiento de caja') ?></td>
+                        <td>
+                            <?= !empty($mv['description']) ? htmlspecialchars($mv['description']) : '-' ?>
+                            <?php if (!empty($mv['reference_number'])): ?>
+                                <br><span style="font-size:10px; color:#666;">Ref: <?= htmlspecialchars($mv['reference_number']) ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= !empty($mv['payment_method_label']) ? htmlspecialchars($mv['payment_method_label']) : '-' ?></td>
+                        <td><?= !empty($mv['account_id']) ? ('#' . (int)$mv['account_id']) : '-' ?></td>
+                        <td style="text-align:right" class="money"><?= $sign ?><?= $currency ?> <?= $amount ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     <?php endif; ?>
 
     <!-- ACCOUNTS CREATED -->
