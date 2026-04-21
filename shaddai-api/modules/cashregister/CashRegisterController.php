@@ -124,6 +124,68 @@ class CashRegisterController {
         echo json_encode($movements);
     }
 
+    public function addMovement() {
+        try {
+            $payload = $_REQUEST['jwt_payload'] ?? null;
+            if (!$payload) throw new Exception('No autorizado');
+
+            $userId = $payload->sub;
+            $open = $this->sessionModel->findOpenByUser($userId);
+            if (!$open) {
+                http_response_code(404);
+                echo json_encode(['error' => 'No hay sesión de caja abierta']);
+                return;
+            }
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($input)) {
+                $input = [];
+            }
+
+            $movementType = isset($_POST['movement_type']) ? $_POST['movement_type'] : ($input['movement_type'] ?? null);
+            $amount = isset($_POST['amount']) ? (float)$_POST['amount'] : (isset($input['amount']) ? (float)$input['amount'] : 0);
+            $currency = isset($_POST['currency']) ? $_POST['currency'] : ($input['currency'] ?? null);
+            $description = isset($_POST['description']) ? trim((string)$_POST['description']) : trim((string)($input['description'] ?? ''));
+
+            $allowedTypes = ['expense_out', 'adjustment_out', 'adjustment_in'];
+            if (!in_array($movementType, $allowedTypes, true)) {
+                throw new Exception('Tipo de movimiento no válido');
+            }
+
+            $allowedCurrencies = ['USD', 'BS'];
+            if (!in_array($currency, $allowedCurrencies, true)) {
+                throw new Exception('Moneda no válida');
+            }
+
+            if ($amount <= 0) {
+                throw new Exception('El monto debe ser mayor a 0');
+            }
+
+            if ($description === '') {
+                throw new Exception('La descripción es obligatoria');
+            }
+
+            $movementId = $this->movementModel->create([
+                'session_id' => $open['id'],
+                'payment_id' => null,
+                'movement_type' => $movementType,
+                'amount' => $amount,
+                'currency' => $currency,
+                'description' => $description,
+                'created_by' => $userId
+            ]);
+
+            http_response_code(201);
+            echo json_encode([
+                'message' => 'Movimiento registrado exitosamente',
+                'movement_id' => (int)$movementId
+            ]);
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
     public function closeSession() {
         try {
             $payload = $_REQUEST['jwt_payload'] ?? null;

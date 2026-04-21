@@ -55,7 +55,7 @@ function ConfirmDialog({ title, message, confirmText, cancelText, tone = 'warnin
   const toneClasses = toneMap[tone] || toneMap.default;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onCancel} />
       <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 transition-all duration-200">
         <div className="flex items-start gap-3">

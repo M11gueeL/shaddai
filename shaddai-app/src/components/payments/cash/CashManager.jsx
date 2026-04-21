@@ -8,6 +8,8 @@ import {
   RefreshCw, 
   History,
   CircleDollarSign,
+  AlertTriangle,
+  CheckCircle2,
   X
 } from 'lucide-react';
 
@@ -28,14 +30,29 @@ export default function CashManager(){
   const [openingUsd, setOpeningUsd] = useState('');
   const [note, setNote] = useState('');
 
+  // Close Session Modal State
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [closeFormData, setCloseFormData] = useState({
+    declared_usd: '',
+    declared_bs: '',
+    notes: ''
+  });
+  const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [movementFormData, setMovementFormData] = useState({
+    movement_type: 'expense_out',
+    amount: '',
+    currency: 'USD',
+    description: ''
+  });
+
   // lock background scroll when modal is open
   useEffect(()=>{
-    if(openModal){
+    if(openModal || isCloseModalOpen || isMovementModalOpen){
       const prev = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = prev; };
     }
-  },[openModal]);
+  },[openModal, isCloseModalOpen, isMovementModalOpen]);
 
   const load = async()=>{
     try{
@@ -51,6 +68,78 @@ export default function CashManager(){
   };
 
   useEffect(()=>{ load(); /* eslint-disable-next-line */ },[]);
+
+  const expectedBalances = useMemo(() => {
+    let expectedUsd = parseFloat(session?.start_balance_usd) || 0;
+    let expectedBs = parseFloat(session?.start_balance_bs) || 0;
+
+    const inTypes = ['payment_in', 'adjustment_in'];
+    const outTypes = ['expense_out', 'adjustment_out', 'reversal'];
+
+    (movs || []).forEach((mov) => {
+      if (mov?.is_virtual) return;
+
+      const type = mov?.movement_type;
+      const currency = mov?.currency;
+      const amount = parseFloat(mov?.amount) || 0;
+
+      if (amount <= 0) return;
+
+      if (inTypes.includes(type)) {
+        if (currency === 'USD') expectedUsd += amount;
+        if (currency === 'BS') expectedBs += amount;
+      }
+
+      if (outTypes.includes(type)) {
+        if (currency === 'USD') expectedUsd -= amount;
+        if (currency === 'BS') expectedBs -= amount;
+      }
+    });
+
+    return {
+      usd: Number(expectedUsd.toFixed(2)),
+      bs: Number(expectedBs.toFixed(2))
+    };
+  }, [session, movs]);
+
+  const declaredUsd = closeFormData.declared_usd === '' ? 0 : (parseFloat(closeFormData.declared_usd) || 0);
+  const declaredBs = closeFormData.declared_bs === '' ? 0 : (parseFloat(closeFormData.declared_bs) || 0);
+
+  const diffUsd = Number((declaredUsd - expectedBalances.usd).toFixed(2));
+  const diffBs = Number((declaredBs - expectedBalances.bs).toFixed(2));
+
+  const hasUsdDifference = Math.abs(diffUsd) >= 0.01;
+  const hasBsDifference = Math.abs(diffBs) >= 0.01;
+  const hasAnyDifference = hasUsdDifference || hasBsDifference;
+  const hasAnyShortage = diffUsd < -0.009 || diffBs < -0.009;
+  const hasAnySurplus = diffUsd > 0.009 || diffBs > 0.009;
+
+  const requiresCloseNotes = hasAnyDifference;
+  const hasValidCloseNotes = closeFormData.notes.trim().length >= 5;
+
+  const closeStatusConfig = !hasAnyDifference
+    ? {
+        title: 'Caja cuadrada',
+        message: 'El efectivo declarado coincide con el efectivo esperado por el sistema.',
+        boxClass: 'bg-emerald-50 border-emerald-200',
+        titleClass: 'text-emerald-700',
+        textClass: 'text-emerald-700'
+      }
+    : hasAnyShortage
+      ? {
+          title: 'Faltante detectado',
+          message: 'Hay menos efectivo que el esperado. Debes registrar una explicación antes de cerrar.',
+          boxClass: 'bg-red-50 border-red-200',
+          titleClass: 'text-red-700',
+          textClass: 'text-red-700'
+        }
+      : {
+          title: 'Sobrante detectado',
+          message: 'Hay más efectivo que el esperado. Registra una explicación para dejar trazabilidad.',
+          boxClass: 'bg-amber-50 border-amber-200',
+          titleClass: 'text-amber-700',
+          textClass: 'text-amber-700'
+        };
 
   const submitOpen = async(e)=>{
     e?.preventDefault?.();
@@ -71,14 +160,101 @@ export default function CashManager(){
     }catch(e){ toast.error(e?.response?.data?.error || 'Error al abrir caja'); }
   };
 
-  const closeSession = async()=>{
-    const ok = await confirm({ title: 'Cerrar Caja', message: 'Esta acción finalizará la sesión actual. Se recomienda verificar el saldo antes de cerrar.', tone: 'warning', confirmText: 'Cerrar Sesión', cancelText: 'Cancelar' });
+  const handleCloseSessionClick = () => {
+    // Reset form data and open the modal
+    setCloseFormData({
+      declared_usd: expectedBalances.usd.toFixed(2),
+      declared_bs: expectedBalances.bs.toFixed(2),
+      notes: ''
+    });
+    setIsCloseModalOpen(true);
+  };
+
+  const submitCloseSession = async (e) => {
+    e?.preventDefault?.();
+
+    if (requiresCloseNotes && !hasValidCloseNotes) {
+      toast.error('Debes explicar la diferencia en observaciones antes de cerrar caja');
+      return;
+    }
+
+    const differences = [];
+    if (hasUsdDifference) differences.push(`USD ${diffUsd > 0 ? '+' : ''}${diffUsd.toFixed(2)}`);
+    if (hasBsDifference) differences.push(`BS ${diffBs > 0 ? '+' : ''}${diffBs.toFixed(2)}`);
+
+    const ok = await confirm({ 
+      title: 'Confirmar Cierre de Caja', 
+      message: hasAnyDifference
+        ? `Se detectaron diferencias (${differences.join(' | ')}). ¿Desea cerrar la sesión con estas diferencias?`
+        : 'No hay diferencias entre lo esperado y lo declarado. ¿Desea cerrar la sesión?', 
+      tone: hasAnyDifference ? (hasAnyShortage ? 'danger' : 'warning') : 'info', 
+      confirmText: hasAnyDifference ? 'Cerrar con Diferencia' : 'Cerrar Sesión', 
+      cancelText: 'Cancelar' 
+    });
     if(!ok) return;
-    try{
-      await cashApi.closeSession({}, token);
-      toast.success('Sesión cerrada correctamente');
+
+    try {
+      const payload = {
+        declared_usd: parseFloat(closeFormData.declared_usd) || 0,
+        declared_bs: parseFloat(closeFormData.declared_bs) || 0,
+        notes: closeFormData.notes
+      };
+      
+      const res = await cashApi.closeSession(payload);
+      toast.success(res?.data?.message || 'Sesión cerrada correctamente');
+      setIsCloseModalOpen(false);
       load();
-    }catch(e){ toast.error(e?.response?.data?.error || 'Error al cerrar caja'); }
+    } catch(e) { 
+      toast.error(e?.response?.data?.error || 'Error al cerrar caja'); 
+    }
+  };
+
+  const handleOpenMovementModal = () => {
+    setMovementFormData({
+      movement_type: 'expense_out',
+      amount: '',
+      currency: 'USD',
+      description: ''
+    });
+    setIsMovementModalOpen(true);
+  };
+
+  const submitMovement = async (e) => {
+    e?.preventDefault?.();
+
+    const amount = parseFloat(movementFormData.amount);
+    const description = movementFormData.description.trim();
+
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Ingresa un monto mayor a 0');
+      return;
+    }
+
+    if (!description) {
+      toast.error('La descripción es obligatoria');
+      return;
+    }
+
+    try {
+      await cashApi.addMovement({
+        movement_type: movementFormData.movement_type,
+        amount,
+        currency: movementFormData.currency,
+        description
+      });
+
+      toast.success('Movimiento registrado correctamente');
+      setIsMovementModalOpen(false);
+      setMovementFormData({
+        movement_type: 'expense_out',
+        amount: '',
+        currency: 'USD',
+        description: ''
+      });
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'Error al registrar movimiento');
+    }
   };
 
   return (
@@ -96,6 +272,16 @@ export default function CashManager(){
           </div>
         </div>
         <div className="flex items-center gap-2">
+           {status === 'open' && (
+             <button
+               onClick={handleOpenMovementModal}
+               className="px-4 py-2 rounded-lg bg-gray-900 text-white font-medium hover:bg-gray-800 transition-all flex items-center gap-2 shadow-sm"
+               title="Registrar egreso o ajuste"
+             >
+               <CircleDollarSign className="w-4 h-4" />
+               Registrar Movimiento
+             </button>
+           )}
            <button 
              onClick={load} 
              className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 hover:text-gray-900 transition-colors"
@@ -120,7 +306,7 @@ export default function CashManager(){
              openingBs={openingBs}
              setOpeningBs={setOpeningBs}
              submitOpen={submitOpen}
-             closeSession={closeSession}
+             closeSession={handleCloseSessionClick}
            />
         </div>
 
@@ -193,6 +379,225 @@ export default function CashManager(){
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={()=>setOpenModal(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">Cancelar</button>
                 <button type="submit" className="flex-1 py-3 bg-gray-900 text-white font-medium rounded-xl shadow-lg hover:bg-gray-800 hover:shadow-xl transition-all">Confirmar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cierre de Sesión / Arqueo de Caja */}
+      {isCloseModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-gray-900/20 transition-all">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-indigo-500" />
+                Arqueo de Caja
+              </h3>
+              <button onClick={() => setIsCloseModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-500 mb-6">
+              Verifica el efectivo esperado y declara el monto contado físicamente antes del cierre.
+            </p>
+
+            <form onSubmit={submitCloseSession} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Esperado USD</div>
+                  <div className="mt-1 text-2xl font-bold text-gray-900">${expectedBalances.usd.toFixed(2)}</div>
+                </div>
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Esperado BS</div>
+                  <div className="mt-1 text-2xl font-bold text-gray-900">Bs {expectedBalances.bs.toFixed(2)}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Efectivo Contado Bs</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={closeFormData.declared_bs} 
+                    onChange={(e) => setCloseFormData(prev => ({ ...prev, declared_bs: e.target.value }))} 
+                    className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all" 
+                    placeholder="0.00" 
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Efectivo Contado USD</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={closeFormData.declared_usd} 
+                    onChange={(e) => setCloseFormData(prev => ({ ...prev, declared_usd: e.target.value }))} 
+                    className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all" 
+                    placeholder="0.00" 
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={`rounded-2xl border p-4 ${closeStatusConfig.boxClass}`}>
+                <div className="flex items-start gap-3">
+                  {!hasAnyDifference ? (
+                    <CheckCircle2 className="w-5 h-5 mt-0.5 text-emerald-600" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 mt-0.5 text-current" />
+                  )}
+                  <div className="flex-1">
+                    <div className={`font-semibold ${closeStatusConfig.titleClass}`}>{closeStatusConfig.title}</div>
+                    <p className={`text-sm mt-1 ${closeStatusConfig.textClass}`}>{closeStatusConfig.message}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    !hasUsdDifference
+                      ? 'bg-emerald-100 border-emerald-200 text-emerald-700'
+                      : diffUsd < 0
+                        ? 'bg-red-100 border-red-200 text-red-700'
+                        : 'bg-amber-100 border-amber-200 text-amber-700'
+                  }`}>
+                    Diferencia USD: {diffUsd > 0 ? '+' : ''}{diffUsd.toFixed(2)}
+                  </div>
+                  <div className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    !hasBsDifference
+                      ? 'bg-emerald-100 border-emerald-200 text-emerald-700'
+                      : diffBs < 0
+                        ? 'bg-red-100 border-red-200 text-red-700'
+                        : 'bg-amber-100 border-amber-200 text-amber-700'
+                  }`}>
+                    Diferencia BS: {diffBs > 0 ? '+' : ''}{diffBs.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase">
+                  Observaciones {requiresCloseNotes ? '(obligatorio por diferencia)' : '(opcional)'}
+                </label>
+                <textarea 
+                  rows={3} 
+                  value={closeFormData.notes} 
+                  onChange={(e) => setCloseFormData(prev => ({ ...prev, notes: e.target.value }))} 
+                  className={`w-full rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all resize-none ${
+                    requiresCloseNotes && !hasValidCloseNotes ? 'border-red-300' : 'border-gray-200'
+                  }`} 
+                  placeholder="Ej: Faltan 10 USD por error al dar vuelto" 
+                  required={requiresCloseNotes}
+                />
+                {requiresCloseNotes && !hasValidCloseNotes && (
+                  <p className="text-xs text-red-600">Debes escribir una explicación (mínimo 5 caracteres).</p>
+                )}
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsCloseModalOpen(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={requiresCloseNotes && !hasValidCloseNotes}
+                  className={`flex-1 py-3 text-white font-medium rounded-xl shadow-lg transition-all ${
+                    requiresCloseNotes && !hasValidCloseNotes
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-gray-900 hover:bg-gray-800 hover:shadow-xl'
+                  }`}
+                >
+                  Cerrar Caja
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Movimiento Manual */}
+      {isMovementModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 backdrop-blur-sm bg-gray-900/20 transition-all">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <CircleDollarSign className="w-5 h-5 text-indigo-500" />
+                Registrar Movimiento de Caja
+              </h3>
+              <button onClick={() => setIsMovementModalOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={submitMovement} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Tipo de Movimiento</label>
+                  <select
+                    value={movementFormData.movement_type}
+                    onChange={(e) => setMovementFormData((prev) => ({ ...prev, movement_type: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all"
+                  >
+                    <option value="expense_out">Gasto/Salida</option>
+                    <option value="adjustment_in">Ajuste de Entrada</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Moneda</label>
+                  <select
+                    value={movementFormData.currency}
+                    onChange={(e) => setMovementFormData((prev) => ({ ...prev, currency: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="BS">BS</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase">Monto</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={movementFormData.amount}
+                  onChange={(e) => setMovementFormData((prev) => ({ ...prev, amount: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all"
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase">Concepto / Descripción</label>
+                <textarea
+                  rows={3}
+                  value={movementFormData.description}
+                  onChange={(e) => setMovementFormData((prev) => ({ ...prev, description: e.target.value }))}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 px-4 py-3 outline-none transition-all resize-none"
+                  placeholder="Ej: Compra de agua para recepción"
+                  required
+                />
+              </div>
+
+              <div className="pt-4 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsMovementModalOpen(false)}
+                  className="w-full py-3 bg-white border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-gray-900 text-white font-medium rounded-xl shadow-lg hover:bg-gray-800 hover:shadow-xl transition-all"
+                >
+                  Guardar Movimiento
+                </button>
               </div>
             </form>
           </div>

@@ -3,7 +3,8 @@ import api from './axiosConfig';
 export const openSession = (data) => api.post('/cash-sessions/open', data);
 export const getStatus = () => api.get('/cash-sessions/status');
 export const listMyMovements = () => api.get('/cash-sessions/movements');
-export const closeSession = (data) => api.post('/cash-sessions/close', data);
+export const addMovement = (data) => api.post('/cash-sessions/movements', data);
+export const closeSession = ({ declared_usd, declared_bs, notes }) => api.post('/cash-sessions/close', { declared_usd, declared_bs, notes });
 export const adminListSessions = (params = {}) => {
     return api.get('/cash-sessions/admin/all', { params });
 };
