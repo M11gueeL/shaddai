@@ -23,6 +23,7 @@
         .text-xs { font-size: 8px; }
         .text-emerald { color: #059669; }
         .text-red { color: #dc2626; }
+        .text-amber { color: #d97706; }
         .text-gray { color: #6b7280; }
 
         .summary-box { width: 100%; margin-bottom: 20px; }
@@ -45,7 +46,6 @@
         </p>
     </div>
 
-    <!-- Resumen Financiero -->
     <div class="section-title">Resumen Financiero Consolidado</div>
     <table class="summary-box">
         <tr>
@@ -72,7 +72,6 @@
         </tr>
     </table>
 
-    <!-- Detalle de Pagos -->
     <div class="section-title">Detalle de Movimientos de Ingreso (<?= count($data['details']['all_movements']) ?>)</div>
     <table>
         <thead>
@@ -88,22 +87,20 @@
         <tbody>
             <?php foreach ($data['details']['all_movements'] as $pay): ?>
                 <?php
-                    // Method Mapping
-                    $rawMethod = strtolower($pay['payment_method']);
-                    $methodName = $rawMethod;
-                    if (strpos($rawMethod, 'transfer') !== false) $methodName = 'Transferencia';
-                    if (strpos($rawMethod, 'mobile') !== false) $methodName = 'Pago Móvil';
-                    if (strpos($rawMethod, 'cash') !== false) $methodName = 'Efectivo';
-                    if (strpos($rawMethod, 'zelle') !== false) $methodName = 'Zelle';
-                    if (strpos($rawMethod, 'card') !== false) $methodName = 'T. Débito/Crédito';
+                    // Method Mapping (Alineado estrictamente con el ENUM de la BD)
+                    $methodTrans = [
+                        'cash_usd' => 'Efectivo USD',
+                        'cash_bs' => 'Efectivo Bs',
+                        'transfer_bs' => 'Transferencia',
+                        'mobile_payment_bs' => 'Pago Móvil'
+                    ];
+                    $methodName = $methodTrans[$pay['payment_method']] ?? ucfirst(str_replace('_', ' ', $pay['payment_method']));
 
                     // Status Mapping
                     $statusTrans = [
-                        'pending'  => 'Pendiente',
+                        'pending_verification' => 'Verificación Pendiente',
                         'verified' => 'Verificado',
-                        'approved' => 'Aprobado',
-                        'rejected' => 'Rechazado',
-                        'annulled' => 'Anulado'
+                        'rejected' => 'Rechazado'
                     ];
                     $statusDisplay = $statusTrans[$pay['status']] ?? ucfirst($pay['status']);
                     
@@ -134,8 +131,9 @@
                     <td class="text-center">
                         <?php 
                             $stColor = match($pay['status']) {
-                                'verified', 'approved' => 'text-emerald',
-                                'rejected', 'annulled' => 'text-red',
+                                'verified' => 'text-emerald',
+                                'rejected' => 'text-red',
+                                'pending_verification' => 'text-amber',
                                 default => 'text-gray'
                             };
                         ?>
@@ -149,7 +147,6 @@
         </tbody>
     </table>
 
-    <!-- Auditoría de Recibos -->
     <div class="section-title">Auditoría de Recibos Emitidos</div>
     <table>
         <thead>
@@ -180,7 +177,6 @@
         </tbody>
     </table>
 
-    <!-- Cuentas Aperturadas -->
     <div class="section-title">Cuentas Aperturadas</div>
     <table>
         <thead>
